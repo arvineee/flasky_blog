@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-sm border-0">
+                <div class="card-header  text-teetiary text-center">
+                    <h3>Register</h3>
+                </div>
+                <div class="card-body p-4">
+                    <form action="{{ url_for('register') }}" method="post" novalidate>
+                        {{ form.hidden_tag() }}
+                        <div class="mb-3">
+                            <label class="form-label fw-bold"> {{ form.username.label }}</label>
+                            {{ form.username(class="form-control") }}
+                            {% for error in form.username.errors %}
+                                <p class="text-danger small">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold"> {{ form.email.label }}</label>
+                            {{ form.email(class="form-control") }}
+                            {% for error in form.email.errors %}
+                                <p class="text-danger small">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold"> {{ form.password.label }}</label>
+                            {{ form.password(class="form-control") }}
+                            {% for error in form.password.errors %}
+                                <p class="text-danger small">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold"> {{ form.password1.label }}</label>
+                            {{ form.password1(class="form-control") }}
+                            {% for error in form.password1.errors %}
+                                <p class="text-danger small">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        <div class="d-grid">
+                            {{ form.submit(class="btn btn-primary btn-block btn-lg") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

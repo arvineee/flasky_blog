@@ -1,9 +1,69 @@
-<!DOCTYPE html>
-<html lang='en'>
-    <head>
-        <title>Arval-Blog</title>
-    </head>
-    <body>
-        <h1>Welcome to Arval Blog</h1>
-    </body>
-</html>
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    {% for post in posts %}
+    <div class="card shadow-lg mb-5 rounded-lg overflow-hidden" style="border: none;">
+        {% if post.image_url %}
+        <div class="card-img-top">
+            
+            <img src="{{ url_for('static', filename='images/' + post.image_url) }}" alt="Post Image" class="img-fluid w-100" style="max-height: 400px; object-fit: cover;">
+        </div>
+        {% endif %}
+        
+        <div class="card-body">
+            <h2 class="card-title text-center text-dark font-weight-bold mb-3">{{ post.title }}</h2>
+            <p class="card-text text-muted lead mb-4">{{ post.desc | safe | truncate(150) }}</p>
+            <div class="d-flex justify-content-between align-items-center">
+                <p class="text-muted mb-0"><small>By <strong>{{ post.author.username }}</strong> on <strong>{{ post.date_pub }}</strong></small></p>
+                <a href="{{ url_for('see_more', post_id=post.id) }}" class="btn btn-outline-primary btn-sm px-4 py-2 transition-transform" style="transition: transform 0.2s ease; font-weight: 500;">Read More</a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<style>
+    /* Card and Image Styles */
+    .card {
+        background-color: #ffffff;
+        border-radius: 15px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    .card-img-top img {
+        border-top-left-radius: 15px;
+        border-top-right-radius: 15px;
+    }
+
+    /* Read More Button Styling */
+    .btn-outline-primary {
+        color: #007bff;
+        border-color: #007bff;
+    }
+
+    .btn-outline-primary:hover {
+        background-color: #007bff;
+        color: #fff;
+        transform: scale(1.05);
+    }
+
+    /* Font Styling */
+    .card-title {
+        font-family: 'Montserrat', sans-serif;
+        font-size: 1.8rem;
+    }
+
+    .card-text {
+        font-family: 'Open Sans', sans-serif;
+        font-size: 1rem;
+        line-height: 1.6;
+    }
+
+    /* Card Hover Effect */
+    .card:hover {
+        transform: translateY(-5px);
+        transition: transform 0.3s ease;
+    }
+</style>
+{% endblock %}

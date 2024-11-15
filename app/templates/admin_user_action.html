@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <h1 class="text-center mb-4">Admin Action for {{ user.username }}</h1>
+
+            <form method="POST">
+                {{ form.hidden_tag() }}
+                
+                <!-- Warning Message -->
+                <div class="mb-3">
+                    <label for="warning_message" class="form-label">{{ form.warning_message.label }}</label>
+                    {{ form.warning_message(class="form-control", size=40) }}
+                </div>
+
+                <!-- Ban User -->
+                <div class="mb-3 form-check">
+                    <input type="checkbox" class="form-check-input" id="is_banned" name="is_banned" {{ 'checked' if form.is_banned.data else '' }}>
+                    <label class="form-check-label" for="is_banned">{{ form.is_banned.label }}</label>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="text-center">
+                    {{ form.submit(class="btn btn-primary") }}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

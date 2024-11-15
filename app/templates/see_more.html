@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-md-10">
+            <div class="card shadow-lg border-0">
+                {% if post.image_url %}
+                    <img src="{{ url_for('static', filename='images/' + post.image_url) }}" class="card-img-top rounded-top" alt="{{ post.title }}">
+                {% endif %}
+                <div class="card-body p-5">
+                    <h1 class="card-title text-center text-dark fw-bold display-4">{{ post.title }}</h1>
+                    <p class="text-muted text-center"><small>By <strong>{{ post.author.username }}</strong> on <span>{{ post.date_pub }}</span></small></p>
+                    <hr class="my-4">
+                    <div class="content text-justify text-secondary lead mb-4">
+                        {{ post.desc | safe }}
+                    </div>
+                    {% if post.author == current_user %}
+<form method="POST" action="{{ url_for('delete_post', post_id=post.id) }}">
+    <button type="submit" class="btn btn-danger mb-3">Delete Post</button>
+</form>
+{% endif %}
+
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        <div class="form-group">
+                            {{ form.comment(class="form-control", placeholder="Add a comment...") }}
+                        </div>
+                        <button type="submit" class="btn btn-primary mt-3">Submit Comment</button>
+                    </form>
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{{ url_for('index') }}" class="btn btn-outline-primary btn-lg rounded-pill">Back to Posts</a>
+                        <button class="btn btn-primary btn-lg rounded-pill" data-bs-toggle="modal" data-bs-target="#shareModal">Share Post</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="shareModal" tabindex="-1" aria-labelledby="shareModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="shareModalLabel">Share This Post</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted">Share this post with your friends and followers:</p>
+                <div class="d-flex justify-content-around">
+                    <a href="#" class="btn btn-outline-primary rounded-circle"><i class="bi bi-facebook"></i></a>
+                    <a href="#" class="btn btn-outline-primary rounded-circle"><i class="bi bi-twitter"></i></a>
+                    <a href="#" class="btn btn-outline-danger rounded-circle"><i class="bi bi-envelope"></i></a>
+                    <a href="#" class="btn btn-outline-success rounded-circle"><i class="bi bi-whatsapp"></i></a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
