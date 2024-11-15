@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="text-center mb-4">Admin Dashboard</h1>
+
+            <!-- Users Section -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="card-title">Users</h3>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group">
+                        {% for user in users %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span>{{ user.username }}</span>
+                            <div>
+                                <a href="{{ url_for('admin.admin_user_action', user_id=user.id) }}" class="btn btn-warning btn-sm mr-2">Action</a>
+                                {% if user.is_banned %}
+                                    <a href="{{ url_for('admin.admin_unban_user', user_id=user.id) }}" class="btn btn-success btn-sm">Unban</a>
+                                {% else %}
+                                    <a href="{{ url_for('admin.admin_unban_user', user_id=user.id) }}" class="btn btn-secondary btn-sm disabled">Unban</a>
+                                {% endif %}
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Posts Section -->
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h3 class="card-title">Posts</h3>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group">
+                        {% for post in posts %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span>{{ post.title }}</span>
+                            <div>
+                                <a href="{{ url_for('admin.admin_delete_post', post_id=post.id) }}" class="btn btn-danger btn-sm mr-2">Delete</a>
+                                {% if post.is_blocked %}
+                                    <a href="{{ url_for('admin.admin_unblock_post', post_id=post.id) }}" class="btn btn-success btn-sm">Unblock</a>
+                                {% else %}
+                                    <a href="{{ url_for('admin.admin_unblock_post', post_id=post.id) }}" class="btn btn-secondary btn-sm disabled">Unblock</a>
+                                {% endif %}
+                                <a href="{{ url_for('admin.admin_block_post', post_id=post.id) }}" class="btn btn-warning btn-sm ml-2">Block</a>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

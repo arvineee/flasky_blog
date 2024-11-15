@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <h2 class='text-center text-color-info'>Add New Post </h2>
+    <form action="{{url_for('new_post')}}" method=post enctype=multipart/form-data novalidate>
+        {{ form.hidden_tag()}}
+        <div class='mb-3'>
+        <p class='form-label'> {{form.title.label}}</p>
+      {{form.title(class='form-control')}}
+      {% for error in form.title.errors %}
+      <p class="text-danger">[{{error}}]</p>
+      {% endfor %}
+        </div>
+        <div class='mb-3'>
+            <p class='form-label'> {{form.desc.label}}</p>
+            {{form.desc(class='form-control')}}
+            {% for error in form.desc.errors %}
+            <p class="text-danger">[{{error}}]</p>
+            {% endfor %}
+        </div>
+        <div class='mb-3'>
+            <p class='form-label'> {{form.image.label}}</p>
+            {{form.image(class='form-control')}}
+            {% for error in form.image.errors %}
+            <p class="text-danger">[{{error}}]</p>
+            {% endfor %}
+        </div>
+        <div class='mb-3'>
+            {{form.submit(class='btn btn-primary btn-lg w-100')}}
+        </div>
+    </form>
+    {{ckeditor.load()}}
+  {{ckeditor.config()}}
+{% endblock %}
