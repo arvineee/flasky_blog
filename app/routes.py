@@ -42,7 +42,6 @@ def check_ban(f):
 
 
 @app.route('/')
-@login_required
 def index():
     if current_user.is_banned:
         flash("Your account has been restricted. Please contact the admin.", "danger")
