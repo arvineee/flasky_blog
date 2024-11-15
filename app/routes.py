@@ -34,7 +34,7 @@ def admin_required(func):
 def check_ban(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if current_user.is_authenticated and current_user.is_banned:
+        if current_user.is_authenticated and current_user.is_authenticated and current_user.is_banned:
             flash("You are banned from accessing this feature. Contact the admin.", "danger")
             return redirect(url_for("index"))
         return f(*args, **kwargs)
