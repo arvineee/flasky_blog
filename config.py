@@ -6,16 +6,18 @@ base_dir = os.path.abspath(os.path.dirname(__file__))
 class Config:
     SECRET_KEY = os.urandom(16) 
 
+    SQLALCHEMY_DATABASE_URI= "sqlite:///database.db"
+
     # Database URI
-    SQLALCHEMY_DATABASE_URI =  'postgresql://Arval_database_owner:jCn7EabY5oTz@ep-round-morning-a68wihjp.us-west-2.aws.neon.tech/Arval_database?sslmode=require'
+    #SQLALCHEMY_DATABASE_URI =  'postgresql://Arval_database_owner:jCn7EabY5oTz@ep-round-morning-a68wihjp.us-west-2.aws.neon.tech/Arval_database?sslmode=require'
     SQLALCHEMY_TRACK_MODIFICATIONS = False  
     
-    conn = psycopg2.connect(
-    dbname="Arval_database",
-    user="Arval_database_owner",
-    password="jCn7EabY5oTz",
-    host= "ep-round-morning-a68wihjp.us-west-2.aws.neon.tech"
-)
+    #conn = psycopg2.connect(
+    #dbname="Arval_database",
+    #user="Arval_database_owner",
+    #password="jCn7EabY5oTz",
+    #host= "ep-round-morning-a68wihjp.us-west-2.aws.neon.tech"
+#)
 
     # Upload folder for storing files
     UPLOAD_FOLDER = os.path.join(base_dir, 'app/static/images')
