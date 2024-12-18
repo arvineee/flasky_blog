@@ -1,7 +1,7 @@
 from flask import render_template, url_for, redirect, flash, request
-from app import app, bootstrap,db,login_manager
-from app.models import User, Post
-from app.forms import LoginForm, RegisterForm, PostForm,CommentForm
+from app import app, bootstrap,db,login_manager,mail
+from app.models import User, Post, Comment, Like, User
+from app.forms import LoginForm, RegisterForm, PostForm,CommentForm,ContactForm, ResetPasswordRequestForm, ResetPasswordForm
 from flask_login import login_user, current_user, login_required,logout_user
 from werkzeug.security import generate_password_hash
 from werkzeug.utils import secure_filename
@@ -9,6 +9,11 @@ from functools import wraps
 import bleach
 from flask_ckeditor.utils import cleanify
 import os
+from flask_mail import Message
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from itsdangerous import URLSafeTimedSerializer, SignatureExpired
+
 
 ALLOWED_EXTENSIONS = { 'png', 'jpg', 'jpeg', 'gif'}
 
@@ -157,7 +162,8 @@ def new_post():
 def see_more(post_id):
     form = CommentForm()
     post = Post.query.get_or_404(post_id)
-    return render_template('see_more.html', post=post,form=form)
+    comments = Comment.query.filter_by(post_id=post_id).all()
+    return render_template('see_more.html', post=post, form=form, comments=comments,Like=Like)
 
 @app.route('/delete_post/<int:post_id>', methods=["POST"])
 @login_required
@@ -174,3 +180,128 @@ def delete_post(post_id):
     db.session.commit()
     flash("Post has been deleted successfully.", "success")
     return redirect(url_for('index'))
+
+@app.route('/share_post/<int:post_id>')
+@login_required
+def share_post(post_id):
+    post = Post.query.get_or_404(post_id)
+    return render_template('share_post.html', post=post)
+
+
+@app.route('/add_comment/<int:post_id>', methods=['POST'])
+@login_required
+def add_comment(post_id):
+    form = CommentForm()
+    if form.validate_on_submit():
+        comment = Comment(content=form.comment.data, user_id=current_user.id, post_id=post_id)
+        db.session.add(comment)
+        db.session.commit()
+        flash('Your comment has been added!', 'success')
+    return redirect(url_for('see_more', post_id=post_id))
+
+@app.route('/like_post/<int:post_id>', methods=['POST'])
+@login_required
+def like_post(post_id):
+    post = Post.query.get_or_404(post_id)
+    existing_like = Like.query.filter_by(user_id=current_user.id, post_id=post_id).first()
+
+    if post.like_count is None:
+        post.like_count = 0  # Initialize if it's None
+
+    if existing_like:
+        # User already liked this post, so unlike it
+        db.session.delete(existing_like)
+        post.like_count -= 1
+        action = "unliked"
+    else:
+        # User is liking this post for the first time
+        new_like = Like(user_id=current_user.id, post_id=post_id)
+        db.session.add(new_like)
+        post.like_count += 1
+        action = "liked"
+
+    db.session.commit()
+    flash(f'You {action} this post!', 'success')
+    return redirect(url_for('see_more', post_id=post_id))
+
+@app.route('/policy')
+def policy():
+    return render_template('policy.html')
+
+@app.route('/privacy_policy')
+def privacy_policy():
+    return render_template('privacy_policy.html')
+
+@app.route('/contact', methods=['GET', 'POST'])
+@login_required
+def contact():
+    form = ContactForm()
+    if form.validate_on_submit():
+
+        msg = Message("Arval-Blog Contact Submission",
+              sender=form.email.data,
+              recipients=[app.config['MAIL_USERNAME']])
+
+        body = f"""
+Dear Arval-Blog Team,
+
+You have received a new contact form submission from:
+
+Name: {form.name.data}
+Email: {form.email.data}
+
+Message:
+{form.message.data}
+
+Best regards,
+Arval-Blog Contact System
+"""
+
+        # Set the body directly to the Message object, without using MIME objects
+        msg.body = body.strip()  # .strip() to remove leading/trailing whitespace
+
+        mail.send(msg)
+        flash('Your message has been sent successfully.', 'success')
+        return redirect(url_for('contact'))
+    return render_template('contact.html', form=form)
+
+# Initialize serializer for token generation
+serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
+
+@app.route('/reset_password_request', methods=['GET', 'POST'])
+def reset_password_request():
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+    form = ResetPasswordRequestForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data).first()
+        if user:
+            token = serializer.dumps(user.email, salt='password-reset-salt')
+            msg = Message('Password Reset Request',
+                          sender=app.config['MAIL_USERNAME'],
+                          recipients=[user.email])
+            link = url_for('reset_password', token=token, _external=True)
+            msg.body = f'Here is your password reset link: {link}'
+            mail.send(msg)
+            flash('An email with instructions to reset your password has been sent.', 'info')
+        return redirect(url_for('login'))
+    return render_template('reset_password_request.html', form=form)
+
+@app.route('/reset_password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    try:
+        email = serializer.loads(token, salt='password-reset-salt', max_age=3600)
+    except SignatureExpired:
+        flash('The password reset link is invalid or has expired.', 'warning')
+        return redirect(url_for('reset_password_request'))
+    user = User.query.filter_by(email=email).first()
+    if user is None:
+        flash('Invalid reset request.', 'warning')
+        return redirect(url_for('index'))
+    form = ResetPasswordForm()
+    if form.validate_on_submit():
+        user.set_password(form.password.data)
+        db.session.commit()
+        flash('Your password has been reset!', 'success')
+        return redirect(url_for('login'))
+    return render_template('reset_password.html', form=form)

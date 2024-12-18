@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <h1 class="text-center mb-4">Privacy Policy</h1>
+
+            <section class="mb-5">
+                <h2>Introduction</h2>
+		<p>At <b>Arval-Blog</b>, we respect your privacy and are committed to protecting your personal information. This Privacy Policy explains how we collect, use, and safeguard your data when you visit our blog or interact with our services. By using our site, you consent to our practices as described here.</p>
+            </section>
+
+            <section class="mb-5">
+                <h2>Information We Collect</h2>
+                <ul>
+                    <li><strong>Personal Data:</strong> When you comment on posts, subscribe to our newsletter, or fill out contact forms, we might collect your name, email address, and any other information you willingly provide.</li>
+                    <li><strong>Usage Data:</strong> We collect information on how you interact with our blog, including pages visited, time spent on pages, and other analytics data to improve user experience.</li>
+                    <li><strong>Cookies:</strong> We use cookies to enhance your user experience. You can choose to disable cookies in your browser settings, though this might affect the functionality of our site.</li>
+                </ul>
+            </section>
+
+            <section class="mb-5">
+                <h2>How We Use Your Information</h2>
+                <ul>
+                    <li>To improve our blog's content and user experience based on how visitors use our site.</li>
+                    <li>To respond to your inquiries, comments, or for customer service purposes.</li>
+                    <li>For sending newsletters and updates if you've subscribed, with an easy opt-out option in every email.</li>
+                    <li>To protect our blog from abuse, spam, and other malicious activities.</li>
+                </ul>
+            </section>
+
+            <section class="mb-5">
+                <h2>Sharing Your Information</h2>
+                <p>We do not sell, trade, or otherwise transfer your personal data to outside parties without your consent. We might share information with:</p>
+                <ul>
+                    <li>Service providers who help us maintain our blog (like hosting services), but under strict confidentiality agreements.</li>
+                    <li>If legally required, to comply with law enforcement or legal processes.</li>
+                </ul>
+            </section>
+
+            <section class="mb-5">
+                <h2>Your Rights</h2>
+                <ul>
+                    <li><strong>Access:</strong> You have the right to request access to your personal data we hold.</li>
+                    <li><strong>Correction:</strong> You can request correction of inaccurate data about you.</li>
+                    <li><strong>Deletion:</strong> You can ask us to delete your personal data where there is no compelling reason for us to continue processing it.</li>
+                    <li><strong>Opt-out:</strong> You can opt out of marketing communications at any time by clicking the unsubscribe link in the emails.</li>
+                </ul>
+                <p>To exercise these rights, please contact us at [your contact email].</p>
+            </section>
+
+            <section class="mb-5">
+                <h2>Security</h2>
+                <p>We take the security of your data seriously and use industry-standard practices to protect your information. However, no method of transmission over the Internet or method of electronic storage is 100% secure. Therefore, while we strive to use commercially acceptable means to protect your personal information, we cannot guarantee its absolute security.</p>
+            </section>
+
+            <section class="mb-5">
+                <h2>Changes to This Privacy Policy</h2>
+                <p>We may update our Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page. You are advised to review this Privacy Policy periodically for any changes. Changes are effective immediately after they are posted on this page.</p>
+            </section>
+
+            <section class="mb-5">
+                <h2>Contact Us</h2>
+		<p>If you have any questions about this Privacy Policy, please <a href="{{url_for('contact')}}">Contact Us</a>.</p>
+            </section>
+        </div>
+    </div>
+</div>
+{% endblock %}

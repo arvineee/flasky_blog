@@ -4,7 +4,7 @@
 {% block title %}Login{% endblock %}
 
 {% block content %}
-<h2 class="my-4">Sign Up</h2>
+<h2 class="my-4">Sign In</h2>
 <form action="{{ url_for('login') }}" method="post" class="needs-validation" novalidate>
     {{ form.hidden_tag() }}
     <div class="mb-3">
@@ -21,6 +21,7 @@
             <div class="text-danger">{{ error }}</div>
         {% endfor %}
     </div>
+    <small>Forget password? <a href="{{url_for('reset_password_request')}}">Reset Password</a>
     <div class="mb-3">
         {{ form.submit(class="btn btn-primary") }}
     </div>

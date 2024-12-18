@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <h1>Traffic Statistics</h1>
+    <p><strong>Total Visitors:</strong> {{ total_visitors }}</p>
+    <p><strong>Total Time Spent:</strong> {{ total_time_spent | round(2) }} seconds</p>
+    <p><strong>Average Time per Visitor:</strong> {{ avg_time_per_visitor | round(2) }} seconds</p>
+
+    <h2>Recent Traffic Data</h2>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Timestamp</th>
+                <th>Visitors</th>
+                <th>Time Spent (seconds)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for stat in traffic_stats %}
+            <tr>
+                <td>{{ stat.timestamp }}</td>
+                <td>{{ stat.visitor_count }}</td>
+                <td>{{ stat.total_time_spent | round(2) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
