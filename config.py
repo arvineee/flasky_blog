@@ -7,14 +7,14 @@ class Config:
     SECRET_KEY = os.urandom(16) 
 
     # Database URI
-    SQLALCHEMY_DATABASE_URI =  'postgresql://arvine:qcMUZd5KPu99si45RXw7RaetkO5BAINb@dpg-ctha3b0gph6c73dad1n0-a.oregon-postgres.render.com/arval'
+    SQLALCHEMY_DATABASE_URI =  'postgresql://Arval_database_owner:jCn7EabY5oTz@ep-round-morning-a68wihjp.us-west-2.aws.neon.tech/Arval_database?sslmode=require'
     SQLALCHEMY_TRACK_MODIFICATIONS = False  
     
     conn = psycopg2.connect(
-    dbname="arval",
-    user="arvine",
-    password="qcMUZd5KPu99si45RXw7RaetkO5BAINb",
-    host="dpg-ctha3b0gph6c73dad1n0-a.oregon-postgres.render.com"
+    dbname="Arval_database",
+    user="Arval_database_owner",
+    password="jCn7EabY5oTz",
+    host= "ep-round-morning-a68wihjp.us-west-2.aws.neon.tech"
 )
 
     # Upload folder for storing files
