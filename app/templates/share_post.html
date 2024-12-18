@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-lg-8 offset-lg-2">
+            <h2 class="mb-4">{{ post.title }}</h2>
+            <div class="card mb-3">
+                <div class="card-body">
+                    <p class="card-text">{{ post.desc[:200] | safe }}...</p>
+                    <a href="{{ url_for('see_more', post_id=post.id) }}" class="btn btn-primary">Read More</a>
+                </div>
+            </div>
+            <h3>Share this Post</h3>
+            <div id="share-buttons" class="mb-4">
+                <!-- Share buttons -->
+                <a href="https://www.facebook.com/sharer/sharer.php?u={{ request.url | urlencode }}" target="_blank" class="btn btn-primary btn-sm me-2"><i class="fab fa-facebook-f"></i> Share on Facebook</a>
+                <a href="https://twitter.com/intent/tweet?text=Check%20out%20this%20post%20on%20Arval-Blog:%20{{ request.url | urlencode }}" target="_blank" class="btn btn-info btn-sm me-2"><i class="fab fa-twitter"></i> Tweet</a>
+                <a href="mailto:?subject=Check%20out%20this%20post%20on%20Arval-Blog&body=Check%20out%20this%20post:%20{{ request.url | urlencode }}" class="btn btn-secondary btn-sm"><i class="fas fa-envelope"></i> Email</a>
+            </div>
+
+            <!-- Copy link button -->
+            <div class="input-group mb-3">
+                <input id="post-url" type="text" class="form-control" value="{{ request.url }}" readonly>
+                <button class="btn btn-outline-secondary" type="button" id="copy-button">Copy Link</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://kit.fontawesome.com/your-fontawesome-kit.js" crossorigin="anonymous"></script>
+<script>
+    document.getElementById('copy-button').addEventListener('click', function() {
+        var copyText = document.getElementById("post-url");
+        copyText.select();
+        copyText.setSelectionRange(0, 99999); // For mobile devices
+        navigator.clipboard.writeText(copyText.value);
+        alert("URL copied to clipboard!");
+    });
+</script>
+
+{% endblock %}

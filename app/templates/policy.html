@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <h1 class="text-center mb-4">Policy</h1>
+
+            <section class="mb-5">
+                <h2>Introduction</h2>
+		<p>Welcome to <b>Arval-Blog</b>. This policy outlines our commitment to upholding the highest standards of content, privacy, and user experience. By interacting with our blog, you agree to comply with the following guidelines.</p>
+            </section>
+
+            <section class="mb-5">
+                <h2>Content Policy</h2>
+                <ul>
+                    <li><strong>Accuracy:</strong> We strive to ensure all content is accurate and current. If inaccuracies are found, we will correct them promptly.</li>
+                    <li><strong>Originality:</strong> Plagiarism is strictly prohibited. All content must be original or properly cited.</li>
+                    <li><strong>Respect:</strong> All posts must respect the rights, privacy, and dignity of others. No hate speech or discrimination will be tolerated.</li>
+                    <li><strong>Transparency:</strong> Any sponsored content or partnerships will be clearly disclosed.</li>
+                </ul>
+            </section>
+
+            <section class="mb-5">
+                <h2>User Interaction</h2>
+                <ul>
+                    <li><strong>Comments:</strong> We encourage thoughtful discussion. Comments are moderated to ensure they adhere to community standards.</li>
+                    <li><strong>Privacy:</strong> User data is handled with utmost privacy. See our <a href="{{ url_for('privacy_policy') }}">Privacy Policy</a> for more details.</li>
+                    <li><strong>Accountability:</strong> Users are responsible for their interactions on our platform.</li>
+                </ul>
+            </section>
+
+            <section class="mb-5">
+                <h2>Intellectual Property</h2>
+                <p>All content published on this blog is protected under copyright law. Unauthorized use or reproduction of any content without permission is prohibited. For inquiries about permissions, please contact us at [your contact email].</p>
+            </section>
+
+            <section class="mb-5">
+                <h2>Updates to Policy</h2>
+                <p>We reserve the right to update this policy as needed. Any changes will be reflected on this page, and we encourage users to check back periodically.</p>
+            </section>
+        </div>
+    </div>
+</div>
+{% endblock %}

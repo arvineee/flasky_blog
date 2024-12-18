@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField,SubmitField, PasswordField,FileField,TextAreaField,BooleanField
+from wtforms import StringField,SubmitField, PasswordField,FileField,TextAreaField,BooleanField,EmailField
 from wtforms.validators import DataRequired,Email,EqualTo,Length
 from flask_ckeditor import CKEditorField
 
@@ -31,3 +31,18 @@ class AdminActionForm(FlaskForm):
 
 class CommentForm(FlaskForm):
     comment = TextAreaField('Comment', validators=[DataRequired()])
+
+class ContactForm(FlaskForm):
+    name = StringField('Name', validators=[DataRequired()])
+    email = EmailField('Email', validators=[DataRequired(), Email()])
+    message = TextAreaField('Message', validators=[DataRequired()])
+    submit = SubmitField('Send')
+
+class ResetPasswordRequestForm(FlaskForm):
+    email = StringField('Email', validators=[DataRequired(), Email()])
+    submit = SubmitField('Request Password Reset')
+
+class ResetPasswordForm(FlaskForm):
+    password = PasswordField('New Password', validators=[DataRequired()])
+    confirm_password = PasswordField('Confirm Password', validators=[DataRequired(), EqualTo('password')])
+    submit = SubmitField('Reset Password')

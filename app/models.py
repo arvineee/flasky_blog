@@ -2,6 +2,7 @@ from datetime import date
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from app import db, login_manager
+from datetime import datetime
 
 class User(UserMixin, db.Model):
     __tablename__ = 'user'
@@ -30,6 +31,35 @@ class Post(db.Model):
     image_url = db.Column(db.String(), nullable=True)
     author_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     is_blocked = db.Column(db.Boolean, default=False)
+    like_count = db.Column(db.Integer, default=0)
+    comments = db.relationship('Comment', backref='post', lazy='dynamic')
+
+class Comment(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    content = db.Column(db.Text, nullable=False)
+    date_posted = db.Column(db.String(), default=date.today)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
+    user = db.relationship('User', backref=db.backref('comments', lazy=True))
+
+class TrafficStats(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    visitor_count = db.Column(db.Integer, nullable=False)
+    total_time_spent = db.Column(db.Float, nullable=False)  # in seconds
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class Like(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+    user = db.relationship('User', backref=db.backref('likes', lazy=True))
+    post = db.relationship('Post', backref=db.backref('likes', lazy=True))
+
+    __table_args__ = (db.UniqueConstraint('user_id', 'post_id', name='_user_post_uc'),)
+
 
 @login_manager.user_loader
 def load_user(id):
