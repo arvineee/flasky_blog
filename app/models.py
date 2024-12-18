@@ -10,7 +10,7 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(100), nullable=False, unique=True, index=True)
     email = db.Column(db.String(150), nullable=False, unique=True, index=True)
     password_hash = db.Column(db.String(256))
-    is_admin = db.Column(db.Boolean, default=True)
+    is_admin = db.Column(db.Boolean, default=False)
     date_r = db.Column(db.String(), default=date.today)
     is_banned = db.Column(db.Boolean, default=False)
     warning_message = db.Column(db.String(500), nullable=True)
