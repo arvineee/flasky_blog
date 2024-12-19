@@ -72,5 +72,8 @@ def log_traffic(response):
 from app.admin_routes import admin_bp
 app.register_blueprint(admin_bp)
 
+from app.newsletter_route import newsletter_bp
+app.register_blueprint(newsletter_bp)
+
 # Import routes and models after blueprint registration
 from app import routes, models

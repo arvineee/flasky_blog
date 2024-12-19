@@ -7,7 +7,7 @@
             <div class="card mb-3">
                 <div class="card-body">
                     <p class="card-text">{{ post.desc[:200] | safe }}...</p>
-                    <a href="{{ url_for('see_more', post_id=post.id) }}" class="btn btn-primary">Read More</a>
+                    <a href="{{ url_for('admin.see_more', post_id=post.id) }}" class="btn btn-primary">Read More</a>
                 </div>
             </div>
             <h3>Share this Post</h3>

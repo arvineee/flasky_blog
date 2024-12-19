@@ -1,13 +1,43 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
-from app.models import User, Post,Comment, TrafficStats
+from app.models import User, Post,Comment, TrafficStats,Announcement, NewsletterSubscriber,Like
 from app.forms import AdminActionForm
 from app import db
 from flask_mail import Message
 from app import mail
 from datetime import datetime
+from werkzeug.security import generate_password_hash
+from werkzeug.utils import secure_filename                                  
+from functools import wraps
+import bleach
+from flask_ckeditor.utils import cleanify
+from app.forms import LoginForm, RegisterForm, PostForm,CommentForm,ContactForm, ResetPasswordRequestForm, ResetPasswordForm
 
 admin_bp = Blueprint('admin', __name__)
+
+ALLOWED_EXTENSIONS = { 'png', 'jpg', 'jpeg', 'gif'}
+def allowed_file(filename):                                                         
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+def admin_required(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        if not current_user.is_authenticated:
+            flash("You need to log in to access this page.", "warning")
+            return redirect(url_for("login"))
+        if not current_user.admin:
+            flash("You do not have the required permissions to access this page.", "danger")
+            return redirect(url_for("index"))  # Redirect to a default route
+        return func(*args, **kwargs)
+    return wrapper
+
+def check_ban(f):                                                            
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if current_user.is_authenticated and current_user.is_banned:
+            flash("You are banned from accessing this feature. Contact the admin.", "danger")
+            return redirect(url_for("index"))                                          
+        return f(*args, **kwargs)
+    return decorated_function
 
 
 def send_warning_email(user_email, message_body):
@@ -139,3 +169,112 @@ def admin_traffic_stats():
         total_time_spent=total_time_spent,
         avg_time_per_visitor=avg_time_per_visitor
         )
+
+@admin_bp.route('/admin/announcement/create', methods=['GET', 'POST'])
+@login_required
+def create_announcement():
+    if not current_user.is_admin:
+        flash("Access Denied!", "danger")
+        return redirect(url_for('index'))
+
+    if request.method == 'POST':
+        title = request.form.get('title')
+        message = request.form.get('message')
+
+        if title and message:
+            announcement = Announcement(title=title, content=message, author_id=current_user.id)
+            db.session.add(announcement)
+            db.session.commit()
+
+            # Notify subscribers
+            subscribers = NewsletterSubscriber.query.filter_by(subscribed=True).all()
+            for subscriber in subscribers:
+                unsubscribe_link = url_for('newsletter.unsubscribe', subscriber_id=subscriber.id, _external=True)
+                msg = Message(f"New Announcement: {title}", recipients=[subscriber.email])
+                msg.body = f"{message}\n\nTo unsubscribe, click here: {unsubscribe_link}"
+                mail.send(msg)
+
+            flash("Announcement created and subscribers notified!", "success")
+            return redirect(url_for('admin.admin_dashboard'))
+        else:
+            flash("Please fill out both the title and message fields.", "danger")
+
+    return render_template('create_announcement.html')
+
+
+@admin_bp.route('/admin/announcement/delete/<int:announcement_id>', methods=['POST'])
+@login_required
+def delete_announcement(announcement_id):
+    if not current_user.is_admin:
+        flash("Access Denied!", "danger")
+        return redirect(url_for('index'))
+
+    announcement = Announcement.query.get_or_404(announcement_id)
+
+    try:
+        db.session.delete(announcement)
+        db.session.commit()
+        flash("Announcement deleted successfully!", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash("An error occurred while deleting the announcement.", "danger")
+
+    return redirect(url_for('admin.admin_dashboard'))
+
+
+@admin_bp.route("/new_post", methods=["GET", "POST"])
+@login_required
+@check_ban
+def new_post():
+    if current_user.is_banned:
+        flash("You are banned and cannot create posts. Contact the admin for further assistance.", "danger")
+        return redirect(url_for("index"))
+    
+    form = PostForm()
+    if request.method == "POST" and form.validate_on_submit():
+        title = form.data['title'].strip()
+        desc = form.data['desc'].strip()
+
+        # Define allowed tags for a rich text experience
+        allowed_tags = ['p', 'strong', 'em', 'a', 'ul', 'ol', 'li', 'br', 'u', 'i', 'b',
+                        'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'code', 'pre',
+                        'img', 'hr', 'table', 'tr', 'th', 'td']
+        allowed_attributes = {
+            'a': ['href', 'title'],
+            'img': ['src', 'alt', 'title'],
+            'table': ['class'],
+            'tr': ['class'],
+            'th': ['class'],
+            'td': ['class']
+        }
+
+        # Sanitize the CKEditor content
+        sanitized_desc = bleach.clean(desc, tags=allowed_tags, attributes=allowed_attributes, strip=True)
+
+        # Handle image file upload
+        file = request.files.get('image')
+        if not file or file.filename == "":
+            flash('No selected file', 'warning')
+            return redirect(request.url)
+        
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            file.save(file_path)
+
+            # Save the post
+            post = Post(title=title, desc=sanitized_desc, image_url=filename, author=current_user)
+            db.session.add(post)
+            db.session.commit()
+
+            flash("New post created and published successfully", "success")
+            return redirect(url_for("index"))
+
+    return render_template("new_post.html", form=form)
+
+@admin_bp.route('/see_more/<int:post_id>')
+def see_more(post_id):
+    form = CommentForm()
+    post = Post.query.get_or_404(post_id)
+    comments = Comment.query.filter_by(post_id=post_id).all()
+    return render_template('see_more.html', post=post, form=form, comments=comments, Like=Like)

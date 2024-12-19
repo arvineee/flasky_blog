@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white text-center">
+                    <h3>Subscribe to Our Newsletter</h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('newsletter.subscribe') }}">
+                        {{ form.hidden_tag() }}
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email Address</label>
+                            <input type="email" name="email" class="form-control" id="email" placeholder="Enter your email address" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Subscribe</button>
+                    </form>
+                </div>
+                <div class="card-footer text-center">
+                    <small class="text-muted">Stay updated with our latest posts and announcements.</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
