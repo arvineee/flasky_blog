@@ -16,7 +16,7 @@
                             <small class="text-muted">Posted by {{ announcement.author.username }} on {{ announcement.date_created }}</small>
                             <p class="card-text">{{ announcement.content | truncate(100) }}</p>
                             <a href="{{ url_for('announcement_detail', announcement_id=announcement.id) }}" class="btn btn-outline-primary btn-sm">Read More</a>
-			    <a href="{{ url_for('newsletter.subscribe') }}" class="btn btn-outline-primary btn-sm">Subscribe to our Newsletter</a>
+			
                             <!-- Delete Button -->
 			    {% if current_user.is_authenticated %}
 			    {% if current_user.is_admin %}
@@ -28,7 +28,9 @@
                         </div>
                     {% else %}
                         <p class="text-center">No announcements available.</p>
+
                     {% endfor %}
+		    <a href="{{ url_for('newsletter.subscribe') }}" class="btn btn-outline-primary btn-sm">Subscribe to our Newsletter</a>
                 </div>
             </div>
         </div>
