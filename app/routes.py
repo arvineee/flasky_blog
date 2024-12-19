@@ -1,6 +1,6 @@
 from flask import render_template, url_for, redirect, flash, request
 from app import app, bootstrap,db,login_manager,mail
-from app.models import User, Post, Comment, Like, User
+from app.models import User, Post, Comment, Like, User,Announcement
 from app.forms import LoginForm, RegisterForm, PostForm,CommentForm,ContactForm, ResetPasswordRequestForm, ResetPasswordForm
 from flask_login import login_user, current_user, login_required,logout_user
 from werkzeug.security import generate_password_hash
@@ -48,14 +48,19 @@ def check_ban(f):
 
 @app.route('/')
 def index():
+    # Check if the current user is authenticated and banned
     if current_user.is_authenticated and current_user.is_banned:
         flash("Your account has been restricted. Please contact the admin.", "danger")
         return redirect(url_for("logout"))
-    
-    # Filter out posts by banned users and blocked posts
+
+    # Fetch posts, filtering out those by banned users and blocked posts
     posts = Post.query.join(User).filter(User.is_banned == False, Post.is_blocked == False).order_by(Post.id.desc()).all()
 
-    return render_template('index.html', posts=posts)
+    # Fetch announcements, limit to the latest 5
+    announcements = Announcement.query.order_by(Announcement.date_created.desc()).limit(5).all()
+
+    # Render the index page with posts and announcements
+    return render_template('index.html', posts=posts, announcements=announcements)
 
 
 @app.route("/login", methods=["POST", "GET"])
@@ -108,62 +113,6 @@ def logout():
     return redirect(url_for('login'))
 
 
-
-@app.route("/new_post", methods=["GET", "POST"])
-@login_required
-@check_ban
-def new_post():
-    if current_user.is_banned:
-        flash("You are banned and cannot create posts. Contact the admin for further assistance.", "danger")
-        return redirect(url_for("index"))
-
-    form = PostForm()
-    if request.method == "POST" and form.validate_on_submit():
-        title = form.data['title'].strip()
-        desc = form.data['desc'].strip()
-
-        # Define allowed tags for a rich text experience
-        allowed_tags = ['p', 'strong', 'em', 'a', 'ul', 'ol', 'li', 'br', 'u', 'i', 'b',
-                        'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'code', 'pre',
-                        'img', 'hr', 'table', 'tr', 'th', 'td']
-        allowed_attributes = {
-            'a': ['href', 'title'],
-            'img': ['src', 'alt', 'title'],
-            'table': ['class'],
-            'tr': ['class'],
-            'th': ['class'],
-            'td': ['class']
-        }
-
-        # Sanitize the CKEditor content
-        sanitized_desc = bleach.clean(desc, tags=allowed_tags, attributes=allowed_attributes, strip=True)
-
-        file = request.files.get('image')
-        if not file or file.filename == "":
-            flash('No selected file', 'warning')
-            return redirect(request.url)
-
-        if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            file.save(file_path)
-
-            post = Post(title=title, desc=sanitized_desc, image_url=filename, author=current_user)
-            db.session.add(post)
-            db.session.commit()
-
-            flash("New post created and published successfully", "success")
-            return redirect(url_for("index"))
-
-    return render_template("new_post.html", form=form)
-
-
-@app.route('/see_more/<int:post_id>')
-def see_more(post_id):
-    form = CommentForm()
-    post = Post.query.get_or_404(post_id)
-    comments = Comment.query.filter_by(post_id=post_id).all()
-    return render_template('see_more.html', post=post, form=form, comments=comments,Like=Like)
 
 @app.route('/delete_post/<int:post_id>', methods=["POST"])
 @login_required
@@ -305,3 +254,10 @@ def reset_password(token):
         flash('Your password has been reset!', 'success')
         return redirect(url_for('login'))
     return render_template('reset_password.html', form=form)
+
+
+@app.route('/announcement/<int:announcement_id>')
+@login_required
+def announcement_detail(announcement_id):
+    announcement = Announcement.query.get_or_404(announcement_id)
+    return render_template('announcement_detail.html', announcement=announcement)

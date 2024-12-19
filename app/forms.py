@@ -46,3 +46,13 @@ class ResetPasswordForm(FlaskForm):
     password = PasswordField('New Password', validators=[DataRequired()])
     confirm_password = PasswordField('Confirm Password', validators=[DataRequired(), EqualTo('password')])
     submit = SubmitField('Reset Password')
+
+class AnnouncementForm(FlaskForm):
+    title = StringField('Title', validators=[DataRequired(), Length(max=100)])
+    content = TextAreaField('Content', validators=[DataRequired(), Length(max=500)])
+    submit = SubmitField('Publish Announcement')
+
+
+class SubscribeForm(FlaskForm):
+    email = StringField('Email', validators=[DataRequired()])
+    submit = SubmitField('Subscribe')

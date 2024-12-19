@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white text-center">
+                    <h3>New Announcement</h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('newsletter.announcement') }}">
+                        {{ form.hidden_tag() }}
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Title</label>
+                            <input type="text" name="title" class="form-control" id="title" placeholder="Enter the announcement title" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="message" class="form-label">Message</label>
+                            <textarea name="message" class="form-control" id="message" rows="5" placeholder="Enter your announcement message" required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Send Announcement</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

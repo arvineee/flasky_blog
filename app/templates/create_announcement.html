@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block title %}Create Announcement{% endblock %}
+
+{% block content %}
+<h1>Create a New Announcement</h1>
+<form method="POST">
+    <!-- Title -->
+    <div class="form-group">
+        <label for="title">Announcement Title</label>
+        <input type="text" class="form-control" id="title" name="title" required>
+    </div>
+
+    <!-- Message -->
+    <div class="form-group">
+        <label for="message">Announcement Message</label>
+        <textarea class="form-control" id="message" name="message" rows="4" required></textarea>
+    </div>
+
+    <!-- Submit Button -->
+    <button type="submit" class="btn btn-primary">Create Announcement</button>
+</form>
+
+{% if get_flashed_messages() %}
+    <div class="alert alert-info mt-3">
+        {% for message in get_flashed_messages() %}
+            <p>{{ message }}</p>
+        {% endfor %}
+    </div>
+{% endif %}
+
+{% endblock %}

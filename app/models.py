@@ -64,6 +64,25 @@ class Like(db.Model):
     __table_args__ = (db.UniqueConstraint('user_id', 'post_id', name='_user_post_uc'),)
 
 
+class NewsletterSubscriber(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(150), nullable=False, unique=True, index=True)
+    subscribed_on = db.Column(db.DateTime, default=datetime.utcnow)
+    subscribed = db.Column(db.Boolean, default=True)  # Track active subscribers
+
+
+class Announcement(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(100), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    date_created = db.Column(db.DateTime, default=datetime.utcnow)
+    author_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
+    author = db.relationship('User', backref=db.backref('announcements', lazy=True))
+
+    def __repr__(self):
+        return f'<Announcement {self.title}>'
+
 @login_manager.user_loader
 def load_user(id):
     return User.query.get(int(id))
