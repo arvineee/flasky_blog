@@ -2,7 +2,7 @@
 
 {% block content %}
     <h2 class='text-center text-color-info'>Add New Post </h2>
-    <form action="{{url_for('new_post')}}" method=post enctype=multipart/form-data novalidate>
+    <form action="{{url_for('admin.new_post')}}" method=post enctype=multipart/form-data novalidate>
         {{ form.hidden_tag()}}
         <div class='mb-3'>
         <p class='form-label'> {{form.title.label}}</p>

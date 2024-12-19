@@ -2,12 +2,13 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from app.models import User, Post,Comment, TrafficStats,Announcement, NewsletterSubscriber,Like
 from app.forms import AdminActionForm
-from app import db
+from app import db,app
 from flask_mail import Message
 from app import mail
 from datetime import datetime
 from werkzeug.security import generate_password_hash
-from werkzeug.utils import secure_filename                                  
+from werkzeug.utils import secure_filename                  
+import os
 from functools import wraps
 import bleach
 from flask_ckeditor.utils import cleanify
