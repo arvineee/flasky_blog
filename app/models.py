@@ -44,9 +44,12 @@ class Comment(db.Model):
 
 class TrafficStats(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    visitor_count = db.Column(db.Integer, nullable=False)
-    total_time_spent = db.Column(db.Float, nullable=False)  # in seconds
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    endpoint = db.Column(db.String(255))  # Track which route was visited
+    visitor_ip = db.Column(db.String(45))  # For IPv4/IPv6
+    visitor_count = db.Column(db.Integer, nullable=False, default=1)
+    total_time_spent = db.Column(db.Float, nullable=False, default=0)  # Time spent in seconds
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
 
 
 class Like(db.Model):
