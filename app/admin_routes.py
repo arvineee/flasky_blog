@@ -119,22 +119,23 @@ def admin_traffic_stats():
         flash("Access Denied!", "danger")
         return redirect(url_for('index'))
 
-    # Fetch recent traffic data, e.g., last 30 days
+    # Fetch recent traffic data (last 30 days)
     from datetime import timedelta
-    from dateutil.relativedelta import relativedelta
     end_date = datetime.utcnow()
-    start_date = end_date - relativedelta(days=30)
-    traffic_stats = TrafficStats.query.filter(TrafficStats.timestamp.between(start_date, end_date)).order_by(TrafficStats.timestamp.desc()).all()
+    start_date = end_date - timedelta(days=30)
+    traffic_stats = TrafficStats.query.filter(
+        TrafficStats.timestamp.between(start_date, end_date)
+    ).order_by(TrafficStats.timestamp.desc()).all()
 
-    # Sum up total visitors and time spent
+    # Calculate statistics
     total_visitors = sum(stat.visitor_count for stat in traffic_stats)
     total_time_spent = sum(stat.total_time_spent for stat in traffic_stats)
-
-    # Calculate average time spent per visitor if there were visitors
     avg_time_per_visitor = total_time_spent / total_visitors if total_visitors > 0 else 0
 
-    return render_template('admin_traffic.html',
-                           traffic_stats=traffic_stats,
-                           total_visitors=total_visitors,
-                           total_time_spent=total_time_spent,
-                           avg_time_per_visitor=avg_time_per_visitor)
+    return render_template(
+        'admin_traffic.html',
+        traffic_stats=traffic_stats,
+        total_visitors=total_visitors,
+        total_time_spent=total_time_spent,
+        avg_time_per_visitor=avg_time_per_visitor
+        )
