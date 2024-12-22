@@ -279,3 +279,59 @@ def see_more(post_id):
     post = Post.query.get_or_404(post_id)
     comments = Comment.query.filter_by(post_id=post_id).all()
     return render_template('see_more.html', post=post, form=form, comments=comments, Like=Like)
+
+@admin_bp.route('/edit_post/<int:post_id>', methods=['GET', 'POST'])
+@login_required
+@check_ban
+def edit_post(post_id):
+    if current_user.is_banned:
+        flash("You are banned and cannot edit posts. Contact the admin for further assistance.", "danger")
+        return redirect(url_for("index"))
+
+    post = Post.query.get_or_404(post_id)
+    # Check if the current user is the author or an admin
+    if post.author != current_user and not current_user.is_admin:
+        flash("You do not have permission to edit this post.", "danger")
+        return redirect(url_for('index'))
+
+    form = PostForm(obj=post)  # Populate the form with the post's data
+    if request.method == "POST" and form.validate_on_submit():
+        title = form.data['title'].strip()
+        desc = form.data['desc'].strip()
+
+        # Sanitize the CKEditor content
+        allowed_tags = [
+            'p', 'strong', 'em', 'a', 'ul', 'ol', 'li', 'br', 'u', 'i', 'b',
+            'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'code', 'pre',
+            'img', 'hr', 'table', 'tr', 'th', 'td'
+        ]
+        allowed_attributes = {
+            'a': ['href', 'title'],
+            'img': ['src', 'alt', 'title'],
+            'table': ['class'],
+            'tr': ['class'],
+            'th': ['class'],
+            'td': ['class']
+        }
+        sanitized_desc = bleach.clean(desc, tags=allowed_tags, attributes=allowed_attributes, strip=True)
+
+        # Handle image file upload if a new image is selected
+        file = request.files.get('image')
+        if file and file.filename != "":
+            if allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                file.save(file_path)
+                post.image_url = filename
+            else:
+                flash('File type not allowed.', 'warning')
+                return redirect(request.url)
+
+        # Update post details
+        post.title = title
+        post.desc = sanitized_desc
+        db.session.commit()
+        flash("Post updated successfully", "success")
+        return redirect(url_for("index"))
+
+    return render_template("edit_post.html", form=form, post=post)
