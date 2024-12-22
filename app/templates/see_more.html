@@ -25,6 +25,10 @@
                         </button>
                     </form>
 
+		    {% if current_user.is_authenticated and current_user.is_admin %}
+    <a class="mb-3 btn btn-primary btn-sm" href="{{ url_for('admin.edit_post', post_id=post.id) }}">Edit Post</a>
+{% endif %}
+
                     {% if post.author == current_user %}
 <form method="POST" action="{{ url_for('delete_post', post_id=post.id) }}">
     <button type="submit" class="btn btn-danger mb-3">Delete Post</button>
