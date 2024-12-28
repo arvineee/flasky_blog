@@ -1,0 +1,58 @@
+.video-wrapper {
+    position: relative;
+    overflow: hidden;
+}
+
+.custom-video {
+    width: 100%;
+    height: auto;
+    border-radius: 10px;
+}
+
+.play-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 2;
+    display: none;
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 50%;
+    padding: 20px;
+}
+
+.big-play-button {
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 3rem;
+    cursor: pointer;
+}
+
+.controls-overlay {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    z-index: 2;
+    display: flex;
+    gap: 10px;
+}
+
+.btn-icon {
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.btn-icon:hover {
+    background: rgba(255, 255, 255, 0.8);
+    color: black;
+}

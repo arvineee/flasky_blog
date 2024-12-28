@@ -34,6 +34,9 @@ class Post(db.Model):
     like_count = db.Column(db.Integer, default=0)
     comments = db.relationship('Comment', backref='post', lazy='dynamic')
 
+    def __repr__(self):
+        return f'<Post {self.title} by {self.author.username} on {self.date_pub}>'
+
 class Comment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.Text, nullable=False)
@@ -82,6 +85,21 @@ class Announcement(db.Model):
 
     def __repr__(self):
         return f'<Announcement {self.title}>'
+
+class Video(db.Model):
+    __tablename__ = 'video'
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    video_url = db.Column(db.String(), nullable=False)  # Path to the uploaded video
+    upload_time = db.Column(db.DateTime, default=datetime.utcnow)  # Timestamp for upload
+    author_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)  # Foreign key to the User model
+
+    # Establish relationship with the User model
+    author = db.relationship('User', backref=db.backref('videos', lazy='dynamic'))
+
+    def __repr__(self):
+        return f'<Video {self.title} by {self.author.username} on {self.upload_time}>'
 
 @login_manager.user_loader
 def load_user(id):
