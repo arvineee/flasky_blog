@@ -56,3 +56,10 @@ class AnnouncementForm(FlaskForm):
 class SubscribeForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired()])
     submit = SubmitField('Subscribe')
+
+
+class VideoForm(FlaskForm):
+    title = StringField("Video Title", validators=[DataRequired(), Length(max=100)])
+    description = TextAreaField("Description", validators=[DataRequired()])
+    video = FileField("Upload Video", validators=[DataRequired()])
+    submit = SubmitField("Upload")

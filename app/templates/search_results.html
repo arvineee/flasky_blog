@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="mb-4">Search Results for "<span class="text-primary">{{ query }}</span>"</h2>
+
+    {% if posts %}
+        <ul class="list-group">
+            {% for post in posts %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <a href="{{ url_for('admin.see_more', post_id=post.id) }}" class="text-decoration-none text-dark">
+                        <strong>{{ post.title }}</strong>
+                    </a>
+                    <span class="badge bg-primary rounded-pill">View</span>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <div class="alert alert-info mt-3" role="alert">
+            <p class="mb-0">No posts found. Try searching with a different keyword.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
-from app.models import User, Post,Comment, TrafficStats,Announcement, NewsletterSubscriber,Like
-from app.forms import AdminActionForm
+from app.models import User, Post,Comment, TrafficStats,Announcement, NewsletterSubscriber,Like,Video
+from app.forms import AdminActionForm,VideoForm
 from app import db,app
 from flask_mail import Message
 from app import mail
@@ -39,6 +39,12 @@ def check_ban(f):
             return redirect(url_for("index"))                                          
         return f(*args, **kwargs)
     return decorated_function
+
+
+def allowed_file(filename, extensions=None):
+    if not extensions:
+        extensions = ['jpg', 'jpeg', 'png', 'gif']
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in extensions
 
 
 def send_warning_email(user_email, message_body):
@@ -335,3 +341,61 @@ def edit_post(post_id):
         return redirect(url_for("index"))
 
     return render_template("edit_post.html", form=form, post=post)
+
+@admin_bp.route('/search', methods=['GET', 'POST'])
+def search():
+    query = request.args.get('q', '').strip()  # Get the search keyword from the query string
+    if not query:
+        flash("Please enter a keyword to search.", "warning")
+        return redirect(url_for('index'))
+
+    # Search posts with titles containing the keyword (case insensitive)
+    posts = Post.query.filter(Post.title.ilike(f'%{query}%')).all()
+
+    if not posts:
+        flash("No posts found matching your search query.", "info")
+
+    return render_template('search_results.html', query=query, posts=posts)
+
+@admin_bp.route("/upload_video", methods=["GET", "POST"])
+@login_required
+@check_ban
+def upload_video():
+    if current_user.is_banned:
+        flash("You are banned and cannot upload videos. Contact the admin for further assistance.", "danger")
+        return redirect(url_for("index"))
+
+    form = VideoForm()  # Create a WTForm for video upload
+    if request.method == "POST" and form.validate_on_submit():
+        title = form.data['title'].strip()
+        description = form.data['description'].strip()
+
+        # Handle video file upload
+        file = request.files.get('video')
+        if not file or file.filename == "":
+            flash("No video file selected.", "warning")
+            return redirect(request.url)
+
+        if allowed_file(file.filename, extensions=['mp4', 'mkv', 'avi', 'mov']):
+            filename = secure_filename(file.filename)
+            file_path = os.path.join(app.config['VIDEO_UPLOAD_FOLDER'], filename)
+            file.save(file_path)
+
+            # Save the video information
+            video = Video(title=title, description=description, video_url=filename, author=current_user)
+            db.session.add(video)
+            db.session.commit()
+
+            flash("Video uploaded successfully!", "success")
+            return redirect(url_for("index"))
+        else:
+            flash("Invalid video format. Allowed formats: mp4, mkv, avi, mov.", "danger")
+            return redirect(request.url)
+
+    return render_template("upload_video.html", form=form)
+
+
+@admin_bp.route("/videos")
+def videos():
+    videos = Video.query.order_by(Video.upload_time.desc()).all()  # Use upload_time instead of uploaded_at
+    return render_template("videos.html", videos=videos)

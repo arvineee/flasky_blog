@@ -21,6 +21,7 @@ class Config:
 
     # Upload folder for storing files
     UPLOAD_FOLDER = os.path.join(base_dir, 'app/static/images')
+    VIDEO_UPLOAD_FOLDER = os.path.join(base_dir, 'app/static/videos')
     
     # Flask-Mail Configuration
     MAIL_SERVER = 'smtp.gmail.com'

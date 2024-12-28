@@ -146,7 +146,7 @@ def add_comment(post_id):
         db.session.add(comment)
         db.session.commit()
         flash('Your comment has been added!', 'success')
-    return redirect(url_for('see_more', post_id=post_id))
+    return redirect(url_for('admin.see_more', post_id=post_id))
 
 @app.route('/like_post/<int:post_id>', methods=['POST'])
 @login_required
