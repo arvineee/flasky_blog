@@ -283,6 +283,12 @@ def new_post():
 def see_more(post_id):
     form = CommentForm()
     post = Post.query.get_or_404(post_id)
+    # Ensure the views count is initialized to 0 if it's None
+    if post.views is None:
+        post.views = 0
+    # Increment the view count
+    post.views += 1
+    db.session.commit()  # Commit the change to the database
     comments = Comment.query.filter_by(post_id=post_id).all()
     return render_template('see_more.html', post=post, form=form, comments=comments, Like=Like)
 

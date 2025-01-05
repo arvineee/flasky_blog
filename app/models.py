@@ -31,6 +31,7 @@ class Post(db.Model):
     image_url = db.Column(db.String(), nullable=True)
     author_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     is_blocked = db.Column(db.Boolean, default=False)
+    views = db.Column(db.Integer, default=0)
     like_count = db.Column(db.Integer, default=0)
     comments = db.relationship('Comment', backref='post', lazy='dynamic')
 
