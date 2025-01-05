@@ -178,7 +178,7 @@ def like_post(post_id):
 
     db.session.commit()
     flash(f'You {action} this post!', 'success')
-    return redirect(url_for('see_more', post_id=post_id))
+    return redirect(url_for('admin.see_more', post_id=post_id))
 
 @app.route('/policy')
 def policy():
