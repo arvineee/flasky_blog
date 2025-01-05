@@ -52,15 +52,21 @@ def index():
     if current_user.is_authenticated and current_user.is_banned:
         flash("Your account has been restricted. Please contact the admin.", "danger")
         return redirect(url_for("logout"))
+    
+    # Get the current page from request args or default to page 1
+    page = request.args.get('page', 1, type=int)
+    
+    # Define how many posts to show per page
+    per_page = 5
 
-    # Fetch posts, filtering out those by banned users and blocked posts
-    posts = Post.query.join(User).filter(User.is_banned == False, Post.is_blocked == False).order_by(Post.id.desc()).all()
+    # Fetch posts with pagination, filtering out those by banned users and blocked posts
+    posts = Post.query.join(User).filter(User.is_banned == False, Post.is_blocked == False).order_by(Post.id.desc()).paginate(page=page, per_page=per_page, error_out=False)
 
     # Fetch announcements, limit to the latest 5
     announcements = Announcement.query.order_by(Announcement.date_created.desc()).limit(5).all()
 
     # Render the index page with posts and announcements
-    return render_template('index.html', posts=posts, announcements=announcements)
+    return render_template('index.html', posts=posts, announcements=announcements,pagination=posts)
 
 
 @app.route("/login", methods=["POST", "GET"])
@@ -114,17 +120,16 @@ def logout():
 
 
 
-@app.route('/delete_post/<int:post_id>', methods=["POST"])
+@app.route('/delete_post/<int:post_id>', methods=['POST'])
 @login_required
 def delete_post(post_id):
     post = Post.query.get_or_404(post_id)
 
-    # Ensure the current user is the author of the post
-    if post.author != current_user:
+    # Allow post deletion for admin or the post author
+    if not (post.author == current_user or current_user.is_admin):
         flash("You are not authorized to delete this post.", "danger")
         return redirect(url_for('index'))
 
-    # Delete the post
     db.session.delete(post)
     db.session.commit()
     flash("Post has been deleted successfully.", "success")
@@ -146,7 +151,9 @@ def add_comment(post_id):
         db.session.add(comment)
         db.session.commit()
         flash('Your comment has been added!', 'success')
-    return redirect(url_for('admin.see_more', post_id=post_id))
+    else:
+        flash('Error adding comment. Please try again.', 'danger')
+    return redirect(url_for('see_more', post_id=post_id))
 
 @app.route('/like_post/<int:post_id>', methods=['POST'])
 @login_required
@@ -241,17 +248,22 @@ def reset_password(token):
     try:
         email = serializer.loads(token, salt='password-reset-salt', max_age=3600)
     except SignatureExpired:
-        flash('The password reset link is invalid or has expired.', 'warning')
+        flash('The password reset link has expired. Please request a new one.', 'warning')
         return redirect(url_for('reset_password_request'))
+    except Exception:
+        flash('Invalid reset link. Please try again.', 'danger')
+        return redirect(url_for('reset_password_request'))
+
     user = User.query.filter_by(email=email).first()
-    if user is None:
+    if not user:
         flash('Invalid reset request.', 'warning')
         return redirect(url_for('index'))
+
     form = ResetPasswordForm()
     if form.validate_on_submit():
         user.set_password(form.password.data)
         db.session.commit()
-        flash('Your password has been reset!', 'success')
+        flash('Your password has been reset successfully!', 'success')
         return redirect(url_for('login'))
     return render_template('reset_password.html', form=form)
 
