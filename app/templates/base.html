@@ -71,11 +71,32 @@
         .footer-newsletter button:hover {
             background-color: #0056b3;
         }
+	.bigtitle{
+  font-size: 3rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  text-align: center;
+  background: linear-gradient(90deg, #ff7e5f, #feb47b);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: 3px;
+  text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+  animation: glow 2s infinite alternate;
+}
+
+@keyframes glow {
+  from {
+    text-shadow: 2px 2px 10px rgba(255, 126, 95, 0.8);
+  }
+  to {
+    text-shadow: 2px 2px 15px rgba(254, 180, 123, 1);
+  }
+	    }
     </style>
 </head>
 <body>
     <header class="bg-light py-3 text-center">
-        <h1 class="display-4 fw-bold">Stay Informed, Stay Ahead – Arval Blog</h1>
+        <h1 class="display-4 fw-bold bigtitle">Stay Informed, Stay Ahead – Arval Blog</h1>
         <nav class=" sticky-top navbar navbar-expand-lg bg-body-tertiary">
             <div class="container-fluid">
                 <a class="navbar-brand" href="{{url_for('index')}}">Arval-Blog</a>
