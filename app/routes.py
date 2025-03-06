@@ -1,4 +1,4 @@
-from flask import render_template, url_for, redirect, flash, request
+from flask import render_template, url_for, redirect, flash, request,send_from_directory
 from app import app, bootstrap,db,login_manager,mail
 from app.models import User, Post, Comment, Like, User,Announcement
 from app.forms import LoginForm, RegisterForm, PostForm,CommentForm,ContactForm, ResetPasswordRequestForm, ResetPasswordForm
@@ -13,6 +13,7 @@ from flask_mail import Message
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired
+
 
 
 ALLOWED_EXTENSIONS = { 'png', 'jpg', 'jpeg', 'gif'}
@@ -273,3 +274,8 @@ def reset_password(token):
 def announcement_detail(announcement_id):
     announcement = Announcement.query.get_or_404(announcement_id)
     return render_template('announcement_detail.html', announcement=announcement)
+
+@app.route('/ads.txt')
+def serve_ads_txt():
+    return send_from_directory(os.getcwd(), 'ads.txt')
+
