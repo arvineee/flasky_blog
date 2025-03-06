@@ -1,4 +1,4 @@
-from flask import render_template, url_for, redirect, flash, request,send_from_directory
+from flask import render_template, url_for, redirect, flash, request,send_file
 from app import app, bootstrap,db,login_manager,mail
 from app.models import User, Post, Comment, Like, User,Announcement
 from app.forms import LoginForm, RegisterForm, PostForm,CommentForm,ContactForm, ResetPasswordRequestForm, ResetPasswordForm
@@ -277,5 +277,6 @@ def announcement_detail(announcement_id):
 
 @app.route('/ads.txt')
 def serve_ads_txt():
-    return send_from_directory(os.getcwd(), 'ads.txt')
+    file_path = os.path.join(os.path.dirname(__file__),"ads.txt")
+    return send_file(file_path,mimetype='text/plain')
 
