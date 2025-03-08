@@ -95,6 +95,16 @@
     </style>
 </head>
 <body>
+     <div class="container mt-4">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
     <header class="bg-light py-3 text-center">
         <h1 class="display-4 fw-bold bigtitle">Arval Blog</h1>
         <nav class="sticky-top navbar navbar-expand-lg bg-body-tertiary">
