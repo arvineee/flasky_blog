@@ -1,3 +1,6 @@
+Here is the updated `index.html` file with the integrated changes to display the category of each post:
+
+```html
 {% extends 'base.html' %}
 
 {% block content %}
@@ -48,8 +51,9 @@
                         <p class="card-text text-muted lead mb-4">{{ post.desc | safe | truncate(150) }}</p>
                         <div class="d-flex justify-content-between align-items-center">
                             <p class="text-muted mb-0"><small>By <strong>{{ post.author.username }}</strong> on <strong>{{ post.date_pub }}</strong></small></p>
-			    <p><strong>Views:</strong> <span class="badge bg-primary">{{ post.views }}</span></p>
-                            <a href="{{ url_for('admin.see_more', post_id=post.id) }}" class="btn btn-outline-primary btn-sm px-4 py-2 transition-transform" style="transition: transform 0.2s ease; font-weight: 500;">Read More</a>
+                            <p class="text-muted mb-0"><small>Category: <strong>{{ post.category }}</strong></small></p>
+                            <p><strong>Views:</strong> <span class="badge bg-primary">{{ post.views }}</span></p>
+                            <a href="{{ url_for('admin.see_more', post_id=post.id) }}" class="btn btn-outline-primary btn-sm px-4 py-2 transition-transform" style="transition: transform 0.2s ease;">Read More</a>
                         </div>
                     </div>
                 </div>
@@ -137,3 +141,6 @@
     }
 </style>
 {% endblock %}
+```
+
+This change ensures that each post's category is displayed alongside the author, date, and views information.
