@@ -11,12 +11,13 @@
                 <div class="card-body p-5">
                     <h1 class="card-title text-center text-dark fw-bold display-4">{{ post.title }}</h1>
                     <p class="text-muted text-center"><small>By <strong>{{ post.author.username }}</strong> on <span>{{ post.date_pub }}</span></small></p>
+                    <p class="text-muted text-center"><small>Category: <strong>{{ post.category }}</strong></small></p>
                     <hr class="my-4">
                     <div class="content text-justify text-secondary lead mb-4">
                         {{ post.desc | safe }}
                     </div>
 
-		    <!-- Like Button -->
+                    <!-- Like Button -->
                     <form method="POST" action="{{ url_for('like_post', post_id=post.id) }}">
                         {% set user_liked = current_user.is_authenticated and Like.query.filter_by(user_id=current_user.id, post_id=post.id).first() %}
                         <button type="submit" class="btn {{ 'btn-outline-danger' if user_liked else 'btn-outline-primary' }} mb-3">
@@ -25,17 +26,15 @@
                         </button>
                     </form>
 
-		    {% if current_user.is_authenticated and current_user.is_admin %}
-    <a class="mb-3 btn btn-primary btn-sm" href="{{ url_for('admin.edit_post', post_id=post.id) }}">Edit Post</a>
-{% endif %}
+                    {% if current_user.is_authenticated and current_user.is_admin %}
+                        <a class="mb-3 btn btn-primary btn-sm" href="{{ url_for('admin.edit_post', post_id=post.id) }}">Edit Post</a>
+                    {% endif %}
 
                     {% if post.author == current_user %}
-<form method="POST" action="{{ url_for('delete_post', post_id=post.id) }}">
-    <button type="submit" class="btn btn-danger mb-3">Delete Post</button>
-</form>
-{% endif %}
-
-                    </form>
+                        <form method="POST" action="{{ url_for('delete_post', post_id=post.id) }}">
+                            <button type="submit" class="btn btn-danger mb-3">Delete Post</button>
+                        </form>
+                    {% endif %}
 
                     <form action="{{ url_for('add_comment', post_id=post.id) }}" method="POST">
                         {{ form.hidden_tag() }}
@@ -44,23 +43,24 @@
                         </div>
                         <button type="submit" class="btn btn-primary mt-3">Submit Comment</button>
                     </form>
-		    <!-- Start of comments section -->
+                    
+                    <!-- Start of comments section -->
                     <div class="card mt-4">
                         <div class="card-body">
                             {% for comment in comments %}
-                            <div class="mb-3">
-                                <p class="mb-0"><strong>{{ comment.user.username }}</strong> on {{ comment.date_posted }}:</p>
-                                <p>{{ comment.content }}</p>
-				    {% if current_user.is_authenticated and (current_user.is_admin or comment.user == current_user) %}
-					    <form action="{{ url_for('delete_comment', comment_id=comment.id) }}" method="POST" class="d-inline">
-       						 <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this comment?')">Delete</button>
-					    </form>
-    {% endif %}
-                                <hr class="my-2">
-                            </div>
+                                <div class="mb-3">
+                                    <p class="mb-0"><strong>{{ comment.user.username }}</strong> on {{ comment.date_posted }}:</p>
+                                    <p>{{ comment.content }}</p>
+                                    {% if current_user.is_authenticated and (current_user.is_admin or comment.user == current_user) %}
+                                        <form action="{{ url_for('delete_comment', comment_id=comment.id) }}" method="POST" class="d-inline">
+                                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this comment?')">Delete</button>
+                                        </form>
+                                    {% endif %}
+                                    <hr class="my-2">
+                                </div>
                             {% endfor %}
                             {% if comments|length == 0 %}
-                            <p class="text-muted text-center">No comments yet. Be the first to comment!</p>
+                                <p class="text-muted text-center">No comments yet. Be the first to comment!</p>
                             {% endif %}
                         </div>
                     </div>
@@ -68,7 +68,7 @@
 
                     <div class="d-flex justify-content-between mt-4">
                         <a href="{{ url_for('index') }}" class="btn btn-outline-primary btn-lg rounded-pill">Back to Posts</a>
-			<a class='btn btn-outline-primary btn-lg rounded-pill' href="{{ url_for('share_post', post_id=post.id) }}">Share</a>
+                        <a class='btn btn-outline-primary btn-lg rounded-pill' href="{{ url_for('share_post', post_id=post.id) }}">Share</a>
                     </div>
                 </div>
             </div>
