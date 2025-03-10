@@ -20,6 +20,7 @@ class LoginForm(FlaskForm):
 
 class PostForm(FlaskForm):
     title = StringField('Title',validators=[DataRequired()])
+    category = db.Column(db.String(50), nullable=False)
     desc = CKEditorField('Content form') 
     image = FileField('Content Image')
     submit =SubmitField('Submit')
