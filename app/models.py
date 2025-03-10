@@ -45,6 +45,9 @@ class Comment(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
     user = db.relationship('User', backref=db.backref('comments', lazy=True))
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
 
 class TrafficStats(db.Model):
     id = db.Column(db.Integer, primary_key=True)
