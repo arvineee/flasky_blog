@@ -231,16 +231,18 @@ def delete_announcement(announcement_id):
 
 @admin_bp.route("/new_post", methods=["GET", "POST"])
 @login_required
+@admin_required
 @check_ban
 def new_post():
     if current_user.is_banned:
         flash("You are banned and cannot create posts. Contact the admin for further assistance.", "danger")
         return redirect(url_for("index"))
-    
+
     form = PostForm()
     if request.method == "POST" and form.validate_on_submit():
         title = form.data['title'].strip()
         desc = form.data['desc'].strip()
+        category = form.data['category'].strip()
 
         # Define allowed tags for a rich text experience
         allowed_tags = ['p', 'strong', 'em', 'a', 'ul', 'ol', 'li', 'br', 'u', 'i', 'b',
@@ -263,14 +265,14 @@ def new_post():
         if not file or file.filename == "":
             flash('No selected file', 'warning')
             return redirect(request.url)
-        
+
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
             file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file.save(file_path)
 
             # Save the post
-            post = Post(title=title, desc=sanitized_desc, image_url=filename, author=current_user)
+            post = Post(title=title, desc=sanitized_desc, category=category, image_url=filename, author=current_user)
             db.session.add(post)
             db.session.commit()
 
@@ -278,7 +280,6 @@ def new_post():
             return redirect(url_for("index"))
 
     return render_template("new_post.html", form=form)
-
 @admin_bp.route('/see_more/<int:post_id>')
 def see_more(post_id):
     form = CommentForm()
