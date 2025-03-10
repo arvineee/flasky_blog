@@ -280,3 +280,15 @@ def serve_ads_txt():
     file_path = os.path.join(os.path.dirname(__file__),"ads.txt")
     return send_file(file_path,mimetype='text/plain')
 
+@app.route('/delete_comment/<int:comment_id>', methods=['POST'])
+@login_required
+def delete_comment(comment_id):
+    comment = Comment.query.get_or_404(comment_id)
+    post_id = comment.post_id
+    if comment.user == current_user or current_user.is_admin:
+        comment.delete()
+        flash('Comment deleted successfully.', 'success')
+    else:
+        flash('You are not authorized to delete this comment.', 'danger')
+    return redirect(url_for('see_more', post_id=post_id))
+
