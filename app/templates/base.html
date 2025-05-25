@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="h-100">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,7 +10,6 @@
 
     <meta name="description" content="Stay updated with the latest political news, analysis, and opinions on Arval Blog. Discover insights on policies, elections, and global trends.">
     <meta name="keywords" content="political blog, politics news, political analysis, government policies, elections, global politics">
-    <meta name="author" content="Arval Blog">
 
     <!-- Open Graph Meta Tags -->
     <meta property="og:title" content="Arval Blog - Political Insights">
@@ -40,37 +39,9 @@
         body {
             font-family: 'Roboto', sans-serif;
             background-color: #f2f4f8;
-            margin: 0;
-            padding-bottom: 100px; /* Ensures footer spacing on shorter pages */
-        }
-        footer {
-            background-color: #f8f9fa;
-            padding: 10px 0;
-            text-align: center;
-            position: relative;
-            bottom: 0;
-            width: 100%;
-        }
-        .footer-newsletter {
-            max-width: 500px;
-            margin: 0 auto;
-        }
-        .footer-newsletter input {
-            width: 75%;
-            padding: 10px;
-            margin-right: 5px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-        }
-        .footer-newsletter button {
-            padding: 10px 20px;
-            border-radius: 5px;
-            border: none;
-            background-color: #007bff;
-            color: white;
-        }
-        .footer-newsletter button:hover {
-            background-color: #0056b3;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
         }
         .bigtitle {
             font-size: 3rem;
@@ -92,98 +63,102 @@
                 text-shadow: 2px 2px 15px rgba(254, 180, 123, 1);
             }
         }
+        .footer {
+            background-color: #f8f9fa;
+            margin-top: auto;
+            padding: 20px 0;
+        }
     </style>
 </head>
-<body>
-     <div class="container mt-4">
+<body class="d-flex flex-column min-vh-100">
+    <!-- Flash Messages -->
     {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        {% for category, message in messages %}
-          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-            {{ message }}
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-              <span aria-hidden="true">&times;</span>
-            </button>
-          </div>
-    <header class="bg-light py-3 text-center">
-        <h1 class="display-4 fw-bold bigtitle">Arval Blog</h1>
-        <nav class="sticky-top navbar navbar-expand-lg bg-body-tertiary">
-            <div class="container-fluid">
-                <a class="navbar-brand" href="{{url_for('index')}}">Arval-Blog</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon">&#9776;</span>
-                </button>
-                <div class="collapse navbar-collapse" id="navbarSupportedContent">
-                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                        <li class="nav-item">
-                            <a class="nav-link active" aria-current="page" href="{{url_for('index')}}">Home</a>
-                        </li>
-
-                        {% if current_user.is_authenticated and current_user.is_admin %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('admin.admin_dashboard') }}">Admin Dashboard</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{url_for('admin.new_post')}}">New Post</a>
-                        </li>
-                        {% endif %}
-
-                        {% if current_user.is_authenticated %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{url_for('logout')}}">Logout</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('contact') }}">Contact</a>
-                        </li>
-                    </ul>
-                    <form class="d-flex mb-4" action="{{ url_for('admin.search') }}" method="GET" role="search">
-                        <input class="form-control me-2" type="search" name="q" placeholder="Search posts..." aria-label="Search" required>
-                        <button class="btn btn-outline-primary" type="submit">Search</button>
-                    </form>
-                        {% else %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{url_for('register')}}">Sign-Up</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{url_for('login')}}">Sign-In</a>
-                        </li>
-                        {% endif %}
-                    </form>
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show m-2" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
-            </div>
-        </nav>
-    </header>
-
-    {% if current_user.is_authenticated and current_user.is_banned %}
-    <div class="alert alert-danger text-center">
-        Your account is currently banned. You have limited access to the website. Contact the admin for further assistance.
-    </div>
-    {% endif %}
-
-    {% with messages = get_flashed_messages(with_categories=True) %}
-    {% if messages %}
-    <div>
-        {% for category, message in messages %}
-        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-        {% endfor %}
-    </div>
-    {% endif %}
+            {% endfor %}
+        {% endif %}
     {% endwith %}
 
-    <!-- Main Content Block -->
-    <div class="container mt-4">
-        {% block content %}
-        {% endblock %}
-    </div>
+    <!-- Banned User Alert -->
+    {% if current_user.is_authenticated and current_user.is_banned %}
+        <div class="alert alert-danger text-center">
+            Your account is currently banned. You have limited access to the website. Contact the admin for further assistance.
+        </div>
+    {% endif %}
+
+    <header class="bg-light py-3">
+        <div class="container">
+            <h1 class="display-4 fw-bold bigtitle mb-0">Arval Blog</h1>
+            <nav class="navbar navbar-expand-lg navbar-light bg-light">
+                <div class="container-fluid">
+                    <a class="navbar-brand" href="{{url_for('index')}}">Home</a>
+                    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+                    <div class="collapse navbar-collapse" id="navbarNav">
+                        <ul class="navbar-nav me-auto">
+                            {% if current_user.is_authenticated and current_user.is_admin %}
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{{ url_for('admin.admin_dashboard') }}">Admin Dashboard</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{{url_for('admin.new_post')}}">New Post</a>
+                                </li>
+                            {% endif %}
+                            
+                            {% if current_user.is_authenticated %}
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{{url_for('contact')}}">Contact</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{{url_for('logout')}}">Logout</a>
+                                </li>
+                            {% else %}
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{{url_for('register')}}">Sign Up</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{{url_for('login')}}">Sign In</a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                        
+                        {% if current_user.is_authenticated %}
+                            <form class="d-flex" action="{{ url_for('admin.search') }}" method="GET">
+                                <input class="form-control me-2" type="search" name="q" placeholder="Search posts" aria-label="Search" required>
+                                <button class="btn btn-outline-primary" type="submit">Search</button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow-1">
+        <div class="container mt-4">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
 
     <!-- Footer -->
-    <footer class="bg-light py-3 fixed-bottom text-center">
-        <p>Copyright &copy; 2023 Arval-Blog. | All rights reserved. | Our <a href='{{url_for("privacy_policy")}}'>Privacy Policy</a> | Our <a href="{{url_for('policy')}}">Policy</a></p>
-    </footer>
+<footer class="footer mt-auto py-3 bg-light">
+    <div class="container text-center">
+        <p class="mb-0">
+            Copyright &copy; {{ now.year }} Arval-Blog. | 
+            All rights reserved. | 
+            <a href='{{url_for("privacy_policy")}}'>Privacy Policy</a> | 
+            <a href="{{url_for('policy')}}">Policy</a>
+        </p>
+    </div>
+</footer>
 
+    <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
 </body>
 </html>

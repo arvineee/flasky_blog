@@ -16,16 +16,19 @@ from app.forms import LoginForm, RegisterForm, PostForm,CommentForm,ContactForm,
 
 admin_bp = Blueprint('admin', __name__)
 
-ALLOWED_EXTENSIONS = { 'png', 'jpg', 'jpeg', 'gif'}
-def allowed_file(filename):                                                         
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+def allowed_file(filename):
+    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
 def admin_required(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         if not current_user.is_authenticated:
             flash("You need to log in to access this page.", "warning")
             return redirect(url_for("login"))
-        if not current_user.admin:
+        if not current_user.is_admin:
             flash("You do not have the required permissions to access this page.", "danger")
             return redirect(url_for("index"))  # Redirect to a default route
         return func(*args, **kwargs)
@@ -239,47 +242,69 @@ def new_post():
         return redirect(url_for("index"))
 
     form = PostForm()
-    if request.method == "POST" and form.validate_on_submit():
-        title = form.data['title'].strip()
-        desc = form.data['desc'].strip()
-        category = form.data['category'].strip()
+    if form.validate_on_submit():
+        try:
+            title = form.title.data.strip()
+            desc = form.desc.data.strip()
+            category = form.category.data.strip()
 
-        # Define allowed tags for a rich text experience
-        allowed_tags = ['p', 'strong', 'em', 'a', 'ul', 'ol', 'li', 'br', 'u', 'i', 'b',
-                        'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'code', 'pre',
-                        'img', 'hr', 'table', 'tr', 'th', 'td']
-        allowed_attributes = {
-            'a': ['href', 'title'],
-            'img': ['src', 'alt', 'title'],
-            'table': ['class'],
-            'tr': ['class'],
-            'th': ['class'],
-            'td': ['class']
-        }
+            # Define allowed tags and attributes
+            allowed_tags = [
+                'p', 'strong', 'em', 'a', 'ul', 'ol', 'li', 'br', 'u', 'i', 'b',
+                'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'code', 'pre',
+                'img', 'hr', 'table', 'tr', 'th', 'td'
+            ]
+            
+            allowed_attributes = {
+                'a': ['href', 'title'],
+                'img': ['src', 'alt', 'title', 'style'],
+                'table': ['class', 'border'],
+                'tr': ['class'],
+                'th': ['class', 'scope'],
+                'td': ['class']
+            }
 
-        # Sanitize the CKEditor content
-        sanitized_desc = bleach.clean(desc, tags=allowed_tags, attributes=allowed_attributes, strip=True)
+            # Sanitize content
+            sanitized_desc = bleach.clean(
+                desc,
+                tags=allowed_tags,
+                attributes=allowed_attributes,
+                strip=True
+            )
 
-        # Handle image file upload
-        file = request.files.get('image')
-        if not file or file.filename == "":
-            flash('No selected file', 'warning')
-            return redirect(request.url)
+            # Handle file upload
+            file = form.image.data
+            if not file or file.filename == '':
+                flash('No image selected', 'warning')
+                return redirect(request.url)
 
-        if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            file.save(file_path)
+            if file and allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                file.save(file_path)
 
-            # Save the post
-            post = Post(title=title, desc=sanitized_desc, category=category, image_url=filename, author=current_user)
-            db.session.add(post)
-            db.session.commit()
+                # Create new post
+                post = Post(
+                    title=title,
+                    desc=sanitized_desc,
+                    category=category,
+                    image_url=filename,
+                    author=current_user
+                )
+                db.session.add(post)
+                db.session.commit()
 
-            flash("New post created and published successfully", "success")
-            return redirect(url_for("index"))
+                flash("Post created successfully!", "success")
+                return redirect(url_for("admin.admin_dashboard"))
+
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Error creating post: {str(e)}", "danger")
+            app.logger.error(f"Post creation error: {str(e)}")
 
     return render_template("new_post.html", form=form)
+
+
 @admin_bp.route('/see_more/<int:post_id>')
 def see_more(post_id):
     form = CommentForm()

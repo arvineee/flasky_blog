@@ -28,6 +28,13 @@ from app.models import TrafficStats
 from datetime import datetime
 
 
+
+from datetime import datetime
+
+@app.context_processor
+def inject_now():
+    return {'now': datetime.utcnow()}
+
 @app.before_request
 def start_timer():
     if request.endpoint and request.endpoint != 'static':

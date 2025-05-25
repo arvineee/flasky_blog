@@ -1,34 +1,60 @@
 {% extends 'base.html' %}
-
 {% block content %}
-    <h2 class='text-center text-color-info'>Add New Post </h2>
-    <form action="{{url_for('admin.new_post')}}" method=post enctype=multipart/form-data novalidate>
-        {{ form.hidden_tag()}}
-        <div class='mb-3'>
-        <p class='form-label'> {{form.title.label}}</p>
-      {{form.title(class='form-control')}}
-      {% for error in form.title.errors %}
-      <p class="text-danger">[{{error}}]</p>
-      {% endfor %}
+<div class="container mt-4">
+    <h2 class="text-center mb-4 text-primary">Create New Post</h2>
+    
+    <form action="{{ url_for('admin.new_post') }}" method="POST" enctype="multipart/form-data">
+        {{ form.hidden_tag() }}
+        
+        <!-- Title Field -->
+        <div class="mb-4">
+            <label class="form-label fw-bold">{{ form.title.label }}</label>
+            {{ form.title(class="form-control form-control-lg" + (' is-invalid' if form.title.errors else '')) }}
+            {% for error in form.title.errors %}
+            <div class="invalid-feedback">{{ error }}</div>
+            {% endfor %}
         </div>
-        <div class='mb-3'>
-            <p class='form-label'> {{form.desc.label}}</p>
-            {{form.desc(class='form-control')}}
+
+        <!-- Category Field -->
+        <div class="mb-4">
+            <label class="form-label fw-bold">{{ form.category.label }}</label>
+            {{ form.category(class="form-select form-select-lg" + (' is-invalid' if form.category.errors else '')) }}
+            {% for error in form.category.errors %}
+            <div class="invalid-feedback">{{ error }}</div>
+            {% endfor %}
+        </div>
+
+        <!-- Content Editor -->
+        <div class="mb-4">
+            <label class="form-label fw-bold">{{ form.desc.label }}</label>
+            {{ form.desc(class="form-control" + (' is-invalid' if form.desc.errors else '')) }}
             {% for error in form.desc.errors %}
-            <p class="text-danger">[{{error}}]</p>
+            <div class="invalid-feedback">{{ error }}</div>
             {% endfor %}
         </div>
-        <div class='mb-3'>
-            <p class='form-label'> {{form.image.label}}</p>
-            {{form.image(class='form-control')}}
+
+        <!-- Image Upload -->
+        <div class="mb-4">
+            <label class="form-label fw-bold">{{ form.image.label }}</label>
+            {{ form.image(class="form-control" + (' is-invalid' if form.image.errors else '')) }}
+            <div class="form-text">Allowed formats: JPEG, PNG, GIF (Max 5MB)</div>
             {% for error in form.image.errors %}
-            <p class="text-danger">[{{error}}]</p>
+            <div class="invalid-feedback">{{ error }}</div>
             {% endfor %}
         </div>
-        <div class='mb-3'>
-            {{form.submit(class='btn btn-primary btn-lg w-100')}}
+
+        <!-- Submit Button -->
+        <div class="d-grid gap-2 mt-5">
+            {{ form.submit(class="btn btn-primary btn-lg") }}
         </div>
     </form>
-    {{ckeditor.load()}}
-  {{ckeditor.config()}}
+</div>
+
+{{ ckeditor.load() }}
+{{ ckeditor.config(name='desc', height=400, 
+    toolbar=[
+        'heading', 'bold', 'italic', 'link', 
+        'bulletedList', 'numberedList', 'blockQuote',
+        'undo', 'redo'
+    ]) }}
 {% endblock %}
