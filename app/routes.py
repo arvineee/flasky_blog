@@ -1,4 +1,4 @@
-from flask import render_template, url_for, redirect, flash, request,send_file
+from flask import render_template, url_for, redirect, flash, request,send_file,jsonify
 from app import app, bootstrap,db,login_manager,mail
 from app.models import User, Post, Comment, Like, User,Announcement
 from app.forms import LoginForm, RegisterForm, PostForm,CommentForm,ContactForm, ResetPasswordRequestForm, ResetPasswordForm
@@ -13,7 +13,7 @@ from flask_mail import Message
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired
-
+from datetime import timedelta
 
 
 ALLOWED_EXTENSIONS = { 'png', 'jpg', 'jpeg', 'gif'}
@@ -80,7 +80,7 @@ def login():
         password = form.password.data.strip()
         user = User.query.filter_by(username=username).first()
         if user and user.check_password(password):
-            login_user(user)
+            login_user(user,remember=True,duration=timedelta(days=1))
             flash(f'{user.username} logged in successfully', 'success')
             return redirect(url_for('index'))
         flash('Wrong Username or Password', 'danger')
@@ -156,30 +156,37 @@ def add_comment(post_id):
         flash('Error adding comment. Please try again.', 'danger')
     return redirect(url_for('see_more', post_id=post_id))
 
+
 @app.route('/like_post/<int:post_id>', methods=['POST'])
 @login_required
 def like_post(post_id):
     post = Post.query.get_or_404(post_id)
     existing_like = Like.query.filter_by(user_id=current_user.id, post_id=post_id).first()
 
+    # Initialize like_count if None
     if post.like_count is None:
-        post.like_count = 0  # Initialize if it's None
+        post.like_count = 0
 
+    # Toggle like state
     if existing_like:
-        # User already liked this post, so unlike it
         db.session.delete(existing_like)
         post.like_count -= 1
         action = "unliked"
     else:
-        # User is liking this post for the first time
         new_like = Like(user_id=current_user.id, post_id=post_id)
         db.session.add(new_like)
         post.like_count += 1
         action = "liked"
 
     db.session.commit()
-    flash(f'You {action} this post!', 'success')
-    return redirect(url_for('admin.see_more', post_id=post_id))
+
+    # Return JSON for AJAX requests
+    return jsonify({
+        'status': 'success',
+        'action': action,
+        'like_count': post.like_count,
+        'post_id': post_id
+    })
 
 @app.route('/policy')
 def policy():

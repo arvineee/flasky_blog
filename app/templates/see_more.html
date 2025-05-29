@@ -18,13 +18,16 @@
                     </div>
 
                     <!-- Like Button -->
-                    <form method="POST" action="{{ url_for('like_post', post_id=post.id) }}">
-                        {% set user_liked = current_user.is_authenticated and Like.query.filter_by(user_id=current_user.id, post_id=post.id).first() %}
-                        <button type="submit" class="btn {{ 'btn-outline-danger' if user_liked else 'btn-outline-primary' }} mb-3">
-                            {{ "Unlike" if user_liked else "Like" }}
-                            <span class="badge badge-light align-text-bottom">{{ post.like_count }}</span>
-                        </button>
-                    </form>
+<button 
+    class="btn {{ 'btn-outline-danger' if user_liked else 'btn-outline-primary' }} mb-3 like-button"
+    data-post-id="{{ post.id }}"
+    data-liked="{{ 'true' if user_liked else 'false' }}"
+>
+    {{ "Unlike" if user_liked else "Like" }}
+    <span class="badge badge-light align-text-bottom" id="like-count-{{ post.id }}">
+        {{ post.like_count }}
+    </span>
+</button>
 
                     {% if current_user.is_authenticated and current_user.is_admin %}
                         <a class="mb-3 btn btn-primary btn-sm" href="{{ url_for('admin.edit_post', post_id=post.id) }}">Edit Post</a>
@@ -96,3 +99,53 @@
     </div>
 </div>
 {% endblock %}
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // Handle like button clicks
+    document.querySelectorAll('.like-button').forEach(button => {
+        button.addEventListener('click', async (e) => {
+            e.preventDefault();
+            
+            // Get post ID from the button's data attribute
+            const postId = button.dataset.postId;
+            if (!postId) {
+                console.error('Post ID is undefined!');
+                return;
+            }
+
+            try {
+                // Send AJAX request with CSRF token
+                const response = await fetch(`/like_post/${postId}`, {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    // Update like count
+                    const likeCountElement = document.querySelector(`#like-count-${postId}`);
+                    if (likeCountElement) {
+                        likeCountElement.textContent = data.like_count;
+                    }
+
+                    // Toggle button state
+                    const isLiked = button.dataset.liked === 'true';
+                    button.dataset.liked = (!isLiked).toString();
+                    
+                    // Update button appearance
+                    button.classList.toggle('btn-outline-danger', !isLiked);
+                    button.classList.toggle('btn-outline-primary', isLiked);
+                    button.querySelector(':first-child').textContent = isLiked ? 'Like' : 'Unlike';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        });
+    });
+});
+</script>

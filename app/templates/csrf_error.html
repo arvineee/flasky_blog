@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-lg">
+                <div class="card-header bg-danger text-white">
+                    <h2 class="mb-0"><i class="bi bi-shield-slash"></i> Security Error</h2>
+                </div>
+                <div class="card-body">
+                    <h4 class="card-title text-danger mb-4">CSRF Validation Failed</h4>
+                    <p class="lead">{{ reason }}</p>
+                    <p class="text-muted">
+                        This security check prevents unauthorized actions. Please:
+                    </p>
+                    <ul class="list-group list-group-flush mb-4">
+                        <li class="list-group-item">1. Refresh the page</li>
+                        <li class="list-group-item">2. Ensure cookies are enabled</li>
+                        <li class="list-group-item">3. Avoid using browser back/forward buttons for forms</li>
+                    </ul>
+                    <a href="{{ url_for('index') }}" class="btn btn-primary btn-lg">
+                        <i class="bi bi-house-door"></i> Return to Homepage
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

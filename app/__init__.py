@@ -1,35 +1,34 @@
-from flask import Flask,request,g
+from flask import Flask, request, g, render_template
 from flask_bootstrap import Bootstrap
 from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
 from flask_login import LoginManager
-from flask_ckeditor import CKEditor
+from flask_migrate import Migrate
+from flask_mail import Mail
+from flask_wtf.csrf import CSRFProtect, CSRFError
 from config import Config
 from dotenv import load_dotenv
-from flask_mail import Mail
 import os
+from flask_ckeditor import CKEditor
+from datetime import datetime
 
 load_dotenv()
 
 app = Flask(__name__)
 app.config.from_object(Config)
 
-# Initialize extensions after app is created
+# Initialize extensions
+csrf = CSRFProtect(app)
 bootstrap = Bootstrap(app)
-ckeditor = CKEditor(app)
 db = SQLAlchemy(app)
+ckeditor = CKEditor(app)
 login_manager = LoginManager(app)
 migrate = Migrate(app, db)
-mail =  Mail(app)
+mail = Mail(app)
 
 login_manager.login_view = 'login'
 
+# Traffic logging model
 from app.models import TrafficStats
-from datetime import datetime
-
-
-
-from datetime import datetime
 
 @app.context_processor
 def inject_now():
@@ -37,50 +36,55 @@ def inject_now():
 
 @app.before_request
 def start_timer():
-    if request.endpoint and request.endpoint != 'static':
-        g.start_time = datetime.utcnow()
+    g.start_time = datetime.utcnow()
 
 @app.after_request
 def log_traffic(response):
-    if request.endpoint and request.endpoint != 'static':
-        try:
+    try:
+        if request.endpoint and request.endpoint != 'static':
             end_time = datetime.utcnow()
             duration = (end_time - g.start_time).total_seconds()
             visitor_ip = request.remote_addr
 
-            # Check if the record exists for this visitor and endpoint
             traffic_entry = TrafficStats.query.filter_by(
                 endpoint=request.endpoint,
-                visitor_ip=visitor_ip,
+                visitor_ip=visitor_ip
             ).first()
 
             if traffic_entry:
-                # Update existing record
                 traffic_entry.visitor_count += 1
                 traffic_entry.total_time_spent += duration
-                traffic_entry.timestamp = datetime.utcnow()  # Update the timestamp
+                traffic_entry.timestamp = datetime.utcnow()
             else:
-                # Create a new record
                 traffic_entry = TrafficStats(
                     endpoint=request.endpoint,
                     visitor_ip=visitor_ip,
                     visitor_count=1,
                     total_time_spent=duration,
-                    timestamp=datetime.utcnow(),
+                    timestamp=datetime.utcnow()
                 )
                 db.session.add(traffic_entry)
 
             db.session.commit()
-        except Exception as e:
-            app.logger.error(f"Error logging traffic: {e}")
+    except Exception as e:
+        app.logger.error(f"Traffic logging error: {str(e)}")
     return response
 
-# Register blueprint after app and extensions are initialized
-from app.admin_routes import admin_bp
-app.register_blueprint(admin_bp)
+@app.errorhandler(CSRFError)
+def handle_csrf_error(e):
+    return render_template('csrf_error.html', reason=e.description), 400
 
+# Dummy endpoint for CSRF initialization
+@app.route('/csrf-init')
+def csrf_init():
+    return '', 204
+
+# Register blueprints
+from app.admin_routes import admin_bp
 from app.newsletter_route import newsletter_bp
+
+app.register_blueprint(admin_bp)
 app.register_blueprint(newsletter_bp)
 
-# Import routes and models after blueprint registration
+# Import routes and models after blueprints
 from app import routes, models
