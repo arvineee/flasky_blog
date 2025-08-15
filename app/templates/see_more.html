@@ -35,8 +35,10 @@
 
                     {% if post.author == current_user %}
                         <form method="POST" action="{{ url_for('delete_post', post_id=post.id) }}">
-                            <button type="submit" class="btn btn-danger mb-3">Delete Post</button>
-                        </form>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+    <button type="submit" class="btn btn-danger">Delete</button>
+</form>
+
                     {% endif %}
 
                     <form action="{{ url_for('add_comment', post_id=post.id) }}" method="POST">

@@ -96,9 +96,10 @@ def admin_user_action(user_id):
     return render_template('admin_user_action.html', user=user, form=form)
 
 # Delete post
-@admin_bp.route('/admin/post/<int:post_id>/delete')
+@admin_bp.route('/admin/post/<int:post_id>/delete', methods=['POST'])
 @login_required
 def admin_delete_post(post_id):
+
     if not current_user.is_admin:
         flash("Access Denied!", "danger")
         return redirect(url_for('index'))

@@ -15,6 +15,10 @@ class User(UserMixin, db.Model):
     is_banned = db.Column(db.Boolean, default=False)
     warning_message = db.Column(db.String(500), nullable=True)
     posts = db.relationship('Post', backref='author', lazy='dynamic')
+    comments = db.relationship('Comment', backref='user', lazy=True)
+    likes = db.relationship('Like', backref='user', lazy=True)
+    announcements = db.relationship('Announcement', backref='author', lazy=True)
+    videos = db.relationship('Video', backref='author', lazy='dynamic')
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -34,7 +38,9 @@ class Post(db.Model):
     is_blocked = db.Column(db.Boolean, default=False)
     views = db.Column(db.Integer, default=0)
     like_count = db.Column(db.Integer, default=0)
-    comments = db.relationship('Comment', backref='post', lazy='dynamic')
+    # Corrected relationship to include cascade deletion
+    comments = db.relationship('Comment', backref='post', lazy='dynamic', cascade='all, delete-orphan')
+    likes = db.relationship('Like', backref='post', lazy='dynamic', cascade='all, delete-orphan')
 
     def __repr__(self):
         return f'<Post {self.title} by {self.author.username} on {self.date_pub}>'
@@ -45,20 +51,18 @@ class Comment(db.Model):
     date_posted = db.Column(db.String(), default=date.today)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
-    user = db.relationship('User', backref=db.backref('comments', lazy=True))
+
     def delete(self):
         db.session.delete(self)
         db.session.commit()
 
 class TrafficStats(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    endpoint = db.Column(db.String(255))  # Track which route was visited
-    visitor_ip = db.Column(db.String(45))  # For IPv4/IPv6
+    endpoint = db.Column(db.String(255))
+    visitor_ip = db.Column(db.String(45))
     visitor_count = db.Column(db.Integer, nullable=False, default=1)
-    total_time_spent = db.Column(db.Float, nullable=False, default=0)  # Time spent in seconds
+    total_time_spent = db.Column(db.Float, nullable=False, default=0)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-
-
 
 class Like(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -66,18 +70,13 @@ class Like(db.Model):
     post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
-    user = db.relationship('User', backref=db.backref('likes', lazy=True))
-    post = db.relationship('Post', backref=db.backref('likes', lazy=True))
-
     __table_args__ = (db.UniqueConstraint('user_id', 'post_id', name='_user_post_uc'),)
-
 
 class NewsletterSubscriber(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(150), nullable=False, unique=True, index=True)
     subscribed_on = db.Column(db.DateTime, default=datetime.utcnow)
-    subscribed = db.Column(db.Boolean, default=True)  # Track active subscribers
-
+    subscribed = db.Column(db.Boolean, default=True)
 
 class Announcement(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -85,8 +84,6 @@ class Announcement(db.Model):
     content = db.Column(db.Text, nullable=False)
     date_created = db.Column(db.DateTime, default=datetime.utcnow)
     author_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-
-    author = db.relationship('User', backref=db.backref('announcements', lazy=True))
 
     def __repr__(self):
         return f'<Announcement {self.title}>'
@@ -96,12 +93,9 @@ class Video(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text, nullable=False)
-    video_url = db.Column(db.String(), nullable=False)  # Path to the uploaded video
-    upload_time = db.Column(db.DateTime, default=datetime.utcnow)  # Timestamp for upload
-    author_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)  # Foreign key to the User model
-
-    # Establish relationship with the User model
-    author = db.relationship('User', backref=db.backref('videos', lazy='dynamic'))
+    video_url = db.Column(db.String(), nullable=False)
+    upload_time = db.Column(db.DateTime, default=datetime.utcnow)
+    author_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
     def __repr__(self):
         return f'<Video {self.title} by {self.author.username} on {self.upload_time}>'
@@ -109,3 +103,4 @@ class Video(db.Model):
 @login_manager.user_loader
 def load_user(id):
     return User.query.get(int(id))
+
