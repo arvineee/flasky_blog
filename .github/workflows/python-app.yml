@@ -24,23 +24,28 @@ jobs:
 
       - name: Install dependencies
         run: |
+          set -x   # Print each command before executing
           python -m pip install --upgrade pip
           pip install flake8 pytest
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
       - name: Lint with flake8
         run: |
-          # Stop the build if there are Python syntax errors or undefined names
+          set -x
+          echo "Running critical lint checks..."
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-          # Exit-zero treats all errors as warnings
+          echo "Running warning-level lint checks..."
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
       - name: Test with pytest
         run: |
-          pytest
+          set -x
+          pytest -v   # -v for verbose output
 
       - name: Deploy to PythonAnywhere
-        if: success()   # Only runs if all previous steps succeeded
+        if: success()   # Only deploy if lint and tests passed
         run: |
-          curl -s -X POST https://www.pythonanywhere.com/api/v0/user/${{ secrets.PA_USERNAME }}/webapps/${{ secrets.PA_USERNAME }}.pythonanywhere.com/reload/ \
+          set -x
+          echo "Deploying to PythonAnywhere..."
+          curl -v -X POST https://www.pythonanywhere.com/api/v0/user/${{ secrets.PA_USERNAME }}/webapps/${{ secrets.PA_USERNAME }}.pythonanywhere.com/reload/ \
           --header "Authorization: Token ${{ secrets.PA_API_TOKEN }}"
