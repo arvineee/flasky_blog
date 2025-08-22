@@ -46,14 +46,10 @@ def subscribe():
 def unsubscribe(subscriber_id):
     subscriber = NewsletterSubscriber.query.get_or_404(subscriber_id)
 
-    if not subscriber.subscribed:
-        flash("You have already unsubscribed.", "info")
-        return redirect(url_for('index'))
-
-    subscriber.subscribed = False
+    db.session.delete(subscriber)  
     db.session.commit()
 
-    flash("You have been unsubscribed from the newsletter.", "success")
+    flash(f"{subscriber.email} has been unsubscribed from all newsletters.", "success")
     return redirect(url_for('index'))
 
 
