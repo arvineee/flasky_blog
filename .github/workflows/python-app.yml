@@ -43,9 +43,13 @@ jobs:
           pytest -v   # -v for verbose output
 
       - name: Deploy to PythonAnywhere
-        if: success()   # Only deploy if lint and tests passed
+        if: success() && github.ref == 'refs/heads/main'  # Only deploy on push to main
+        env:
+          PA_USERNAME: ${{ secrets.PA_USERNAME }}
+          PA_API_TOKEN: ${{ secrets.PA_API_TOKEN }}
         run: |
           set -x
           echo "Deploying to PythonAnywhere..."
-          curl -v -X POST https://www.pythonanywhere.com/api/v0/user/${{ secrets.PA_USERNAME }}/webapps/${{ secrets.PA_USERNAME }}.pythonanywhere.com/reload/ \
-          --header "Authorization: Token ${{ secrets.PA_API_TOKEN }}"
+          curl -X POST \
+            "https://www.pythonanywhere.com/api/v0/user/$PA_USERNAME/webapps/$PA_USERNAME.pythonanywhere.com/reload/" \
+            -H "Authorization: Token $PA_API_TOKEN"
