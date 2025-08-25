@@ -17,31 +17,31 @@
                         {{ post.desc | safe }}
                     </div>
 
-                    <!-- Like Button -->
-<button 
-    class="btn {{ 'btn-outline-danger' if user_liked else 'btn-outline-primary' }} mb-3 like-button"
-    data-post-id="{{ post.id }}"
-    data-liked="{{ 'true' if user_liked else 'false' }}"
->
-    {{ "Unlike" if user_liked else "Like" }}
-    <span class="badge badge-light align-text-bottom" id="like-count-{{ post.id }}">
-        {{ post.like_count }}
-    </span>
-</button>
+                    <!-- Action buttons container -->
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <!-- Like Button -->
+                        <button class="btn btn-outline-danger like-btn" data-post-id="{{ post.id }}">
+                            ❤️ Like (<span id="like-count-{{ post.id }}">{{ post.likes.count() }}</span>)
+                        </button>
 
-                    {% if current_user.is_authenticated and current_user.is_admin %}
-                        <a class="mb-3 btn btn-primary btn-sm" href="{{ url_for('admin.edit_post', post_id=post.id) }}">Edit Post</a>
-                    {% endif %}
+                        <!-- Edit and Delete buttons for post author -->
+                        {% if current_user.is_authenticated and (current_user.is_admin or post.author == current_user) %}
+                        <div class="btn-group">
+                            {% if current_user.is_authenticated and current_user.is_admin %}
+                                <a class="btn btn-primary btn-sm" href="{{ url_for('admin.edit_post', post_id=post.id) }}">Edit Post</a>
+                            {% endif %}
+                            
+                            {% if post.author == current_user %}
+                                <form method="POST" action="{{ url_for('main.delete_post', post_id=post.id) }}" class="d-inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this post?')">Delete Post</button>
+                                </form>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
 
-                    {% if post.author == current_user %}
-                        <form method="POST" action="{{ url_for('delete_post', post_id=post.id) }}">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-    <button type="submit" class="btn btn-danger">Delete</button>
-</form>
-
-                    {% endif %}
-
-                    <form action="{{ url_for('add_comment', post_id=post.id) }}" method="POST">
+                    <form action="{{ url_for('main.add_comment', post_id=post.id) }}" method="POST">
                         {{ form.hidden_tag() }}
                         <div class="form-group">
                             {{ form.comment(class="form-control", placeholder="Add a comment...") }}
@@ -57,8 +57,12 @@
                                     <p class="mb-0"><strong>{{ comment.user.username }}</strong> on {{ comment.date_posted }}:</p>
                                     <p>{{ comment.content }}</p>
                                     {% if current_user.is_authenticated and (current_user.is_admin or comment.user == current_user) %}
-                                        <form action="{{ url_for('delete_comment', comment_id=comment.id) }}" method="POST" class="d-inline">
-                                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this comment?')">Delete</button>
+                                        <form action="{{ url_for('main.delete_comment', comment_id=comment.id) }}" method="POST" class="d-inline">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <button type="submit" class="btn btn-danger btn-sm"
+                                                    onclick="return confirm('Are you sure you want to delete this comment?')">
+                                                Delete
+                                            </button>
                                         </form>
                                     {% endif %}
                                     <hr class="my-2">
@@ -72,8 +76,8 @@
                     <!-- End of comments section -->
 
                     <div class="d-flex justify-content-between mt-4">
-                        <a href="{{ url_for('index') }}" class="btn btn-outline-primary btn-lg rounded-pill">Back to Posts</a>
-                        <a class='btn btn-outline-primary btn-lg rounded-pill' href="{{ url_for('share_post', post_id=post.id) }}">Share</a>
+                        <a href="{{ url_for('main.index') }}" class="btn btn-outline-primary btn-lg rounded-pill">Back to Posts</a>
+                        <a class='btn btn-outline-primary btn-lg rounded-pill' href="{{ url_for('main.share_post', post_id=post.id) }}">Share</a>
                     </div>
                 </div>
             </div>
@@ -100,54 +104,46 @@
         </div>
     </div>
 </div>
-{% endblock %}
 
+<!-- JavaScript for like button functionality -->
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-    // Handle like button clicks
-    document.querySelectorAll('.like-button').forEach(button => {
-        button.addEventListener('click', async (e) => {
-            e.preventDefault();
+document.addEventListener("DOMContentLoaded", function() {
+    const likeButtons = document.querySelectorAll(".like-btn");
+    
+    likeButtons.forEach(button => {
+        button.addEventListener("click", function() {
+            const postId = this.getAttribute("data-post-id");
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute("content");
             
-            // Get post ID from the button's data attribute
-            const postId = button.dataset.postId;
-            if (!postId) {
-                console.error('Post ID is undefined!');
-                return;
-            }
-
-            try {
-                // Send AJAX request with CSRF token
-                const response = await fetch(`/like_post/${postId}`, {
-                    method: 'POST',
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
-                    }
-                });
-
-                const data = await response.json();
-                
-                if (data.status === 'success') {
+            fetch(`/like_post/${postId}`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": csrfToken
+                },
+                credentials: "same-origin"
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === "success") {
                     // Update like count
-                    const likeCountElement = document.querySelector(`#like-count-${postId}`);
-                    if (likeCountElement) {
-                        likeCountElement.textContent = data.like_count;
-                    }
-
-                    // Toggle button state
-                    const isLiked = button.dataset.liked === 'true';
-                    button.dataset.liked = (!isLiked).toString();
+                    document.getElementById(`like-count-${postId}`).textContent = data.like_count;
                     
-                    // Update button appearance
-                    button.classList.toggle('btn-outline-danger', !isLiked);
-                    button.classList.toggle('btn-outline-primary', isLiked);
-                    button.querySelector(':first-child').textContent = isLiked ? 'Like' : 'Unlike';
+                    // Show toast notification
+                    const toast = new bootstrap.Toast(document.getElementById('likeToast'));
+                    const toastBody = document.querySelector('#likeToast .toast-body');
+                    toastBody.textContent = `You ${data.action} this post!`;
+                    toast.show();
+                } else {
+                    alert("Error: " + data.message);
                 }
-            } catch (error) {
-                console.error('Error:', error);
-            }
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                alert("An error occurred while processing your request.");
+            });
         });
     });
 });
 </script>
+{% endblock %}

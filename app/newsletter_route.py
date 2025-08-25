@@ -59,7 +59,7 @@ def unsubscribe(subscriber_id):
 def send_bulk_email():
     if not current_user.is_admin:
         flash("Access Denied!", "danger")
-        return redirect(url_for('index'))
+        return redirect(url_for('main.index'))
 
     subject = request.form.get('subject')
     message_body = request.form.get('message_body')
@@ -85,7 +85,7 @@ def send_bulk_email():
 def create_post():
     if not current_user.is_admin:
         flash("Access Denied!", "danger")
-        return redirect(url_for('index'))
+        return redirect(url_for('main.index'))
 
     form = PostForm()
 

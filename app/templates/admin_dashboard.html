@@ -9,6 +9,25 @@
 	    <div class="text-center mb-4">
                 <a href="{{ url_for('admin.admin_traffic_stats') }}" class="btn btn-info">View Traffic</a>
             </div>
+	   <div class="text-center mb-4">
+<a href="{{ url_for('admin.manage_ads_txt') }}" class="btn btn-outline-info">
+    <i class="bi bi-file-text"></i> Manage Ads.txt
+</a>
+          </div>
+
+<div class="card mb-3">
+    <div class="card-header bg-success text-white">
+        <h6 class="mb-0">Newsletter Tools</h6>
+    </div>
+    <div class="card-body">
+        <a href="{{ url_for('admin.send_newsletter') }}" class="btn btn-outline-success btn-sm">
+            <i class="bi bi-envelope-plus"></i> Send Newsletter
+        </a>
+        <a href="{{ url_for('admin.manage_subscribers') }}" class="btn btn-outline-info btn-sm ms-2">
+            <i class="bi bi-people-fill"></i> Manage Subscribers
+        </a>
+    </div>
+</div>
 	    <div class="text-center mb-4">                                   
 		    <a href="{{ url_for('admin.create_announcement') }}" class="btn btn-info">Create Announcement</a>   
 		    <a href="{{ url_for('admin.upload_video') }}" class="btn btn-info">Upload Video</a>

@@ -1,0 +1,13 @@
+# Ignore environment variables
+.env
+
+# Python cache files
+__pycache__/
+*.pyc
+
+# SQLite database file
+database.db
+
+# Virtual environment
+venv/
+.flask

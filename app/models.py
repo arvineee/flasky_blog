@@ -1,9 +1,9 @@
-from datetime import date
+from datetime import date, datetime
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from app import db, login_manager
-from datetime import datetime
 
+# ---------------------- User Model ----------------------
 class User(UserMixin, db.Model):
     __tablename__ = 'user'
     id = db.Column(db.Integer, primary_key=True)
@@ -14,6 +14,7 @@ class User(UserMixin, db.Model):
     date_r = db.Column(db.String(), default=date.today)
     is_banned = db.Column(db.Boolean, default=False)
     warning_message = db.Column(db.String(500), nullable=True)
+
     posts = db.relationship('Post', backref='author', lazy='dynamic')
     comments = db.relationship('Comment', backref='user', lazy=True)
     likes = db.relationship('Like', backref='user', lazy=True)
@@ -26,25 +27,44 @@ class User(UserMixin, db.Model):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
+# ---------------------- Category Model ----------------------
+class Category(db.Model):
+    __tablename__ = 'category'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False, unique=True)
+    parent_id = db.Column(db.Integer, db.ForeignKey('category.id'), nullable=True)
+
+    children = db.relationship(
+        'Category',
+        backref=db.backref('parent', remote_side=[id]),
+        lazy='dynamic'
+    )
+    posts = db.relationship('Post', backref='category_obj', lazy='dynamic')
+
+    def __repr__(self):
+        return f'<Category {self.name}>'
+
+# ---------------------- Post Model ----------------------
 class Post(db.Model):
     __tablename__ = 'post'
     id = db.Column(db.Integer, primary_key=True, index=True)
     title = db.Column(db.String(100), nullable=False)
-    category = db.Column(db.String(50), nullable=False)
     desc = db.Column(db.Text, nullable=False)
     date_pub = db.Column(db.String(), default=date.today)
     image_url = db.Column(db.String(), nullable=True)
     author_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    category_id = db.Column(db.Integer, db.ForeignKey('category.id'))
     is_blocked = db.Column(db.Boolean, default=False)
     views = db.Column(db.Integer, default=0)
     like_count = db.Column(db.Integer, default=0)
-    # Corrected relationship to include cascade deletion
+
     comments = db.relationship('Comment', backref='post', lazy='dynamic', cascade='all, delete-orphan')
     likes = db.relationship('Like', backref='post', lazy='dynamic', cascade='all, delete-orphan')
 
     def __repr__(self):
         return f'<Post {self.title} by {self.author.username} on {self.date_pub}>'
 
+# ---------------------- Comment Model ----------------------
 class Comment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.Text, nullable=False)
@@ -56,6 +76,7 @@ class Comment(db.Model):
         db.session.delete(self)
         db.session.commit()
 
+# ---------------------- Traffic Stats ----------------------
 class TrafficStats(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     endpoint = db.Column(db.String(255))
@@ -64,6 +85,7 @@ class TrafficStats(db.Model):
     total_time_spent = db.Column(db.Float, nullable=False, default=0)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
+# ---------------------- Like Model ----------------------
 class Like(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -72,12 +94,14 @@ class Like(db.Model):
 
     __table_args__ = (db.UniqueConstraint('user_id', 'post_id', name='_user_post_uc'),)
 
+# ---------------------- Newsletter Subscriber ----------------------
 class NewsletterSubscriber(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(150), nullable=False, unique=True, index=True)
     subscribed_on = db.Column(db.DateTime, default=datetime.utcnow)
     subscribed = db.Column(db.Boolean, default=True)
 
+# ---------------------- Announcement ----------------------
 class Announcement(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(100), nullable=False)
@@ -88,6 +112,7 @@ class Announcement(db.Model):
     def __repr__(self):
         return f'<Announcement {self.title}>'
 
+# ---------------------- Video Model ----------------------
 class Video(db.Model):
     __tablename__ = 'video'
     id = db.Column(db.Integer, primary_key=True)
@@ -100,7 +125,18 @@ class Video(db.Model):
     def __repr__(self):
         return f'<Video {self.title} by {self.author.username} on {self.upload_time}>'
 
+# ---------------------- User Loader ----------------
+
 @login_manager.user_loader
 def load_user(id):
     return User.query.get(int(id))
 
+# ---------------------- Ads.txt Model ---------------
+class AdsTxt(db.Model):
+    __tablename__ = 'ads_txt'
+    id = db.Column(db.Integer, primary_key=True)
+    content = db.Column(db.Text, nullable=False)
+    last_updated = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
+    updater = db.relationship('User', backref='ads_txt_updates')

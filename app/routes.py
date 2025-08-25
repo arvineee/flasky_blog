@@ -1,6 +1,6 @@
-from flask import render_template, url_for, redirect, flash, request,send_file,jsonify
-from app import app, bootstrap,db,login_manager,mail
-from app.models import User, Post, Comment, Like, User,Announcement
+from flask import render_template, url_for, redirect, flash, request,send_file,jsonify,Blueprint,current_app,abort,make_response
+from app import  bootstrap,db,login_manager,mail
+from app.models import User, Post, Comment, Like, User,Announcement,Category,AdsTxt,NewsletterSubscriber
 from app.forms import LoginForm, RegisterForm, PostForm,CommentForm,ContactForm, ResetPasswordRequestForm, ResetPasswordForm
 from flask_login import login_user, current_user, login_required,logout_user
 from werkzeug.security import generate_password_hash
@@ -14,6 +14,10 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired
 from datetime import timedelta
+
+
+main = Blueprint('main', __name__)
+
 
 
 ALLOWED_EXTENSIONS = { 'png', 'jpg', 'jpeg', 'gif'}
@@ -31,7 +35,7 @@ def admin_required(func):
             return redirect(url_for("login"))
         if not current_user.admin:
             flash("You do not have the required permissions to access this page.", "danger")
-            return redirect(url_for("index"))  # Redirect to a default route
+            return redirect(url_for("main.index"))  # Redirect to a default route
         return func(*args, **kwargs)
     return wrapper
 
@@ -42,17 +46,17 @@ def check_ban(f):
     def decorated_function(*args, **kwargs):
         if current_user.is_authenticated and current_user.is_banned:
             flash("You are banned from accessing this feature. Contact the admin.", "danger")
-            return redirect(url_for("index"))
+            return redirect(url_for("main.index"))
         return f(*args, **kwargs)
     return decorated_function
 
 
-@app.route('/')
+@main.route('/')
 def index():
     # Check if the current user is authenticated and banned
     if current_user.is_authenticated and current_user.is_banned:
         flash("Your account has been restricted. Please contact the admin.", "danger")
-        return redirect(url_for("logout"))
+        return redirect(url_for("main.logout"))
     
     # Get the current page from request args or default to page 1
     page = request.args.get('page', 1, type=int)
@@ -70,11 +74,11 @@ def index():
     return render_template('index.html', posts=posts, announcements=announcements,pagination=posts)
 
 
-@app.route("/login", methods=["POST", "GET"])
+@main.route("/login", methods=["POST", "GET"])
 def login():
     form = LoginForm()
     if current_user.is_authenticated:
-        return redirect(url_for('index'))
+        return redirect(url_for('main.index'))
     if form.validate_on_submit():
         username = form.username.data.strip()
         password = form.password.data.strip()
@@ -82,15 +86,15 @@ def login():
         if user and user.check_password(password):
             login_user(user,remember=True,duration=timedelta(days=1))
             flash(f'{user.username} logged in successfully', 'success')
-            return redirect(url_for('index'))
+            return redirect(url_for('main.index'))
         flash('Wrong Username or Password', 'danger')
     return render_template('login.html', form=form)
 
-@app.route('/register', methods=['GET', 'POST'])
+@main.route('/register', methods=['GET', 'POST'])
 def register():
     form = RegisterForm()
     if current_user.is_authenticated:
-        return redirect(url_for('index'))
+        return redirect(url_for('main.index'))
     if form.validate_on_submit():
         username = form.username.data.strip()
         email = form.email.data.strip()
@@ -100,28 +104,28 @@ def register():
         existing_email = User.query.filter_by(email=email).first()
         if existing_user:
             flash('Username already used!', 'danger')
-            return redirect(url_for('register'))
+            return redirect(url_for('main.register'))
         elif existing_email:
             flash('Email already used!', 'danger')
-            return redirect(url_for('register'))
+            return redirect(url_for('main.register'))
         else:
             user = User(username=username, email=email)
             user.password_hash = generate_password_hash(password)
             db.session.add(user)
             db.session.commit()
             flash(f'{user.username}, registered successfully. Please Login', 'success')
-            return redirect(url_for('login'))
+            return redirect(url_for('main.login'))
     return render_template('register.html', form=form)
 
-@app.route('/logout')
+@main.route('/logout')
 @login_required
 def logout():
     logout_user()
-    return redirect(url_for('login'))
+    return redirect(url_for('main.login'))
 
 
 
-@app.route('/delete_post/<int:post_id>', methods=['POST'])
+@main.route('/delete_post/<int:post_id>', methods=['POST'])
 @login_required
 def delete_post(post_id):
     post = Post.query.get_or_404(post_id)
@@ -129,21 +133,21 @@ def delete_post(post_id):
     # Allow post deletion for admin or the post author
     if not (post.author == current_user or current_user.is_admin):
         flash("You are not authorized to delete this post.", "danger")
-        return redirect(url_for('index'))
+        return redirect(url_for('main.index'))
 
     db.session.delete(post)
     db.session.commit()
     flash("Post has been deleted successfully.", "success")
-    return redirect(url_for('index'))
+    return redirect(url_for('main.index'))
 
-@app.route('/share_post/<int:post_id>')
+@main.route('/share_post/<int:post_id>')
 @login_required
 def share_post(post_id):
     post = Post.query.get_or_404(post_id)
     return render_template('share_post.html', post=post)
 
 
-@app.route('/add_comment/<int:post_id>', methods=['POST'])
+@main.route('/add_comment/<int:post_id>', methods=['POST'])
 @login_required
 def add_comment(post_id):
     form = CommentForm()
@@ -154,10 +158,10 @@ def add_comment(post_id):
         flash('Your comment has been added!', 'success')
     else:
         flash('Error adding comment. Please try again.', 'danger')
-    return redirect(url_for('see_more', post_id=post_id))
+    return redirect(url_for('admin.see_more', post_id=post_id))
 
 
-@app.route('/like_post/<int:post_id>', methods=['POST'])
+@main.route('/like_post/<int:post_id>', methods=['POST'])
 @login_required
 def like_post(post_id):
     post = Post.query.get_or_404(post_id)
@@ -188,23 +192,22 @@ def like_post(post_id):
         'post_id': post_id
     })
 
-@app.route('/policy')
+@main.route('/policy')
 def policy():
     return render_template('policy.html')
 
-@app.route('/privacy_policy')
+@main.route('/privacy_policy')
 def privacy_policy():
     return render_template('privacy_policy.html')
 
-@app.route('/contact', methods=['GET', 'POST'])
-@login_required
+@main.route('/contact', methods=['GET', 'POST'])
 def contact():
     form = ContactForm()
     if form.validate_on_submit():
 
         msg = Message("Arval-Blog Contact Submission",
               sender=form.email.data,
-              recipients=[app.config['MAIL_USERNAME']])
+              recipients=[current_app.config['MAIL_USERNAME']])
 
         body = f"""
 Dear Arval-Blog Team,
@@ -226,18 +229,19 @@ Arval-Blog Contact System
 
         mail.send(msg)
         flash('Your message has been sent successfully.', 'success')
-        return redirect(url_for('contact'))
+        return redirect(url_for('main.index'))
     return render_template('contact.html', form=form)
 
-# Initialize serializer for token generation
-serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
-@app.route('/reset_password_request', methods=['GET', 'POST'])
+@main.route('/reset_password_request', methods=['GET', 'POST'])
 def reset_password_request():
     if current_user.is_authenticated:
         return redirect(url_for('index'))
     form = ResetPasswordRequestForm()
     if form.validate_on_submit():
+        # Initialize serializer for token generation
+        serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+
         user = User.query.filter_by(email=form.email.data).first()
         if user:
             token = serializer.dumps(user.email, salt='password-reset-salt')
@@ -248,54 +252,95 @@ def reset_password_request():
             msg.body = f'Here is your password reset link: {link}'
             mail.send(msg)
             flash('An email with instructions to reset your password has been sent.', 'info')
-        return redirect(url_for('login'))
+        return redirect(url_for('main.login'))
     return render_template('reset_password_request.html', form=form)
 
-@app.route('/reset_password/<token>', methods=['GET', 'POST'])
+@main.route('/reset_password/<token>', methods=['GET', 'POST'])
 def reset_password(token):
     try:
         email = serializer.loads(token, salt='password-reset-salt', max_age=3600)
     except SignatureExpired:
         flash('The password reset link has expired. Please request a new one.', 'warning')
-        return redirect(url_for('reset_password_request'))
+        return redirect(url_for('main.reset_password_request'))
     except Exception:
         flash('Invalid reset link. Please try again.', 'danger')
-        return redirect(url_for('reset_password_request'))
+        return redirect(url_for('main.reset_password_request'))
 
     user = User.query.filter_by(email=email).first()
     if not user:
         flash('Invalid reset request.', 'warning')
-        return redirect(url_for('index'))
+        return redirect(url_for('main.index'))
 
     form = ResetPasswordForm()
     if form.validate_on_submit():
         user.set_password(form.password.data)
         db.session.commit()
         flash('Your password has been reset successfully!', 'success')
-        return redirect(url_for('login'))
+        return redirect(url_for('main.login'))
     return render_template('reset_password.html', form=form)
 
 
-@app.route('/announcement/<int:announcement_id>')
+@main.route('/announcement/<int:announcement_id>')
 @login_required
 def announcement_detail(announcement_id):
     announcement = Announcement.query.get_or_404(announcement_id)
     return render_template('announcement_detail.html', announcement=announcement)
-
-@app.route('/ads.txt')
+@login_required
+@main.route('/ads.txt')
 def serve_ads_txt():
-    file_path = os.path.join(os.path.dirname(__file__),"ads.txt")
-    return send_file(file_path,mimetype='text/plain')
+    # Get the latest ads.txt entry
+    ads_txt = AdsTxt.query.order_by(AdsTxt.last_updated.desc()).first()
+    
+    if ads_txt:
+        # Create a response with the ads.txt content
+        response = make_response(ads_txt.content)
+        response.mimetype = 'text/plain'
+        response.headers['Cache-Control'] = 'public, max-age=3600'  # Cache for 1 hour
+        return response
+    else:
+        # Fallback to default content or 404
+        default_content = "google.com, pub-2038759698856668, DIRECT, f08c47fec0942fa0"
+        response = make_response(default_content)
+        response.mimetype = 'text/plain'
+        return response
 
-@app.route('/delete_comment/<int:comment_id>', methods=['POST'])
+@main.route('/delete_comment/<int:comment_id>', methods=['POST'])
 @login_required
 def delete_comment(comment_id):
     comment = Comment.query.get_or_404(comment_id)
     post_id = comment.post_id
+
     if comment.user == current_user or current_user.is_admin:
-        comment.delete()
+        db.session.delete(comment)   
+        db.session.commit()
         flash('Comment deleted successfully.', 'success')
     else:
         flash('You are not authorized to delete this comment.', 'danger')
-    return redirect(url_for('see_more', post_id=post_id))
 
+    return redirect(url_for('admin.see_more', post_id=post_id))
+
+
+@login_required
+@check_ban
+@main.route("/category/<int:category_id>")
+def category_posts(category_id):
+    # Get the category
+    category = Category.query.get_or_404(category_id)
+
+    # Fetch posts in this category (and optionally in its subcategories)
+    posts = Post.query.filter_by(category_id=category.id).order_by(Post.created_at.desc()).all()
+
+    return render_template("category_posts.html", category=category, posts=posts)
+
+@main.route('/unsubscribe/<email>')
+def unsubscribe_newsletter(email):
+    subscriber = NewsletterSubscriber.query.filter_by(email=email).first()
+
+    if subscriber:
+        subscriber.subscribed = False
+        db.session.commit()
+        flash("You have been unsubscribed from our newsletter.", "success")
+    else:
+        flash("Email not found in our subscription list.", "warning")
+
+    return redirect(url_for('main.index'))

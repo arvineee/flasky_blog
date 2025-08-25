@@ -3,6 +3,9 @@ from wtforms import (StringField, SubmitField, PasswordField, FileField,
                     TextAreaField, BooleanField, EmailField, SelectField)
 from wtforms.validators import DataRequired, Email, EqualTo, Length, Optional
 from flask_ckeditor import CKEditorField
+from wtforms_sqlalchemy.fields import QuerySelectField
+
+
 
 # Predefined choices for categories
 CATEGORIES = [
@@ -37,13 +40,10 @@ class PostForm(FlaskForm):
         DataRequired(),
         Length(max=120, message="Title cannot exceed 120 characters")
     ])
-    category = SelectField('Category', choices=CATEGORIES, 
-                          validators=[DataRequired()])
+    # Use SelectField, not QuerySelectField
+    category = SelectField('Category', coerce=int, validators=[DataRequired()])
     desc = CKEditorField('Content', validators=[DataRequired()])
-    image = FileField('Featured Image', render_kw={
-        "accept": "image/*",
-        "help": "Upload JPEG, PNG or GIF (max 5MB)"
-    })
+    image = FileField('Featured Image', render_kw={"accept": "image/*"})
     submit = SubmitField('Publish Post')
 
 class AdminActionForm(FlaskForm):
@@ -83,16 +83,33 @@ class ResetPasswordForm(FlaskForm):
     ])
     submit = SubmitField('Update Password')
 
+import logging
+from flask_wtf import FlaskForm
+from wtforms import StringField, TextAreaField, SubmitField
+from wtforms.validators import DataRequired, Length
+
+logger = logging.getLogger(__name__)
+
 class AnnouncementForm(FlaskForm):
-    title = StringField('Announcement Title', validators=[
-        DataRequired(),
-        Length(max=100, message="Title cannot exceed 100 characters")
-    ])
-    content = TextAreaField('Announcement Content', validators=[
-        DataRequired(),
-        Length(max=500, message="Content cannot exceed 500 characters")
-    ])
+    title = StringField(
+        'Title',
+        validators=[DataRequired(), Length(max=100, message="Title cannot exceed 100 characters")]
+    )
+    message = TextAreaField(
+        'Message',
+        validators=[DataRequired(), Length(max=500, message="Message cannot exceed 500 characters")]
+    )
     submit = SubmitField('Publish Announcement')
+
+    def validate(self, extra_validators=None):
+        logger.debug("Validating AnnouncementForm with data: title=%s, message=%s",
+                     self.title.data, self.message.data)
+        result = super().validate(extra_validators)
+        if not result:
+            logger.error("Form validation failed with errors: %s", self.errors)
+        else:
+            logger.debug("Form validation succeeded")
+        return result
 
 class SubscribeForm(FlaskForm):
     email = EmailField('Email Address', validators=[
@@ -115,3 +132,13 @@ class VideoForm(FlaskForm):
         "help": "MP4 or WebM format (max 50MB)"
     })
     submit = SubmitField("Upload Video")
+
+
+class AdsTxtForm(FlaskForm):
+    content = TextAreaField('Ads.txt Content', validators=[DataRequired()])
+    submit = SubmitField('Update Ads.txt')
+
+class NewsletterForm(FlaskForm):
+    subject = StringField('Subject', validators=[DataRequired()])
+    message = TextAreaField('Message', validators=[DataRequired()])
+    submit = SubmitField('Send Newsletter')

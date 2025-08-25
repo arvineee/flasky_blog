@@ -3,30 +3,35 @@
 {% block title %}Create Announcement{% endblock %}
 
 {% block content %}
-<h1>Create a New Announcement</h1>
-<form method="POST">
-    <!-- Title -->
-    <div class="form-group">
-        <label for="title">Announcement Title</label>
-        <input type="text" class="form-control" id="title" name="title" required>
-    </div>
+<div class="container mt-4">
+    <h1>Create a New Announcement</h1>
+    <form method="POST">
+        {{ form.hidden_tag() }}
 
-    <!-- Message -->
-    <div class="form-group">
-        <label for="message">Announcement Message</label>
-        <textarea class="form-control" id="message" name="message" rows="4" required></textarea>
-    </div>
+        <!-- Title -->
+        <div class="form-group mb-3">
+            {{ form.title.label(class="form-label") }}
+            {{ form.title(class="form-control", placeholder="Enter announcement title") }}
+        </div>
 
-    <!-- Submit Button -->
-    <button type="submit" class="btn btn-primary">Create Announcement</button>
-</form>
+        <!-- Message -->
+        <div class="form-group mb-3">
+            {{ form.message.label(class="form-label") }}
+            {{ form.message(class="form-control", rows="4", placeholder="Enter announcement message") }}
+        </div>
 
-{% if get_flashed_messages() %}
-    <div class="alert alert-info mt-3">
-        {% for message in get_flashed_messages() %}
-            <p>{{ message }}</p>
+        <!-- Submit Button -->
+        <div class="form-group">
+            {{ form.submit(class="btn btn-primary") }}
+        </div>
+    </form>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} mt-3">{{ message }}</div>
         {% endfor %}
-    </div>
-{% endif %}
-
+      {% endif %}
+    {% endwith %}
+</div>
 {% endblock %}

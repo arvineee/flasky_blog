@@ -1,90 +1,170 @@
-from flask import Flask, request, g, render_template
+import logging
+from flask import Flask, g, request, render_template
 from flask_bootstrap import Bootstrap
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_migrate import Migrate
 from flask_mail import Mail
 from flask_wtf.csrf import CSRFProtect, CSRFError
-from config import Config
-from dotenv import load_dotenv
-import os
 from flask_ckeditor import CKEditor
 from datetime import datetime
+from config import Config
+from dotenv import load_dotenv
+import getpass
+import click
+from flask.cli import with_appcontext
+import os
 
+# Load environment variables
 load_dotenv()
 
-app = Flask(__name__)
-app.config.from_object(Config)
+# Configure logging
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="[%(asctime)s] %(levelname)s in %(module)s: %(message)s"
+)
+logger = logging.getLogger(__name__)
 
 # Initialize extensions
-csrf = CSRFProtect(app)
-bootstrap = Bootstrap(app)
-db = SQLAlchemy(app)
-ckeditor = CKEditor(app)
-login_manager = LoginManager(app)
-migrate = Migrate(app, db)
-mail = Mail(app)
+db = SQLAlchemy()
+login_manager = LoginManager()
+csrf = CSRFProtect()
+bootstrap = Bootstrap()
+ckeditor = CKEditor()
+migrate = Migrate()
+mail = Mail()
 
-login_manager.login_view = 'login'
+def create_app():
+    app = Flask(__name__)
+    app.config.from_object(Config)
 
-# Traffic logging model
-from app.models import TrafficStats
+    # Initialize extensions with app
+    db.init_app(app)
+    login_manager.init_app(app)
+    csrf.init_app(app)
+    bootstrap.init_app(app)
+    ckeditor.init_app(app)
+    migrate.init_app(app, db)
+    mail.init_app(app)
 
-@app.context_processor
-def inject_now():
-    return {'now': datetime.utcnow()}
+    login_manager.login_view = 'main.login'
+    logger.debug("Flask app and extensions initialized")
 
-@app.before_request
-def start_timer():
-    g.start_time = datetime.utcnow()
+    # Import models here to avoid circular import
+    from app import models
+    from app.routes import main
+    from app.admin_routes import admin_bp
+    from app.newsletter_route import newsletter_bp
 
-@app.after_request
-def log_traffic(response):
-    try:
-        if request.endpoint and request.endpoint != 'static':
-            end_time = datetime.utcnow()
-            duration = (end_time - g.start_time).total_seconds()
-            visitor_ip = request.remote_addr
+    # Register blueprints
+    app.register_blueprint(admin_bp, url_prefix="/admin")
+    app.register_blueprint(newsletter_bp)
+    app.register_blueprint(main)
+    logger.debug("Blueprints registered: admin_bp, newsletter_bp,main_bp")
 
-            traffic_entry = TrafficStats.query.filter_by(
-                endpoint=request.endpoint,
-                visitor_ip=visitor_ip
-            ).first()
 
-            if traffic_entry:
-                traffic_entry.visitor_count += 1
-                traffic_entry.total_time_spent += duration
-                traffic_entry.timestamp = datetime.utcnow()
-            else:
-                traffic_entry = TrafficStats(
+    UPLOAD_FOLDER = os.path.join(app.root_path, "static", "images")
+    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+    app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+
+    # Request timing and traffic logging
+    from app.models import TrafficStats, Category
+
+    @app.before_request
+    def start_timer():
+        g.start_time = datetime.utcnow()
+        logger.debug("Request started: endpoint=%s, ip=%s, method=%s, start_time=%s",
+                     request.endpoint, request.remote_addr, request.method, g.start_time)
+
+    @app.after_request
+    def log_traffic(response):
+        try:
+            if request.endpoint and request.endpoint != 'static':
+                end_time = datetime.utcnow()
+                duration = (end_time - g.start_time).total_seconds()
+                visitor_ip = request.remote_addr
+
+                traffic_entry = TrafficStats.query.filter_by(
                     endpoint=request.endpoint,
-                    visitor_ip=visitor_ip,
-                    visitor_count=1,
-                    total_time_spent=duration,
-                    timestamp=datetime.utcnow()
-                )
-                db.session.add(traffic_entry)
+                    visitor_ip=visitor_ip
+                ).first()
 
-            db.session.commit()
-    except Exception as e:
-        app.logger.error(f"Traffic logging error: {str(e)}")
-    return response
+                if traffic_entry:
+                    traffic_entry.visitor_count += 1
+                    traffic_entry.total_time_spent += duration
+                    traffic_entry.timestamp = datetime.utcnow()
+                else:
+                    traffic_entry = TrafficStats(
+                        endpoint=request.endpoint,
+                        visitor_ip=visitor_ip,
+                        visitor_count=1,
+                        total_time_spent=duration,
+                        timestamp=datetime.utcnow()
+                    )
+                    db.session.add(traffic_entry)
+                db.session.commit()
+        except Exception as e:
+            logger.exception("Traffic logging error")
+        return response
 
-@app.errorhandler(CSRFError)
-def handle_csrf_error(e):
-    return render_template('csrf_error.html', reason=e.description), 400
+    @app.errorhandler(CSRFError)
+    def handle_csrf_error(e):
+        logger.error("CSRF error on endpoint=%s, ip=%s: %s",
+                     request.endpoint, request.remote_addr, e.description)
+        return render_template('csrf_error.html', reason=e.description), 400
 
-# Dummy endpoint for CSRF initialization
-@app.route('/csrf-init')
-def csrf_init():
-    return '', 204
+    # Inject current time and categories into templates
+    @app.context_processor
+    def inject_now():
+        return {'now': datetime.utcnow()}
 
-# Register blueprints
-from app.admin_routes import admin_bp
-from app.newsletter_route import newsletter_bp
+    @app.context_processor
+    def inject_categories():
+        categories = Category.query.filter_by(parent_id=None).order_by(Category.name).all()
+        category_structure = []
+        for cat in categories:
+            subcats = Category.query.filter_by(parent_id=cat.id).order_by(Category.name).all()
+            category_structure.append({'category': cat, 'subcategories': subcats})
+        return dict(category_structure=category_structure)
 
-app.register_blueprint(admin_bp)
-app.register_blueprint(newsletter_bp)
+    # CLI command to create admin
+    @app.cli.command("create-admin")
+    @with_appcontext
+    def create_admin():
+        from app.models import User  # Import here to avoid circular import
+        print("=== Create a New Admin User ===")
 
-# Import routes and models after blueprints
-from app import routes, models
+        while True:
+            username = input("Username: ").strip()
+            if username:
+                break
+        while True:
+            email = input("Email: ").strip()
+            if email:
+                break
+        while True:
+            password = getpass.getpass("Password: ")
+            password_confirm = getpass.getpass("Confirm Password: ")
+            if password == password_confirm:
+                break
+            else:
+                print("Passwords do not match. Try again.")
+
+        # Check if user already exists
+        if User.query.filter_by(username=username).first() or User.query.filter_by(email=email).first():
+            print("User with this username or email already exists!")
+            return
+
+        new_user = User(
+            username=username,
+            email=email,
+            is_admin=True
+        )
+        new_user.set_password(password)
+        db.session.add(new_user)
+        db.session.commit()
+        print(f"Admin user '{username}' created successfully!")
+
+
+    return app

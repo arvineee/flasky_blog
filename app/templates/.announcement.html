@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white text-center">
+                    <h3>New Announcement</h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('admin.create_announcement') }}">
+                        {{ form.hidden_tag() }}
+
+                        <div class="mb-3">
+                            {{ form.title.label(class="form-label") }}
+                            <input type="text" name="title" class="form-control"
+                                   id="title" placeholder="Enter the announcement title"
+                                   value="{{ form.title.data or '' }}" required>
+                            {% for error in form.title.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.message.label(class="form-label") }}
+                            <textarea name="message" class="form-control" id="message" rows="5"
+                                      placeholder="Enter your announcement message" required>{{ form.message.data or '' }}</textarea>
+                            {% for error in form.message.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        {{ form.submit(class="btn btn-primary w-100") }}
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

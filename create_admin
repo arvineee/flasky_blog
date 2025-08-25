@@ -1,0 +1,47 @@
+#!/usr/bin/env python3
+import os
+from getpass import getpass
+from app import app, db
+from app.models import User
+
+def prompt_admin_creation():
+    print("=== Create a New Admin User ===")
+
+    while True:
+        username = input("Username: ").strip()
+        if username:
+            break
+        print("Username cannot be empty.")
+
+    while True:
+        email = input("Email: ").strip()
+        if email:
+            break
+        print("Email cannot be empty.")
+
+    while True:
+        password = getpass("Password: ").strip()
+        password2 = getpass("Confirm Password: ").strip()
+        if password != password2:
+            print("Passwords do not match. Try again.")
+        elif len(password) < 6:
+            print("Password must be at least 6 characters.")
+        else:
+            break
+
+    existing = User.query.filter((User.username == username) | (User.email == email)).first()
+    if existing:
+        print("Error: A user with this username or email already exists.")
+        return
+
+    admin_user = User(username=username, email=email, is_admin=True)
+    admin_user.set_password(password)
+
+    db.session.add(admin_user)
+    db.session.commit()
+    print(f"Success! Admin user '{username}' created.")
+
+
+if __name__ == "__main__":
+    with app.app_context():
+        prompt_admin_creation()
