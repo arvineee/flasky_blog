@@ -14,6 +14,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired
 from datetime import timedelta
+from app.utils import get_recommended_posts
 
 
 main = Blueprint('main', __name__)
@@ -63,6 +64,7 @@ def index():
     
     # Define how many posts to show per page
     per_page = 5
+    recommended_posts = get_recommended_posts()
 
     # Fetch posts with pagination, filtering out those by banned users and blocked posts
     posts = Post.query.join(User).filter(User.is_banned == False, Post.is_blocked == False).order_by(Post.id.desc()).paginate(page=page, per_page=per_page, error_out=False)
@@ -71,7 +73,7 @@ def index():
     announcements = Announcement.query.order_by(Announcement.date_created.desc()).limit(5).all()
 
     # Render the index page with posts and announcements
-    return render_template('index.html', posts=posts, announcements=announcements,pagination=posts)
+    return render_template('index.html', posts=posts, announcements=announcements,pagination=posts,recommended_posts=recommended_posts)
 
 
 @main.route("/login", methods=["POST", "GET"])
@@ -344,3 +346,6 @@ def unsubscribe_newsletter(email):
         flash("Email not found in our subscription list.", "warning")
 
     return redirect(url_for('main.index'))
+
+
+

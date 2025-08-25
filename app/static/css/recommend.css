@@ -1,0 +1,40 @@
+/* Recommended Posts Popup Styles */
+.popup-post-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: none;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.popup-post-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+}
+
+.popup-post-card .card-img-top {
+    transition: transform 0.3s ease;
+}
+
+.popup-post-card:hover .card-img-top {
+    transform: scale(1.05);
+}
+
+#recommendedPopup .modal-content {
+    border-radius: 15px;
+    border: none;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+}
+
+#recommendedPopup .modal-header {
+    border-radius: 15px 15px 0 0;
+}
+
+/* Animation for popup */
+@keyframes popupEntrance {
+    0% { transform: scale(0.9); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.modal.show .modal-dialog {
+    animation: popupEntrance 0.3s ease-out;
+}

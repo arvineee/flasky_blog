@@ -146,4 +146,19 @@ document.addEventListener("DOMContentLoaded", function() {
     });
 });
 </script>
+
+<script>
+// Pass recommended posts data to JavaScript
+const recommendedPosts = [
+    {% for post in recommended_posts %}
+    {
+        id: {{ post.id }},
+        title: "{{ post.title|escapejs }}",
+        desc: "{{ post.desc|striptags|escapejs }}",
+        image_url: "{{ post.image_url|default('')|escapejs }}",
+        url: "{{ url_for('admin.see_more', post_id=post.id) }}"
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+];
+</script>
 {% endblock %}

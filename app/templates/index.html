@@ -84,13 +84,13 @@
             <!-- Pagination Controls -->
             <div class="pagination">
                 {% if pagination.has_prev %}
-                    <a href="{{ url_for('index', page=pagination.prev_num) }}" class="btn btn-outline-primary btn-sm">Previous</a>
+                    <a href="{{ url_for('main.index', page=pagination.prev_num) }}" class="btn btn-outline-primary btn-sm">Previous</a>
                 {% endif %}
 
                 <span>Page {{ pagination.page }} of {{ pagination.pages }}</span>
 
                 {% if pagination.has_next %}
-                    <a href="{{ url_for('index', page=pagination.next_num) }}" class="btn btn-outline-primary btn-sm">Next</a>
+                    <a href="{{ url_for('main.index', page=pagination.next_num) }}" class="btn btn-outline-primary btn-sm">Next</a>
                 {% endif %}
             </div>
         </div>
@@ -162,7 +162,22 @@
         text-decoration: none;
     }
 </style>
-{% endblock %}
-```
+<script>
+// Pass recommended posts data to JavaScript
+const recommendedPosts = [
+    {% for post in recommended_posts %}
+    {
+        id: {{ post.id }},
+        title: "{{ post.title|escapejs }}",
+        desc: "{{ post.desc|striptags|escapejs }}",
+        image_url: "{{ post.image_url|default('')|escapejs }}",
+        url: "{{ url_for('admin.see_more', post_id=post.id) }}"
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+];
+</script>
 
-This change ensures that each post's category is displayed alongside the author, date, and views information.
+{% endblock %}
+
+
+

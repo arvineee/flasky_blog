@@ -7,7 +7,7 @@ from werkzeug.utils import secure_filename
 from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
 from flask_login import login_required, current_user
 from flask_mail import Message
-
+from app.utils import get_recommended_posts
 from app import db, mail,csrf
 from app.models import User, Post, Comment, TrafficStats, Announcement, NewsletterSubscriber, Like, Video,Category,AdsTxt,NewsletterSubscriber
 from app.forms import (
@@ -231,12 +231,13 @@ def admin_unblock_post(post_id):
 def see_more(post_id):
     form = CommentForm()
     post = Post.query.get_or_404(post_id)
+    recommended_posts = get_recommended_posts(post_id)
     if post.views is None:
         post.views = 0
     post.views += 1
     db.session.commit()
     comments = Comment.query.filter_by(post_id=post_id).all()
-    return render_template('see_more.html', post=post, form=form, comments=comments, Like=Like)
+    return render_template('see_more.html', post=post, form=form, comments=comments, Like=Like,recommended_posts=recommended_posts)
 
 
 @admin_bp.route('/edit_post/<int:post_id>', methods=['GET', 'POST'])

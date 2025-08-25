@@ -38,6 +38,29 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
+    # Add custom escapejs filter
+    @app.template_filter('escapejs')
+    def escapejs_filter(value):
+        """Escape characters for use in JavaScript strings."""
+        if value is None:
+            return ''
+        value = str(value)
+        escape_map = {
+            '\\': '\\\\',
+            '"': '\\"',
+            "'": "\\'",
+            '\n': '\\n',
+            '\r': '\\r',
+            '\t': '\\t',
+            '<': '\\u003C',
+            '>': '\\u003E',
+            '&': '\\u0026',
+            '=': '\\u003D',
+            '-': '\\u002D',
+            ';': '\\u003B',
+        }
+        return ''.join(escape_map.get(c, c) for c in value)
+
     # Initialize extensions with app
     db.init_app(app)
     login_manager.init_app(app)
