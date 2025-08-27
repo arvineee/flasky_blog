@@ -1,4 +1,3 @@
-
 document.addEventListener('DOMContentLoaded', function() {
     // Function to show recommended posts popup
     function showRecommendedPopup() {
@@ -9,13 +8,16 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Create HTML for each recommended post
             recommendedPosts.forEach(post => {
+                // Get the base URL for static files
+                const staticBaseUrl = window.location.origin + '/static/images/';
+                
                 const postHtml = `
                     <div class="col-md-6 mb-3">
                         <div class="card h-100 shadow-sm popup-post-card">
                             ${post.image_url ? `
-                                <img src="{{ url_for('static', filename='images/') }}${post.image_url}" 
+                                <img src="${staticBaseUrl}${post.image_url}" 
                                      class="card-img-top" alt="${post.title}" style="height: 180px; object-fit: cover;">
-                            ` : ''}
+                            ` : '<div class="card-img-top bg-secondary" style="height: 180px; display: flex; align-items: center; justify-content: center; color: white;">No Image</div>'}
                             <div class="card-body">
                                 <h6 class="card-title">${post.title}</h6>
                                 <p class="card-text small text-muted">${post.desc ? post.desc.substring(0, 100) + '...' : ''}</p>
@@ -86,4 +88,3 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 45000);
     }
 });
-
