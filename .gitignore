@@ -11,3 +11,4 @@ database.db
 # Virtual environment
 venv/
 .flask
+instance/database.db
