@@ -14,6 +14,7 @@ import getpass
 import click
 from flask.cli import with_appcontext
 import os
+from .ddos_protection import ddos_protection
 
 # Load environment variables
 load_dotenv()
@@ -33,6 +34,7 @@ bootstrap = Bootstrap()
 ckeditor = CKEditor()
 migrate = Migrate()
 mail = Mail()
+
 
 def create_app():
     app = Flask(__name__)
@@ -70,6 +72,9 @@ def create_app():
     migrate.init_app(app, db)
     mail.init_app(app)
 
+    # Initialize DDoS protection AFTER other extensions
+    ddos_protection.init_app(app)
+
     login_manager.login_view = 'main.login'
     logger.debug("Flask app and extensions initialized")
 
@@ -83,13 +88,16 @@ def create_app():
     app.register_blueprint(admin_bp, url_prefix="/admin")
     app.register_blueprint(newsletter_bp)
     app.register_blueprint(main)
-    logger.debug("Blueprints registered: admin_bp, newsletter_bp,main_bp")
-
+    logger.debug("Blueprints registered: admin_bp, newsletter_bp, main_bp")
 
     UPLOAD_FOLDER = os.path.join(app.root_path, "static", "images")
     os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
     app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+
+    # Create video upload folder if it doesn't exist
+    VIDEO_UPLOAD_FOLDER = os.path.join(app.root_path, "static", "videos")
+    os.makedirs(VIDEO_UPLOAD_FOLDER, exist_ok=True)
+    app.config["VIDEO_UPLOAD_FOLDER"] = VIDEO_UPLOAD_FOLDER
 
     # Request timing and traffic logging
     from app.models import TrafficStats, Category
@@ -186,8 +194,46 @@ def create_app():
         )
         new_user.set_password(password)
         db.session.add(new_user)
-        db.session.commit()
-        print(f"Admin user '{username}' created successfully!")
+        try:
+            db.session.commit()
+            print(f"Admin user '{username}' created successfully!")
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error creating admin user: {e}")
 
+    # CLI command to initialize database
+    @app.cli.command("init-db")
+    @with_appcontext
+    def init_db():
+        """Initialize the database with default categories"""
+        from app.models import Category
+        
+        # Create default categories if they don't exist
+        default_categories = [
+            'Technology',
+            'Science',
+            'Art',
+            'Sports',
+            'Entertainment',
+            'News',
+            'Education',
+            'Health',
+            'Travel',
+            'Food'
+        ]
+        
+        for cat_name in default_categories:
+            category = Category.query.filter_by(name=cat_name).first()
+            if not category:
+                category = Category(name=cat_name)
+                db.session.add(category)
+                print(f"Created category: {cat_name}")
+        
+        try:
+            db.session.commit()
+            print("Database initialized successfully!")
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error initializing database: {e}")
 
     return app

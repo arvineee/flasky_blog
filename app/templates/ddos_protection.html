@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="bi bi-shield-lock"></i> DDoS Protection</h2>
+                <div class="btn-group">
+                    <a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> Back to Dashboard
+                    </a>
+                </div>
+            </div>
+
+            <!-- Protection Status -->
+<div class="card mb-4">
+    <div class="card-header bg-info text-white">
+        <h5 class="mb-0">Protection Status</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span>Protection Mode:</span>
+                    <span class="badge bg-{{ 'success' if protection_mode == 'active' else 'warning' }}">
+                        {{ protection_mode|upper }}
+                    </span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span>Requests Blocked:</span>
+                    <span class="badge bg-danger">{{ stats.requests_blocked }}</span>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span>IPs Currently Banned:</span>
+                    <span class="badge bg-warning">{{ stats.currently_banned }}</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span>Total Tracked IPs:</span>
+                    <span class="badge bg-info">{{ stats.total_tracked_ips }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+            <!-- Configuration -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Configuration</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Protection Mode</label>
+                                <select name="protection_mode" class="form-select">
+                                    <option value="monitor" {% if protection_mode == 'monitor' %}selected{% endif %}>Monitor Only</option>
+                                    <option value="active" {% if protection_mode == 'active' %}selected{% endif %}>Active Protection</option>
+                                    <option value="passive" {% if protection_mode == 'passive' %}selected{% endif %}>Passive (Log Only)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Request Limit</label>
+                                <input type="number" name="request_limit" value="{{ config.REQUEST_LIMIT }}" class="form-control">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Time Window (seconds)</label>
+                                <input type="number" name="window_size" value="{{ config.WINDOW_SIZE }}" class="form-control">
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Ban Time (seconds)</label>
+                                <input type="number" name="ban_time" value="{{ config.BAN_TIME }}" class="form-control">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Auto Ban</label>
+                                <select name="auto_ban" class="form-select">
+                                    <option value="true" {% if config.AUTO_BAN %}selected{% endif %}>Enabled</option>
+                                    <option value="false" {% if not config.AUTO_BAN %}selected{% endif %}>Disabled</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Update Configuration</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Banned IPs -->
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">Banned IP Addresses</h5>
+                </div>
+                <div class="card-body">
+                    {% if banned_ips %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>IP Address</th>
+                                    <th>Banned Until</th>
+                                    <th>Reason</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for ip, info in banned_ips.items() %}
+                                <tr>
+                                    <td>{{ ip }}</td>
+                                    <td>{{ info.banned_until }}</td>
+                                    <td>{{ info.reason }}</td>
+                                    <td>
+                                        <form method="POST" action="{{ url_for('admin.ddos_unban_ip') }}" class="d-inline">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                            <input type="hidden" name="ip" value="{{ ip }}">
+                                            <button type="submit" class="btn btn-sm btn-success">Unban</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">No IP addresses are currently banned.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

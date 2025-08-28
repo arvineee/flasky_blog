@@ -14,6 +14,7 @@ from app.forms import (
     AdminActionForm, VideoForm, LoginForm, RegisterForm, PostForm, CommentForm,
     ContactForm, ResetPasswordRequestForm, ResetPasswordForm, AnnouncementForm,AdsTxtForm,NewsletterForm
 )
+from .ddos_protection import ddos_protection
 
 admin_bp = Blueprint('admin', __name__)
 logger = logging.getLogger(__name__)
@@ -58,6 +59,7 @@ def send_warning_email(user_email, message_body):
 # ---------------------- Admin Dashboard ----------------------
 @admin_bp.route('/dashboard')
 @login_required
+@admin_required
 def admin_dashboard():
     if not current_user.is_admin:
         flash("Access Denied!", "danger")
@@ -65,14 +67,20 @@ def admin_dashboard():
 
     users = User.query.all()
     posts = Post.query.all()
-    active_subscribers_count = NewsletterSubscriber.query.filter_by(subscribed=True).count()
-    total_subscribers_count = NewsletterSubscriber.query.count()
-    return render_template('admin_dashboard.html', users=users, posts=posts,active_subscribers_count=active_subscribers_count,total_subscribers_count=total_subscribers_count)  
+    banned_users_count = User.query.filter_by(is_banned=True).count()
+    subscriber_count = NewsletterSubscriber.query.filter_by(subscribed=True).count()
+    
+    return render_template('admin_dashboard.html', 
+                         users=users, 
+                         posts=posts,
+                         subscriber_count=subscriber_count,
+                         banned_users_count=banned_users_count)
 
 
 # ---------------------- User Management ----------------------
 @admin_bp.route('/user/<int:user_id>/action', methods=['GET', 'POST'])
 @login_required
+@admin_required
 def admin_user_action(user_id):
     if not current_user.is_admin:
         flash("Access Denied!", "danger")
@@ -100,6 +108,7 @@ def admin_user_action(user_id):
 
 @admin_bp.route('/user/<int:user_id>/unban', methods=['GET', 'POST'])
 @login_required
+@admin_required
 def admin_unban_user(user_id):
     if not current_user.is_admin:
         flash("Access Denied!", "danger")
@@ -201,6 +210,7 @@ def admin_delete_post(post_id):
 
 @admin_bp.route('/post/<int:post_id>/block')
 @login_required
+@admin_required
 def admin_block_post(post_id):
     if not current_user.is_admin:
         flash("Access Denied!", "danger")
@@ -215,6 +225,7 @@ def admin_block_post(post_id):
 
 @admin_bp.route('/post/<int:post_id>/unblock', methods=['GET', 'POST'])
 @login_required
+@admin_required
 def admin_unblock_post(post_id):
     if not current_user.is_admin:
         flash("Access Denied!", "danger")
@@ -297,7 +308,7 @@ def edit_post(post_id):
 
         db.session.commit()
         flash("Post updated successfully", "success")
-        return redirect(url_for("admin.see_more", post_id=post_id))  # Changed to redirect to the post
+        return redirect(url_for("admin.see_more", post_id=post_id))  
 
     return render_template("edit_post.html", form=form, post=post)
 
@@ -549,3 +560,95 @@ To unsubscribe from our newsletter, click here: {unsubscribe_url}
 
     # Pass the subscriber count to the template
     return render_template('admin_newsletter.html', form=form, subscribers_count=subscribers_count)
+
+@admin_bp.route('/admin/ddos/stats')
+@ddos_protection.middleware
+def ddos_stats():
+    stats = ddos_protection.get_stats()
+    return jsonify(stats)
+
+@admin_bp.route('/admin/ddos/ban/<ip>', methods=['POST'])
+@login_required
+@admin_required
+def ban_ip(ip):
+    ban_time = int(request.form.get('ban_time', 300))  
+    ddos_protection.ban_ip(ip, ban_time)
+    flash(f'IP {ip} has been banned for {ban_time} seconds!', 'success')
+    return redirect(url_for('admin.ddos_protection'))
+
+@admin_bp.route('/admin/ddos/unban/<ip>', methods=['POST'])
+@login_required
+@admin_required
+def ddos_unban_ip(ip):
+    ddos_protection.unban_ip(ip)
+    flash(f'IP {ip} has been unbanned successfully!', 'success')
+    return redirect(url_for('admin.ddos_protection_management'))
+
+@admin_bp.route('/ddos-protection', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def ddos_protection_management():
+    #"""DDoS Protection Management Dashboard"""
+    if request.method == 'POST':
+        # Update DDoS protection configuration
+        try:
+            ddos_protection.config['MODE'] = request.form.get('protection_mode', 'active')
+            ddos_protection.config['REQUEST_LIMIT'] = int(request.form.get('request_limit', 100))
+            ddos_protection.config['WINDOW_SIZE'] = int(request.form.get('window_size', 60))
+            ddos_protection.config['BAN_TIME'] = int(request.form.get('ban_time', 300))
+            ddos_protection.config['AUTO_BAN'] = request.form.get('auto_ban') == 'true'
+
+            flash('DDoS protection settings updated successfully!', 'success')
+        except Exception as e:
+            flash(f'Error updating settings: {str(e)}', 'danger')
+
+    # Get current stats and configuration
+    stats = ddos_protection.get_stats()
+    banned_ips = {}
+
+    # Get banned IPs information
+    if ddos_protection.use_redis and ddos_protection.redis_client:
+        try:
+            # Get all banned IP keys from Redis
+            banned_keys = ddos_protection.redis_client.keys('ban:*')
+            for key in banned_keys:
+                ip = key.decode().replace('ban:', '')
+                ttl = ddos_protection.redis_client.ttl(key)
+                banned_ips[ip] = {
+                    'banned_until': datetime.utcnow().timestamp() + ttl if ttl > 0 else 0,
+                    'reason': 'Rate limit exceeded'  # Default reason
+                }
+        except Exception as e:
+            logger.error(f"Error getting banned IPs from Redis: {e}")
+    else:
+        # Get from in-memory storage
+        for ip, ban_until in ddos_protection.banned_ips.items():
+            banned_ips[ip] = {
+                'banned_until': ban_until,
+                'reason': 'Rate limit exceeded'
+            }
+
+    # Format banned until timestamps
+    for ip_info in banned_ips.values():
+        if ip_info['banned_until']:
+            ip_info['banned_until'] = datetime.fromtimestamp(ip_info['banned_until']).strftime('%Y-%m-%d %H:%M:%S')
+
+    return render_template('ddos_protection.html',
+                         stats=stats,
+                         config=ddos_protection.config,
+                         banned_ips=banned_ips,
+                         protection_mode=ddos_protection.config['MODE'])
+
+@admin_bp.route('/user/<int:user_id>/ban', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def admin_ban_user(user_id):
+    if not current_user.is_admin:
+        flash("Access Denied!", "danger")
+        return redirect(url_for('main.index'))
+
+    user = User.query.get_or_404(user_id)
+    user.is_banned = True
+    db.session.commit()
+    flash(f"User {user.username} has been banned!", "success")
+    return redirect(url_for('admin.admin_dashboard'))
