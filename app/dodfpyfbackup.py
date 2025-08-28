@@ -1,9 +1,9 @@
 import time
 import redis
-import ipaddress
 from collections import deque
 from functools import wraps
 from flask import request, jsonify, abort
+from IPy import IP
 import threading
 import logging
 from datetime import datetime, timedelta
@@ -18,6 +18,8 @@ class DDoSProtection:
         self.redis_client = None
         self.use_redis = kwargs.get('use_redis', False)
         self.redis_url = kwargs.get('redis_url', 'redis://localhost:6379/0')
+        self.requests_blocked = 0
+        self.blocked_ips_log = {}
         
         # Configuration with default values
         self.config = {
@@ -38,10 +40,6 @@ class DDoSProtection:
         self.whitelist_ips = self._parse_ip_list(self.config['WHITELIST'])
         self.blacklist_ips = self._parse_ip_list(self.config['BLACKLIST'])
         self.trusted_proxies_ips = self._parse_ip_list(self.config['TRUSTED_PROXIES'])
-        
-        # Tracking for statistics
-        self.requests_blocked = 0
-        self.blocked_ips_log = {}
         
         # Advanced detection patterns
         self.suspicious_patterns = [
@@ -69,24 +67,27 @@ class DDoSProtection:
             self.init_app(app)
     
     def _parse_ip_list(self, ip_list):
-        """Parse IP addresses and networks from a list using ipaddress"""
+        """Parse IP addresses and networks from a list"""
         parsed_ips = []
         for item in ip_list:
             try:
-                # Handle both individual IPs and networks
-                parsed_ips.append(ipaddress.ip_network(item, strict=False))
-            except ValueError as e:
+                # Check if it's a network range
+                if '/' in item:
+                    parsed_ips.append(IP(item))
+                else:
+                    parsed_ips.append(IP(item))
+            except Exception as e:
                 logger.warning(f"Invalid IP/network in list: {item} - {e}")
         return parsed_ips
     
     def _is_ip_in_list(self, ip, ip_list):
-        """Check if an IP is in a list of IPs or networks using ipaddress"""
+        """Check if an IP is in a list of IPs or networks"""
         try:
-            ip_obj = ipaddress.ip_address(ip)
+            ip_obj = IP(ip)
             for network in ip_list:
                 if ip_obj in network:
                     return True
-        except ValueError as e:
+        except Exception as e:
             logger.warning(f"Error checking IP {ip}: {e}")
         return False
     
@@ -122,16 +123,12 @@ class DDoSProtection:
             if self._is_ip_in_list(client_ip, self.blacklist_ips):
                 if self.config['ENABLE_LOGGING']:
                     logger.warning(f"Blacklisted IP attempted access: {client_ip}")
-                self.requests_blocked += 1
-                self.blocked_ips_log[client_ip] = self.blocked_ips_log.get(client_ip, 0) + 1
                 abort(403)
             
             # Check if IP is temporarily banned
             if self.is_banned(client_ip):
                 if self.config['ENABLE_LOGGING']:
                     logger.warning(f"Banned IP attempted access: {client_ip}")
-                self.requests_blocked += 1
-                self.blocked_ips_log[client_ip] = self.blocked_ips_log.get(client_ip, 0) + 1
                 abort(429)
             
             # Check request rate
@@ -140,8 +137,6 @@ class DDoSProtection:
                     self.ban_ip(client_ip, self.config['BAN_TIME'])
                 if self.config['ENABLE_LOGGING']:
                     logger.warning(f"Rate limit exceeded for IP: {client_ip}")
-                self.requests_blocked += 1
-                self.blocked_ips_log[client_ip] = self.blocked_ips_log.get(client_ip, 0) + 1
                 abort(429)
             
             # Check for suspicious patterns in request
@@ -150,8 +145,6 @@ class DDoSProtection:
                     self.ban_ip(client_ip, self.config['BAN_TIME'] * 2)  # Longer ban
                 if self.config['ENABLE_LOGGING']:
                     logger.warning(f"Suspicious request pattern from IP: {client_ip}")
-                self.requests_blocked += 1
-                self.blocked_ips_log[client_ip] = self.blocked_ips_log.get(client_ip, 0) + 1
                 abort(403)
     
     def is_rate_limited(self, ip):
@@ -280,43 +273,40 @@ class DDoSProtection:
                     count = self.redis_client.get(f"ddos:{ip}")
                     banned = self.redis_client.exists(f"ban:{ip}")
                     return {
-                        'ip': ip,
-                        'request_count': int(count) if count else 0,
-                        'banned': bool(banned)
-                    }
+                            'ip': ip,
+                            'request_count': int(count) if count else 0,
+                            'banned': bool(banned)
+                            }
                 except Exception as e:
                     logger.error(f"Redis stats error: {e}")
-            
-            # In-memory stats
-            request_count = len(self.request_logs.get(ip, []))
-            banned = ip in self.banned_ips and time.time() < self.banned_ips[ip]
-            
-            return {
-                'ip': ip,
-                'request_count': request_count,
-                'banned': banned
-            }
+                # In-memory stats
+                request_count = len(self.request_logs.get(ip, []))
+                banned = ip in self.banned_ips and time.time() < self.banned_ips[ip]
+                return {
+                            'ip': ip,
+                            'request_count': request_count,
+                            'banned': banned
+                            }
         else:
-            # Return overall stats with the fields your template expects
-            currently_banned = len([ip for ip in self.banned_ips if time.time() < self.banned_ips[ip]])
-            
-            # For Redis, we need to count banned IPs differently
-            if self.use_redis and self.redis_client:
-                try:
-                    banned_keys = self.redis_client.keys('ban:*')
-                    currently_banned = len(banned_keys)
-                except Exception as e:
-                    logger.error(f"Error counting banned IPs from Redis: {e}")
-            
-            return {
-                'total_tracked_ips': len(self.request_logs),
-                'currently_banned': currently_banned,
-                'ips_banned': currently_banned,
-                'ips_tracked': len(self.request_logs),
-                'requests_blocked': self.requests_blocked,
-                'mode': self.config['MODE'],
-                'using_redis': self.use_redis
-            }
+                    # Return overall stats with the fields your template expects
+                    currently_banned = len([ip for ip in self.banned_ips if time.time() < self.banned_ips[ip]])
+
+                    # For Redis, we need to count banned IPs differently
+                    if self.use_redis and self.redis_client:
+                        try:
+                            banned_keys = self.redis_client.keys('ban:*')
+                            currently_banned = len(banned_keys)
+                        except Exception as e:
+                            logger.error(f"Error counting banned IPs from Redis: {e}")
+                            return {
+                                    'total_tracked_ips': len(self.request_logs),
+                                    'currently_banned': currently_banned,
+                                    'ips_banned': currently_banned,  # Add this for template compatibility
+                                    'ips_tracked': len(self.request_logs),  # Add this for template compatibility
+                                    'requests_blocked': 'N/A',  # You'll need to implement request blocking tracking
+                                    'mode': self.config['MODE'],
+                                    'using_redis': self.use_redis
+                                    }
     
     def middleware(self, f):
         """Decorator for applying DDoS protection to specific routes"""
