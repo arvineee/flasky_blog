@@ -13,7 +13,8 @@ admin_bp = Blueprint('admin', __name__)
 def subscribe():
     form = SubscribeForm()
     if not current_user.is_authenticated:
-        return redirect(url_for('login'))
+        return redirect(url_for('main.login'))
+    
     if request.method == 'POST':
         email = request.form.get('email')
         if not email:
@@ -30,15 +31,101 @@ def subscribe():
         db.session.add(new_subscriber)
         db.session.commit()
 
-        # Send a welcome email
-        msg = Message("Welcome to our Newsletter!", recipients=[email])
-        msg.body = "Thank you for subscribing to our newsletter. Stay tuned for updates!"
+        # Send a professional HTML welcome email
+        unsubscribe_link = url_for('newsletter.unsubscribe', subscriber_id=new_subscriber.id, _external=True)
+        msg = Message(
+            "Welcome to Arval Blog  Newsletter",
+            recipients=[email]
+        )
+        msg.html = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Welcome to [Your Website Name]</title>
+    <style>
+        body {{
+            margin: 0;
+            padding: 0;
+            font-family: 'Helvetica', Arial, sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+        }}
+        .email-container {{
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }}
+        .header {{
+            background-color: #007bff;
+            color: #ffffff;
+            text-align: center;
+            padding: 30px 20px;
+        }}
+        .header img {{
+            max-width: 120px;
+            margin-bottom: 10px;
+        }}
+        .content {{
+            padding: 30px 20px;
+            line-height: 1.6;
+        }}
+        .content h1 {{
+            color: #2c3e50;
+        }}
+        .button {{
+            display: inline-block;
+            padding: 12px 25px;
+            margin: 20px 0;
+            background-color: #007bff;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 5px;
+        }}
+        .footer {{
+            background-color: #f1f1f1;
+            text-align: center;
+            padding: 15px 20px;
+            font-size: 12px;
+            color: #888888;
+        }}
+        .footer a {{
+            color: #007bff;
+            text-decoration: none;
+        }}
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+    <img src="{{ url_for('static', filename='logo.png') }}" alt="Arval Blog Logo">
+    <h2>Welcome to Arval Blog</h2>
+        </div>
+        <div class="content">
+            <h1>Hello {email},</h1>
+            <p>Thank you for subscribing to our newsletter! We're thrilled to have you as part of our community.</p>
+            <p>You'll now receive regular updates, expert insights, and exclusive content straight to your inbox. We promise to deliver value with every email.</p>
+            <p>Explore our website and stay updated with the latest content:</p>
+            <a href="http://localhost:5000" class="button">Visit Our Website</a>
+            <p>We're always here if you have questions or suggestions—just reply to this email!</p>
+            <p>Best regards,<br>The Arval Blog Team</p>
+        </div>
+        <div class="footer">
+            <p>If you did not subscribe, you can safely ignore this email or <a href="{unsubscribe_link}">unsubscribe here</a>.</p>
+        </div>
+    </div>
+</body>
+</html>
+"""
         mail.send(msg)
 
         flash("Subscription successful! Check your email for confirmation.", "success")
-        return redirect(url_for('index'))
+        return redirect(url_for('main.index'))
 
-    return render_template('subscribe.html',form=form)
+    return render_template('subscribe.html', form=form)
 
 
 # Unsubscribe from Newsletter
@@ -50,7 +137,7 @@ def unsubscribe(subscriber_id):
     db.session.commit()
 
     flash(f"{subscriber.email} has been unsubscribed from all newsletters.", "success")
-    return redirect(url_for('index'))
+    return redirect(url_for('main.index'))
 
 
 # Bulk Emailing
@@ -71,8 +158,93 @@ def send_bulk_email():
 
     for subscriber in subscribers:
         unsubscribe_link = url_for('newsletter.unsubscribe', subscriber_id=subscriber.id, _external=True)
-        msg = Message(subject, recipients=[subscriber.email])
-        msg.body = f"{message_body}\n\nTo unsubscribe, click here: {unsubscribe_link}"
+        msg = Message(
+            subject="Welcome to [Your Website Name] Newsletter",
+            recipients=[subscriber.email]
+        )
+        msg.html = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Welcome to [Your Website Name]</title>
+    <style>
+        body {{
+            margin: 0;
+            padding: 0;
+            font-family: 'Helvetica', Arial, sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+        }}
+        .email-container {{
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }}
+        .header {{
+            background-color: #007bff;
+            color: #ffffff;
+            text-align: center;
+            padding: 30px 20px;
+        }}
+        .header img {{
+            max-width: 120px;
+            margin-bottom: 10px;
+        }}
+        .content {{
+            padding: 30px 20px;
+            line-height: 1.6;
+        }}
+        .content h1 {{
+            color: #2c3e50;
+        }}
+        .button {{
+            display: inline-block;
+            padding: 12px 25px;
+            margin: 20px 0;
+            background-color: #007bff;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 5px;
+        }}
+        .footer {{
+            background-color: #f1f1f1;
+            text-align: center;
+            padding: 15px 20px;
+            font-size: 12px;
+            color: #888888;
+        }}
+        .footer a {{
+            color: #007bff;
+            text-decoration: none;
+        }}
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <img src="https://yourwebsite.com/logo.png" alt="[Your Website Name] Logo">
+            <h2>Welcome to [Your Website Name]</h2>
+        </div>
+        <div class="content">
+            <h1>Hello {subscriber.email},</h1>
+            <p>Thank you for subscribing to our newsletter! We're thrilled to have you as part of our community.</p>
+            <p>You'll now receive regular updates, expert insights, and exclusive content straight to your inbox. We promise to deliver value with every email.</p>
+            <p>Explore our website and stay updated with the latest content:</p>
+            <a href="https://yourwebsite.com" class="button">Visit Our Website</a>
+            <p>We're always here if you have questions or suggestions—just reply to this email!</p>
+            <p>Best regards,<br>The [Your Website Name] Team</p>
+        </div>
+        <div class="footer">
+            <p>If you did not subscribe, you can safely ignore this email or <a href="{unsubscribe_link}">unsubscribe here</a>.</p>
+        </div>
+    </div>
+</body>
+</html>
+"""
         mail.send(msg)
 
     flash("Bulk emails sent successfully!", "success")
@@ -87,6 +259,7 @@ def create_post():
         flash("Access Denied!", "danger")
         return redirect(url_for('main.index'))
 
+    from app.forms import PostForm  # Import here to avoid circular imports
     form = PostForm()
 
     if form.validate_on_submit():
@@ -111,7 +284,3 @@ def create_post():
         return redirect(url_for('admin.admin_dashboard'))
 
     return render_template('create_post.html', form=form)
-
-
-
-

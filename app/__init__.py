@@ -159,47 +159,71 @@ def create_app():
             category_structure.append({'category': cat, 'subcategories': subcats})
         return dict(category_structure=category_structure)
 
-    # CLI command to create admin
+    # CLI command to create admin - IMPROVED VERSION
     @app.cli.command("create-admin")
     @with_appcontext
     def create_admin():
-        from app.models import User  # Import here to avoid circular import
+        """Create a new admin user with proper validation"""
+        from app.models import User
+        
         print("=== Create a New Admin User ===")
 
         while True:
             username = input("Username: ").strip()
             if username:
-                break
+                # Check if username already exists
+                if User.query.filter_by(username=username).first():
+                    print("Username already exists. Please choose a different one.")
+                else:
+                    break
+            else:
+                print("Username cannot be empty.")
+
         while True:
             email = input("Email: ").strip()
             if email:
-                break
-        while True:
-            password = getpass.getpass("Password: ")
-            password_confirm = getpass.getpass("Confirm Password: ")
-            if password == password_confirm:
-                break
+                # Check if email already exists
+                if User.query.filter_by(email=email).first():
+                    print("Email already exists. Please use a different email.")
+                else:
+                    break
             else:
+                print("Email cannot be empty.")
+
+        while True:
+            password = getpass.getpass("Password: ").strip()
+            password_confirm = getpass.getpass("Confirm Password: ").strip()
+            
+            if not password:
+                print("Password cannot be empty.")
+                continue
+                
+            if len(password) < 6:
+                print("Password must be at least 6 characters.")
+                continue
+                
+            if password != password_confirm:
                 print("Passwords do not match. Try again.")
+            else:
+                break
 
-        # Check if user already exists
-        if User.query.filter_by(username=username).first() or User.query.filter_by(email=email).first():
-            print("User with this username or email already exists!")
-            return
-
+        # Create the admin user
         new_user = User(
             username=username,
             email=email,
             is_admin=True
         )
         new_user.set_password(password)
+        
         db.session.add(new_user)
         try:
             db.session.commit()
-            print(f"Admin user '{username}' created successfully!")
+            print(f"✅ Admin user '{username}' created successfully!")
+            print(f"   Email: {email}")
+            print(f"   Admin privileges: Yes")
         except Exception as e:
             db.session.rollback()
-            print(f"Error creating admin user: {e}")
+            print(f"❌ Error creating admin user: {e}")
 
     # CLI command to initialize database
     @app.cli.command("init-db")
@@ -235,5 +259,23 @@ def create_app():
         except Exception as e:
             db.session.rollback()
             print(f"Error initializing database: {e}")
+
+    # CLI command to list all users
+    @app.cli.command("list-users")
+    @with_appcontext
+    def list_users():
+        """List all users in the database"""
+        from app.models import User
+        
+        users = User.query.all()
+        if not users:
+            print("No users found in the database.")
+            return
+            
+        print("=== Users ===")
+        for user in users:
+            admin_status = "Yes" if user.is_admin else "No"
+            confirmed_status = "Yes" if user.is_confirmed else "No"
+            print(f"ID: {user.id} | Username: {user.username} | Email: {user.email} | Admin: {admin_status} | Confirmed: {confirmed_status}")
 
     return app

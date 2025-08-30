@@ -1,0 +1,37 @@
+2025-08-28 17:50:32.381 EAT [11519] LOG:  starting PostgreSQL 17.0 on aarch64-unknown-linux-android, compiled by Android (12470979, +pgo, +bolt, +lto, +mlgo, based on r522817c) clang version 18.0.3 (https://android.googlesource.com/toolchain/llvm-project d8003a456d14a3deb8054cdaa529ffbf02d9b262), 64-bit
+2025-08-28 17:50:32.383 EAT [11519] LOG:  listening on IPv4 address "127.0.0.1", port 5432
+2025-08-28 17:50:32.385 EAT [11519] LOG:  listening on Unix socket "/data/data/com.termux/files/usr/tmp/.s.PGSQL.5432"
+2025-08-28 17:50:32.395 EAT [11525] LOG:  database system was shut down at 2025-08-28 17:47:45 EAT
+2025-08-28 17:50:32.415 EAT [11519] LOG:  database system is ready to accept connections
+2025-08-28 17:55:32.402 EAT [11523] LOG:  checkpoint starting: time
+2025-08-28 17:57:09.519 EAT [11523] LOG:  checkpoint complete: wrote 968 buffers (5.9%); 0 WAL file(s) added, 0 removed, 0 recycled; write=96.925 s, sync=0.164 s, total=97.118 s; sync files=313, longest=0.010 s, average=0.001 s; distance=4479 kB, estimate=4479 kB; lsn=0/194DE38, redo lsn=0/194DDA8
+2025-08-28 18:00:32.535 EAT [11523] LOG:  checkpoint starting: time
+2025-08-28 18:00:37.128 EAT [11523] LOG:  checkpoint complete: wrote 46 buffers (0.3%); 0 WAL file(s) added, 0 removed, 0 recycled; write=4.539 s, sync=0.030 s, total=4.593 s; sync files=37, longest=0.010 s, average=0.001 s; distance=147 kB, estimate=4046 kB; lsn=0/1972B48, redo lsn=0/1972AF0
+2025-08-28 18:05:32.226 EAT [11523] LOG:  checkpoint starting: time
+2025-08-28 18:05:42.872 EAT [11523] LOG:  checkpoint complete: wrote 106 buffers (0.6%); 0 WAL file(s) added, 0 removed, 0 recycled; write=10.576 s, sync=0.041 s, total=10.647 s; sync files=95, longest=0.003 s, average=0.001 s; distance=430 kB, estimate=3684 kB; lsn=0/19DE6F0, redo lsn=0/19DE660
+2025-08-28 18:31:17.719 EAT [11523] LOG:  checkpoint starting: time
+2025-08-28 18:31:19.582 EAT [11523] LOG:  checkpoint complete: wrote 18 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.717 s, sync=0.110 s, total=1.864 s; sync files=15, longest=0.016 s, average=0.008 s; distance=117 kB, estimate=3327 kB; lsn=0/19FBE30, redo lsn=0/19FBDD8
+2025-08-28 18:36:17.587 EAT [11523] LOG:  checkpoint starting: time
+2025-08-28 18:36:18.353 EAT [11523] LOG:  checkpoint complete: wrote 9 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.719 s, sync=0.015 s, total=0.767 s; sync files=6, longest=0.007 s, average=0.003 s; distance=249 kB, estimate=3020 kB; lsn=0/1A3A3E8, redo lsn=0/1A3A390
+2025-08-28 18:42:53.078 EAT [11523] LOG:  checkpoint starting: time
+2025-08-28 18:42:53.906 EAT [11523] LOG:  checkpoint complete: wrote 8 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.712 s, sync=0.013 s, total=0.828 s; sync files=6, longest=0.006 s, average=0.003 s; distance=23 kB, estimate=2720 kB; lsn=0/1A40160, redo lsn=0/1A40108
+2025-08-28 19:05:04.440 EAT [11523] LOG:  checkpoint starting: time
+2025-08-28 19:05:04.981 EAT [11523] LOG:  checkpoint complete: wrote 6 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.511 s, sync=0.013 s, total=0.542 s; sync files=6, longest=0.008 s, average=0.003 s; distance=1 kB, estimate=2448 kB; lsn=0/1A408B0, redo lsn=0/1A40858
+2025-08-28 19:10:05.078 EAT [11523] LOG:  checkpoint starting: time
+2025-08-28 19:10:06.433 EAT [11523] LOG:  checkpoint complete: wrote 14 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.319 s, sync=0.010 s, total=1.355 s; sync files=11, longest=0.002 s, average=0.001 s; distance=5 kB, estimate=2204 kB; lsn=0/1A41CE8, redo lsn=0/1A41C90
+2025-08-28 19:15:43.060 EAT [11523] LOG:  checkpoint starting: time
+2025-08-28 19:15:43.904 EAT [11523] LOG:  checkpoint complete: wrote 9 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.809 s, sync=0.016 s, total=0.845 s; sync files=9, longest=0.006 s, average=0.002 s; distance=7 kB, estimate=1984 kB; lsn=0/1A43AB0, redo lsn=0/1A43A58
+2025-08-28 19:53:17.256 EAT [11523] LOG:  checkpoint starting: time
+2025-08-28 19:53:18.213 EAT [11523] LOG:  checkpoint complete: wrote 10 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.914 s, sync=0.016 s, total=0.957 s; sync files=10, longest=0.010 s, average=0.002 s; distance=22 kB, estimate=1788 kB; lsn=0/1A49628, redo lsn=0/1A495D0
+2025-08-28 20:03:17.336 EAT [11523] LOG:  checkpoint starting: time
+2025-08-28 20:03:18.684 EAT [11523] LOG:  checkpoint complete: wrote 14 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.310 s, sync=0.015 s, total=1.349 s; sync files=12, longest=0.007 s, average=0.002 s; distance=28 kB, estimate=1612 kB; lsn=0/1A50710, redo lsn=0/1A506B8
+2025-08-28 20:08:17.784 EAT [11523] LOG:  checkpoint starting: time
+2025-08-28 20:08:18.331 EAT [11523] LOG:  checkpoint complete: wrote 6 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.512 s, sync=0.012 s, total=0.547 s; sync files=6, longest=0.008 s, average=0.002 s; distance=5 kB, estimate=1451 kB; lsn=0/1A51B40, redo lsn=0/1A51AE8
+2025-08-28 20:13:17.428 EAT [11523] LOG:  checkpoint starting: time
+2025-08-28 20:13:17.969 EAT [11523] LOG:  checkpoint complete: wrote 6 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.507 s, sync=0.013 s, total=0.542 s; sync files=6, longest=0.007 s, average=0.003 s; distance=5 kB, estimate=1307 kB; lsn=0/1A531D8, redo lsn=0/1A53180
+2025-08-30 10:06:18.735 EAT [11523] LOG:  checkpoint starting: time
+2025-08-30 10:06:19.631 EAT [11523] LOG:  checkpoint complete: wrote 9 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.833 s, sync=0.013 s, total=0.897 s; sync files=8, longest=0.007 s, average=0.002 s; distance=46 kB, estimate=1180 kB; lsn=0/1A5EAA8, redo lsn=0/1A5EA50
+2025-08-30 10:11:18.731 EAT [11523] LOG:  checkpoint starting: time
+2025-08-30 10:11:19.470 EAT [11523] LOG:  checkpoint complete: wrote 8 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.711 s, sync=0.007 s, total=0.739 s; sync files=8, longest=0.002 s, average=0.001 s; distance=9 kB, estimate=1063 kB; lsn=0/1A60FA8, redo lsn=0/1A60F50
+2025-08-30 10:16:18.573 EAT [11523] LOG:  checkpoint starting: time
+2025-08-30 10:16:18.706 EAT [11523] LOG:  checkpoint complete: wrote 2 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.107 s, sync=0.006 s, total=0.134 s; sync files=2, longest=0.003 s, average=0.003 s; distance=5 kB, estimate=957 kB; lsn=0/1A623B8, redo lsn=0/1A62360
