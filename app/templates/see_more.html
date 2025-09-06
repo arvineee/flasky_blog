@@ -1,111 +1,354 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="container mt-5">
+<div class="container mt-4">
     <div class="row justify-content-center">
-        <div class="col-lg-8 col-md-10">
-            <div class="card shadow-lg border-0">
+        <div class="col-lg-9 col-xl-8">
+            <!-- Article Header -->
+            <div class="article-header mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <a href="{{ url_for('main.index') }}" class="btn btn-outline-primary rounded-pill back-btn">
+                        <i class="bi bi-arrow-left me-2"></i>Back to Posts
+                    </a>
+                    <a class='btn btn-primary rounded-pill share-btn' href="{{ url_for('main.share_post', post_id=post.id) }}">
+                        <i class="bi bi-share me-2"></i>Share
+                    </a>
+                </div>
+                
                 {% if post.image_url %}
-                    <img src="{{ url_for('static', filename='images/' + post.image_url) }}" class="card-img-top rounded-top" alt="{{ post.title }}">
+                <div class="article-image-container rounded-4 overflow-hidden shadow-sm mb-4">
+                    <img src="{{ url_for('static', filename='images/' + post.image_url) }}" class="article-image" alt="{{ post.title }}">
+                </div>
                 {% endif %}
-                <div class="card-body p-5">
-                    <h1 class="card-title text-center text-dark fw-bold display-4">{{ post.title }}</h1>
-                    <p class="text-muted text-center"><small>By <strong>{{ post.author.username }}</strong> on <span>{{ post.date_pub }}</span></small></p>
-                    <p class="text-muted text-center"><small>Category: <strong>{{ post.category }}</strong></small></p>
-                    <hr class="my-4">
-                    <div class="content text-justify text-secondary lead mb-4">
-                        {{ post.desc | safe }}
-                    </div>
-
-                    <!-- Action buttons container -->
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <!-- Like Button -->
-                        <button class="btn btn-outline-danger like-btn" data-post-id="{{ post.id }}">
-                            ❤️ Like (<span id="like-count-{{ post.id }}">{{ post.likes.count() }}</span>)
-                        </button>
-
-                        <!-- Edit and Delete buttons for post author -->
-                        {% if current_user.is_authenticated and (current_user.is_admin or post.author == current_user) %}
-                        <div class="btn-group">
-                            {% if current_user.is_authenticated and current_user.is_admin %}
-                                <a class="btn btn-primary btn-sm" href="{{ url_for('admin.edit_post', post_id=post.id) }}">Edit Post</a>
-                            {% endif %}
-                            
-                            {% if post.author == current_user %}
-                                <form method="POST" action="{{ url_for('main.delete_post', post_id=post.id) }}" class="d-inline">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this post?')">Delete Post</button>
-                                </form>
-                            {% endif %}
-                        </div>
-                        {% endif %}
-                    </div>
-
-                    <form action="{{ url_for('main.add_comment', post_id=post.id) }}" method="POST">
-                        {{ form.hidden_tag() }}
-                        <div class="form-group">
-                            {{ form.comment(class="form-control", placeholder="Add a comment...") }}
-                        </div>
-                        <button type="submit" class="btn btn-primary mt-3">Submit Comment</button>
-                    </form>
-                    
-                    <!-- Start of comments section -->
-                    <div class="card mt-4">
-                        <div class="card-body">
-                            {% for comment in comments %}
-                                <div class="mb-3">
-                                    <p class="mb-0"><strong>{{ comment.user.username }}</strong> on {{ comment.date_posted }}:</p>
-                                    <p>{{ comment.content }}</p>
-                                    {% if current_user.is_authenticated and (current_user.is_admin or comment.user == current_user) %}
-                                        <form action="{{ url_for('main.delete_comment', comment_id=comment.id) }}" method="POST" class="d-inline">
-                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                            <button type="submit" class="btn btn-danger btn-sm"
-                                                    onclick="return confirm('Are you sure you want to delete this comment?')">
-                                                Delete
-                                            </button>
-                                        </form>
-                                    {% endif %}
-                                    <hr class="my-2">
+                
+                <div class="article-meta mb-3">
+                    <h1 class="article-title fw-bold mb-3">{{ post.title }}</h1>
+                    <div class="d-flex flex-wrap align-items-center text-muted">
+                        <div class="d-flex align-items-center me-4 mb-2">
+                            <div class="avatar-sm me-2">
+                                <div class="avatar-initials bg-primary text-white rounded-circle d-flex align-items-center justify-content-center">
+                                    {{ post.author.username[0]|upper }}
                                 </div>
-                            {% endfor %}
-                            {% if comments|length == 0 %}
-                                <p class="text-muted text-center">No comments yet. Be the first to comment!</p>
-                            {% endif %}
+                            </div>
+                            <span>By <strong class="text-dark">{{ post.author.username }}</strong></span>
                         </div>
-                    </div>
-                    <!-- End of comments section -->
-
-                    <div class="d-flex justify-content-between mt-4">
-                        <a href="{{ url_for('main.index') }}" class="btn btn-outline-primary btn-lg rounded-pill">Back to Posts</a>
-                        <a class='btn btn-outline-primary btn-lg rounded-pill' href="{{ url_for('main.share_post', post_id=post.id) }}">Share</a>
+                        <div class="d-flex align-items-center me-4 mb-2">
+                            <i class="bi bi-calendar3 me-1"></i>
+                            <span>{{ post.date_pub }}</span>
+                        </div>
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="bi bi-tag me-1"></i>
+                            <span class="badge bg-light text-dark ms-1">{{ post.category }}</span>
+                        </div>
                     </div>
                 </div>
+            </div>
+
+            <!-- Article Content -->
+            <article class="article-content shadow-sm rounded-4 p-4 p-md-5 mb-5">
+                <div class="content-text">
+                    {{ post.desc | safe }}
+                </div>
+                
+                <!-- Action buttons -->
+                <div class="d-flex justify-content-between align-items-center mt-5 pt-3 border-top">
+                    <!-- Like Button -->
+                    <button class="btn like-btn rounded-pill px-4" data-post-id="{{ post.id }}">
+                        <span class="like-icon">❤️</span>
+                        <span class="like-text">Like</span>
+                        <span id="like-count-{{ post.id }}" class="like-count ms-1">{{ post.likes.count() }}</span>
+                    </button>
+
+                    <!-- Edit and Delete buttons for post author -->
+                    {% if current_user.is_authenticated and (current_user.is_admin or post.author == current_user) %}
+                    <div class="btn-group">
+                        {% if current_user.is_authenticated and current_user.is_admin %}
+                            <a class="btn btn-outline-primary btn-sm rounded-pill me-2" href="{{ url_for('admin.edit_post', post_id=post.id) }}">
+                                <i class="bi bi-pencil me-1"></i>Edit
+                            </a>
+                        {% endif %}
+                        
+                        {% if post.author == current_user %}
+                            <form method="POST" action="{{ url_for('main.delete_post', post_id=post.id) }}" class="d-inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill" onclick="return confirm('Are you sure you want to delete this post?')">
+                                    <i class="bi bi-trash me-1"></i>Delete
+                                </button>
+                            </form>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </article>
+
+            <!-- Comments Section -->
+            <div class="comments-section rounded-4 shadow-sm p-4 p-md-5 mb-5">
+                <h3 class="mb-4">Comments ({{ comments|length }})</h3>
+                
+                <form action="{{ url_for('main.add_comment', post_id=post.id) }}" method="POST" class="comment-form mb-5">
+                    {{ form.hidden_tag() }}
+                    <div class="form-group">
+                        {{ form.comment(class="form-control form-control-lg", placeholder="Share your thoughts...", rows="3") }}
+                    </div>
+                    <button type="submit" class="btn btn-primary mt-3 rounded-pill px-4">
+                        <i class="bi bi-send me-2"></i>Post Comment
+                    </button>
+                </form>
+                
+                {% if comments|length > 0 %}
+                <div class="comments-list">
+                    {% for comment in comments %}
+                    <div class="comment-card mb-4 p-3 rounded-3">
+                        <div class="d-flex">
+                            <div class="avatar-sm me-3">
+                                <div class="avatar-initials bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center">
+                                    {{ comment.user.username[0]|upper }}
+                                </div>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <h6 class="mb-0 fw-bold">{{ comment.user.username }}</h6>
+                                    <small class="text-muted">{{ comment.date_posted }}</small>
+                                </div>
+                                <p class="mb-2 text-dark">{{ comment.content }}</p>
+                                {% if current_user.is_authenticated and (current_user.is_admin or comment.user == current_user) %}
+                                    <form action="{{ url_for('main.delete_comment', comment_id=comment.id) }}" method="POST" class="d-inline">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill"
+                                                onclick="return confirm('Are you sure you want to delete this comment?')">
+                                            <i class="bi bi-trash me-1"></i>Delete
+                                        </button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="bi bi-chat-dots display-4 text-muted mb-3"></i>
+                    <p class="text-muted">No comments yet. Be the first to share your thoughts!</p>
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>
 </div>
 
+<!-- Share Modal -->
 <div class="modal fade" id="shareModal" tabindex="-1" aria-labelledby="shareModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="shareModalLabel">Share This Post</h5>
+        <div class="modal-content rounded-4">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold" id="shareModalLabel">Share This Post</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <p class="text-muted">Share this post with your friends and followers:</p>
-                <div class="d-flex justify-content-around">
-                    <a href="#" class="btn btn-outline-primary rounded-circle"><i class="bi bi-facebook"></i></a>
-                    <a href="#" class="btn btn-outline-primary rounded-circle"><i class="bi bi-twitter"></i></a>
-                    <a href="#" class="btn btn-outline-danger rounded-circle"><i class="bi bi-envelope"></i></a>
-                    <a href="#" class="btn btn-outline-success rounded-circle"><i class="bi bi-whatsapp"></i></a>
+                <p class="text-muted mb-4">Share this post with your friends and followers:</p>
+                <div class="d-flex justify-content-around mb-4">
+                    <a href="#" class="btn btn-share facebook rounded-circle p-3">
+                        <i class="bi bi-facebook fs-4"></i>
+                    </a>
+                    <a href="#" class="btn btn-share twitter rounded-circle p-3">
+                        <i class="bi bi-twitter fs-4"></i>
+                    </a>
+                    <a href="#" class="btn btn-share email rounded-circle p-3">
+                        <i class="bi bi-envelope fs-4"></i>
+                    </a>
+                    <a href="#" class="btn btn-share whatsapp rounded-circle p-3">
+                        <i class="bi bi-whatsapp fs-4"></i>
+                    </a>
+                </div>
+                <div class="input-group">
+                    <input type="text" class="form-control" value="{{ request.url }}" id="shareUrl" readonly>
+                    <button class="btn btn-primary" type="button" id="copyUrlBtn">Copy Link</button>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- JavaScript for like button functionality -->
+<!-- Toast for like notifications -->
+<div class="toast align-items-center text-white bg-primary border-0 position-fixed bottom-0 end-0 m-3" id="likeToast" role="alert" aria-live="assertive" aria-atomic="true">
+    <div class="d-flex">
+        <div class="toast-body"></div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+    </div>
+</div>
+
+<style>
+    :root {
+        --primary-color: #4e73df;
+        --secondary-color: #6c757d;
+        --light-bg: #f8f9fa;
+        --card-shadow: 0 5px 20px rgba(0,0,0,0.05);
+        --transition: all 0.3s ease;
+    }
+    
+    body {
+        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        background-color: #fafafa;
+    }
+    
+    .article-header {
+        padding-top: 1rem;
+    }
+    
+    .article-image-container {
+        transition: var(--transition);
+    }
+    
+    .article-image {
+        width: 100%;
+        height: 400px;
+        object-fit: cover;
+        transition: transform 0.5s ease;
+    }
+    
+    .article-image:hover {
+        transform: scale(1.02);
+    }
+    
+    .article-title {
+        font-size: 2.5rem;
+        line-height: 1.2;
+        color: #212529;
+    }
+    
+    .article-content {
+        background: white;
+        border: none;
+    }
+    
+    .content-text {
+        font-size: 1.1rem;
+        color: #444;
+        line-height: 1.8;
+    }
+    
+    .content-text p {
+        margin-bottom: 1.5rem;
+    }
+    
+    .content-text img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 12px;
+        margin: 2rem 0;
+    }
+    
+    .like-btn {
+        background: #fff;
+        border: 1px solid #e6e6e6;
+        transition: var(--transition);
+        display: flex;
+        align-items: center;
+    }
+    
+    .like-btn:hover {
+        background: #fff5f5;
+        border-color: #ffcccc;
+        transform: translateY(-2px);
+    }
+    
+    .comments-section {
+        background: white;
+        border: none;
+    }
+    
+    .comment-card {
+        background: var(--light-bg);
+        transition: var(--transition);
+    }
+    
+    .comment-card:hover {
+        background: #f0f4f8;
+        transform: translateX(5px);
+    }
+    
+    .avatar-sm {
+        width: 40px;
+        height: 40px;
+        flex-shrink: 0;
+    }
+    
+    .avatar-initials {
+        width: 100%;
+        height: 100%;
+        font-weight: 600;
+    }
+    
+    .btn-share {
+        transition: var(--transition);
+    }
+    
+    .btn-share.facebook {
+        color: #3b5998;
+        border: 1px solid #3b5998;
+    }
+    
+    .btn-share.twitter {
+        color: #1da1f2;
+        border: 1px solid #1da1f2;
+    }
+    
+    .btn-share.email {
+        color: #ea4335;
+        border: 1px solid #ea4335;
+    }
+    
+    .btn-share.whatsapp {
+        color: #25d366;
+        border: 1px solid #25d366;
+    }
+    
+    .btn-share:hover {
+        transform: translateY(-3px);
+        color: white;
+    }
+    
+    .btn-share.facebook:hover {
+        background: #3b5998;
+    }
+    
+    .btn-share.twitter:hover {
+        background: #1da1f2;
+    }
+    
+    .btn-share.email:hover {
+        background: #ea4335;
+    }
+    
+    .btn-share.whatsapp:hover {
+        background: #25d366;
+    }
+    
+    .back-btn, .share-btn {
+        transition: var(--transition);
+    }
+    
+    .back-btn:hover, .share-btn:hover {
+        transform: translateY(-2px);
+    }
+    
+    @media (max-width: 768px) {
+        .article-title {
+            font-size: 2rem;
+        }
+        
+        .article-content, .comments-section {
+            padding: 1.5rem !important;
+        }
+        
+        .article-image {
+            height: 250px;
+        }
+    }
+</style>
+
 <script>
 document.addEventListener("DOMContentLoaded", function() {
     const likeButtons = document.querySelectorAll(".like-btn");
@@ -114,6 +357,9 @@ document.addEventListener("DOMContentLoaded", function() {
         button.addEventListener("click", function() {
             const postId = this.getAttribute("data-post-id");
             const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute("content");
+            
+            // Add animation to like button
+            this.classList.add('liking');
             
             fetch(`/like_post/${postId}`, {
                 method: "POST",
@@ -129,6 +375,16 @@ document.addEventListener("DOMContentLoaded", function() {
                     // Update like count
                     document.getElementById(`like-count-${postId}`).textContent = data.like_count;
                     
+                    // Update like button appearance based on action
+                    if (data.action === 'liked') {
+                        button.classList.add('liked');
+                    } else {
+                        button.classList.remove('liked');
+                    }
+                    
+                    // Remove animation class
+                    button.classList.remove('liking');
+                    
                     // Show toast notification
                     const toast = new bootstrap.Toast(document.getElementById('likeToast'));
                     const toastBody = document.querySelector('#likeToast .toast-body');
@@ -141,8 +397,24 @@ document.addEventListener("DOMContentLoaded", function() {
             .catch(error => {
                 console.error("Error:", error);
                 alert("An error occurred while processing your request.");
+                button.classList.remove('liking');
             });
         });
+    });
+    
+    // Copy URL functionality for share modal
+    document.getElementById('copyUrlBtn')?.addEventListener('click', function() {
+        const copyText = document.getElementById("shareUrl");
+        copyText.select();
+        copyText.setSelectionRange(0, 99999);
+        document.execCommand("copy");
+        
+        // Change button text temporarily
+        const originalText = this.textContent;
+        this.textContent = "Copied!";
+        setTimeout(() => {
+            this.textContent = originalText;
+        }, 2000);
     });
 });
 </script>

@@ -1,0 +1,183 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <!-- Sidebar for Announcements -->
+        <div class="col-lg-4 col-md-5 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="card-title mb-0">Latest Announcements</h4>
+                </div>
+                <div class="card-body">
+                    {% for announcement in announcements %}
+                        <div class="mb-3">
+                            <h5>{{ announcement.title }}</h5>
+                            <small class="text-muted">Posted by {{ announcement.author.username }} on {{ announcement.date_created }}</small>
+                            <p class="card-text">{{ announcement.content | truncate(100) }}</p>
+                            <a href="{{ url_for('main.announcement_detail', announcement_id=announcement.id) }}" class="btn btn-outline-primary btn-sm">Read More</a>
+
+                            <!-- Delete Button -->
+{% if current_user.is_authenticated and current_user.is_admin %}
+    <form action="{{ url_for('admin.delete_announcement', announcement_id=announcement.id) }}" method="POST" class="d-inline">
+        <button type="submit" class="btn btn-danger btn-sm"
+                onclick="return confirm('Are you sure you want to delete this announcement?')">
+            Delete
+        </button>
+    </form>
+{% endif %}
+                        </div>
+                    {% else %}
+                        <p class="text-center">No announcements available.</p>
+                    {% endfor %}
+                    <a href="{{ url_for('newsletter.subscribe') }}" class="btn btn-outline-primary btn-sm">Subscribe to our Newsletter</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content (Posts Section) -->
+        <div class="col-lg-8 col-md-7">
+            {% for post in posts %}
+                <div class="card shadow-lg mb-5 rounded-lg overflow-hidden" style="border: none;">
+                    {% if post.image_url %}
+                        <div class="card-img-top">
+                            <img src="{{ url_for('static', filename='images/' + post.image_url) }}" alt="Post Image" class="img-fluid w-100" style="max-height: 400px; object-fit: cover;">
+                        </div>
+                    {% endif %}
+                    <div class="card-body">
+                        <h2 class="card-title text-center text-dark font-weight-bold mb-3">{{ post.title }}</h2>
+                        <p class="card-text text-muted lead mb-4">{{ post.desc | safe | truncate(150) }}</p>
+                        <!-- Metadata Section -->
+    <div class="mb-3">
+        <p class="mb-1 text-muted">
+            <small>
+                By <strong>{{ post.author.username }}</strong> 
+                on <strong>{{ post.date_pub }}</strong>
+            </small>
+        </p>
+        <p class="mb-1 text-muted">
+            <small>
+                Category: <strong>{{ post.category_obj.name if post.category_obj else "Uncategorized" }}</strong>
+            </small>
+        </p>
+        <p class="mb-1 text-muted">
+            <small>
+                Views: <span class="badge bg-primary">{{ post.views }}</span>
+            </small>
+        </p>
+    </div>
+
+    <!-- Read More Button -->
+    <div class="text-end">
+        <a href="{{ url_for('admin.see_more', post_id=post.id) }}" 
+           class="btn btn-outline-primary btn-sm px-4 py-2"
+           style="transition: transform 0.2s ease;">
+           Read More
+        </a>
+    </div>
+</div>
+                        
+                    </div>
+                </div>
+            {% endfor %}
+            
+            <!-- Pagination Controls -->
+            <div class="pagination">
+                {% if pagination.has_prev %}
+                    <a href="{{ url_for('main.index', page=pagination.prev_num) }}" class="btn btn-outline-primary btn-sm">Previous</a>
+                {% endif %}
+
+                <span>Page {{ pagination.page }} of {{ pagination.pages }}</span>
+
+                {% if pagination.has_next %}
+                    <a href="{{ url_for('main.index', page=pagination.next_num) }}" class="btn btn-outline-primary btn-sm">Next</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Sidebar Styles */
+    .card {
+        background-color: #ffffff;
+        border-radius: 15px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Announcement Read More Button Styling */
+    .btn-outline-primary {
+        color: #007bff;
+        border-color: #007bff;
+    }
+
+    .btn-outline-primary:hover {
+        background-color: #007bff;
+        color: #fff;
+        transform: scale(1.05);
+    }
+
+    /* Font Styling */
+    .card-title {
+        font-family: 'Montserrat', sans-serif;
+        font-size: 1.8rem;
+    }
+
+    .card-text {
+        font-family: 'Open Sans', sans-serif;
+        font-size: 1rem;
+        line-height: 1.6;
+    }
+
+    /* Main Content Hover Effect */
+    .card:hover {
+        transform: translateY(-5px);
+        transition: transform 0.3s ease;
+    }
+
+    /* Ensure the sidebar content is fixed within the container */
+    .row {
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    /* Make sidebar sticky on larger screens */
+    @media (min-width: 992px) {
+        .col-lg-4 {
+            position: -webkit-sticky; /* For Safari */
+            position: sticky;
+            top: 20px; /* Adjust this value based on your design */
+        }
+    }
+
+    /* Pagination Styling */
+    .pagination {
+        margin-top: 20px;
+        text-align: center;
+    }
+
+    .pagination a {
+        margin: 0 10px;
+        font-weight: bold;
+        text-decoration: none;
+    }
+</style>
+<script>
+// Pass recommended posts data to JavaScript
+const recommendedPosts = [
+    {% for post in recommended_posts %}
+    {
+        id: {{ post.id }},
+        title: "{{ post.title|escapejs }}",
+        desc: "{{ post.desc|striptags|escapejs }}",
+        image_url: "{{ post.image_url|default('')|escapejs }}",
+        url: "{{ url_for('admin.see_more', post_id=post.id) }}"
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+];
+</script>
+
+{% endblock %}
+
+
+

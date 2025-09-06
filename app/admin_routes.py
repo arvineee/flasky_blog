@@ -12,7 +12,7 @@ from app import db, mail,csrf
 from app.models import User, Post, Comment, TrafficStats, Announcement, NewsletterSubscriber, Like, Video,Category,AdsTxt,NewsletterSubscriber
 from app.forms import (
     AdminActionForm, VideoForm, LoginForm, RegisterForm, PostForm, CommentForm,
-    ContactForm, ResetPasswordRequestForm, ResetPasswordForm, AnnouncementForm,AdsTxtForm,NewsletterForm
+    ContactForm, ResetPasswordRequestForm, ResetPasswordForm, AnnouncementForm,AdsTxtForm,NewsletterForm,CategoryForm
 )
 from .ddos_protection import ddos_protection
 
@@ -67,12 +67,14 @@ def admin_dashboard():
 
     users = User.query.all()
     posts = Post.query.all()
+    categories = Category.query.all()
     banned_users_count = User.query.filter_by(is_banned=True).count()
     subscriber_count = NewsletterSubscriber.query.filter_by(subscribed=True).count()
     
     return render_template('admin_dashboard.html', 
                          users=users, 
                          posts=posts,
+                         categories = categories,
                          subscriber_count=subscriber_count,
                          banned_users_count=banned_users_count)
 
@@ -431,8 +433,23 @@ def videos():
 @admin_bp.route('/search')
 def search():
     query = request.args.get('q', '')
-    results = Post.query.filter(Post.title.contains(query) | Post.desc.contains(query)).all()
-    return render_template('search_results.html', query=query, results=results)
+    if not query:
+        flash('Please enter a search term.', 'warning')
+        return redirect(request.referrer or url_for('main.index'))
+    
+    # Get the current page from request args or default to page 1
+    page = request.args.get('page', 1, type=int)
+    per_page = 10  # Same as index page
+    
+    # Filter posts like in the index route (exclude banned users and blocked posts)
+    results = Post.query.join(User).filter(
+        User.is_banned == False, 
+        Post.is_blocked == False,
+        (Post.title.ilike(f'%{query}%')) | (Post.desc.ilike(f'%{query}%'))
+    ).order_by(Post.date_pub.desc()).paginate(page=page, per_page=per_page, error_out=False)
+    
+    return render_template('search_results.html', query=query, results=results, pagination=results)
+
 
 @admin_bp.route('/admin/ads_txt', methods=['GET', 'POST'])
 @login_required
@@ -652,3 +669,100 @@ def admin_ban_user(user_id):
     db.session.commit()
     flash(f"User {user.username} has been banned!", "success")
     return redirect(url_for('admin.admin_dashboard'))
+
+@admin_bp.route('/manage-categories')
+@admin_required
+def manage_categories():
+    categories = Category.query.all()
+    
+    # Calculate stats
+    active_categories_count = Category.query.join(Post).group_by(Category.id).count()
+    empty_categories_count = len(categories) - active_categories_count
+    parent_categories_count = Category.query.filter_by(parent_id=None).count()
+    
+    # Create form instance
+    form = CategoryForm()
+    
+    return render_template('manage_categories.html', 
+                         categories=categories,
+                         active_categories_count=active_categories_count,
+                         empty_categories_count=empty_categories_count,
+                         parent_categories_count=parent_categories_count,
+                         form=form)
+
+@admin_bp.route('/categories/add', methods=['POST'])
+@admin_required
+def add_category():
+    form = CategoryForm()
+    
+    if form.validate_on_submit():
+        try:
+            # Handle parent_id (0 means no parent)
+            parent_id = form.parent_id.data if form.parent_id.data != 0 else None
+            
+            category = Category(
+                name=form.name.data.strip(),
+                parent_id=parent_id
+            )
+            db.session.add(category)
+            db.session.commit()
+            flash('Category added successfully!', 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error adding category: {str(e)}', 'danger')
+            current_app.logger.error(f"Category addition error: {str(e)}")
+    else:
+        # Display form errors
+        for field, errors in form.errors.items():
+            for error in errors:
+                flash(f'{field}: {error}', 'danger')
+    
+    return redirect(url_for('admin.manage_categories'))
+
+@admin_bp.route('/categories/<int:category_id>/edit', methods=['POST'])
+@admin_required
+def edit_category(category_id):
+    category = Category.query.get_or_404(category_id)
+    form = CategoryForm()
+    
+    if form.validate_on_submit():
+        try:
+            # Handle parent_id (0 means no parent)
+            parent_id = form.parent_id.data if form.parent_id.data != 0 else None
+            
+            category.name = form.name.data.strip()
+            category.parent_id = parent_id
+            db.session.commit()
+            flash('Category updated successfully!', 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error updating category: {str(e)}', 'danger')
+            current_app.logger.error(f"Category update error: {str(e)}")
+    else:
+        # Display form errors
+        for field, errors in form.errors.items():
+            for error in errors:
+                flash(f'{field}: {error}', 'danger')
+    
+    return redirect(url_for('admin.manage_categories'))
+
+@admin_bp.route('/categories/<int:category_id>/delete', methods=['POST'])
+@admin_required
+def delete_category(category_id):
+    category = Category.query.get_or_404(category_id)
+    
+    # Check if category has posts or subcategories
+    if category.posts.count() > 0 or category.children.count() > 0:
+        flash('Cannot delete category with posts or subcategories.', 'danger')
+        return redirect(url_for('admin.manage_categories'))
+    
+    try:
+        db.session.delete(category)
+        db.session.commit()
+        flash('Category deleted successfully!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error deleting category: {str(e)}', 'danger')
+        current_app.logger.error(f"Category deletion error: {str(e)}")
+    
+    return redirect(url_for('admin.manage_categories'))

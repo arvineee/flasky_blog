@@ -1,31 +1,82 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="container mt-4">
+<div class="container-fluid py-4">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2 fw-bold text-primary">
+            <i class="fas fa-tachometer-alt me-2"></i>Admin Dashboard
+        </h1>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('admin.new_post') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-1"></i>New Post
+            </a>
+            <a href="{{ url_for('main.logout') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-sign-out-alt me-1"></i>Logout
+            </a>
+        </div>
+    </div>
+
     <!-- Quick Stats Row -->
     <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card bg-primary text-white text-center p-3">
-                <h5><i class="bi bi-people-fill"></i> Total Users</h5>
-                <h3>{{ users|length }}</h3>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h6 class="card-title text-white-50">Total Users</h6>
+                            <h3 class="fw-bold mb-0">{{ users|length }}</h3>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fas fa-users fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card bg-success text-white text-center p-3">
-                <h5><i class="bi bi-file-post"></i> Total Posts</h5>
-                <h3>{{ posts|length }}</h3>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h6 class="card-title text-white-50">Total Posts</h6>
+                            <h3 class="fw-bold mb-0">{{ posts|length }}</h3>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fas fa-file-alt fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card bg-info text-white text-center p-3">
-                <h5><i class="bi bi-envelope"></i> Subscribers</h5>
-                <h3>{{ subscriber_count }}</h3>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h6 class="card-title text-white-50">Subscribers</h6>
+                            <h3 class="fw-bold mb-0">{{ subscriber_count }}</h3>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fas fa-envelope fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card bg-warning text-dark text-center p-3">
-                <h5><i class="bi bi-ban-fill"></i> Banned Users</h5>
-                <h3>{{ banned_users_count }}</h3>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card bg-warning text-dark">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h6 class="card-title text-dark-50">Banned Users</h6>
+                            <h3 class="fw-bold mb-0">{{ banned_users_count }}</h3>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fas fa-ban fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -34,33 +85,81 @@
     <div class="row mb-4">
         <div class="col-12">
             <div class="card">
-                <div class="card-header bg-secondary text-white">
-                    <h5 class="mb-0">Quick Actions</h5>
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fas fa-bolt me-2"></i>Quick Actions</h5>
                 </div>
                 <div class="card-body">
                     <div class="d-flex flex-wrap gap-2">
-                        <a href="{{ url_for('admin.admin_traffic_stats') }}" class="btn btn-outline-info">
-                            <i class="bi bi-graph-up"></i> Traffic Stats
+                        <a href="{{ url_for('admin.admin_traffic_stats') }}" class="btn btn-action">
+                            <i class="fas fa-chart-line me-1"></i> Traffic Stats
                         </a>
-                        <a href="{{ url_for('admin.manage_ads_txt') }}" class="btn btn-outline-info">
-                            <i class="bi bi-file-text"></i> Manage Ads.txt
+                        <a href="{{ url_for('admin.manage_ads_txt') }}" class="btn btn-action">
+                            <i class="fas fa-file-text me-1"></i> Manage Ads.txt
                         </a>
-                        <a href="{{ url_for('admin.send_newsletter') }}" class="btn btn-outline-success">
-                            <i class="bi bi-envelope-plus"></i> Send Newsletter
+                        <a href="{{ url_for('admin.send_newsletter') }}" class="btn btn-action">
+                            <i class="fas fa-paper-plane me-1"></i> Send Newsletter
                         </a>
-                        <a href="{{ url_for('admin.manage_subscribers') }}" class="btn btn-outline-info">
-                            <i class="bi bi-people-fill"></i> Subscribers
+                        <a href="{{ url_for('admin.manage_subscribers') }}" class="btn btn-action">
+                            <i class="fas fa-user-friends me-1"></i> Subscribers
                         </a>
-                        <a href="{{ url_for('admin.create_announcement') }}" class="btn btn-outline-warning">
-                            <i class="bi bi-megaphone"></i> Announcement
+                        <a href="{{ url_for('admin.create_announcement') }}" class="btn btn-action">
+                            <i class="fas fa-bullhorn me-1"></i> Announcement
                         </a>
-                        <a href="{{ url_for('admin.upload_video') }}" class="btn btn-outline-primary">
-                            <i class="bi bi-play-btn"></i> Upload Video
+                        <a href="{{ url_for('admin.upload_video') }}" class="btn btn-action">
+                            <i class="fas fa-video me-1"></i> Upload Video
                         </a>
-                        <a href="{{ url_for('admin.ddos_protection_management') }}" class="btn btn-outline-danger">
-                            <i class="bi bi-shield-lock"></i> DDoS Protection
+                        <a href="{{ url_for('admin.ddos_protection_management') }}" class="btn btn-action">
+                            <i class="fas fa-shield-alt me-1"></i> DDoS Protection
+                        </a>
+                        <!-- NEW: Category Management Button -->
+                        <a href="{{ url_for('admin.manage_categories') }}" class="btn btn-action">
+                            <i class="fas fa-tags me-1"></i> Manage Categories
                         </a>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- NEW: Category Management Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-tags me-2"></i>Category Management</h5>
+                    <a href="{{ url_for('admin.manage_categories') }}" class="btn btn-sm btn-light">
+                        <i class="fas fa-cog me-1"></i>Manage All
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if categories %}
+                    <div class="row">
+                        {% for category in categories[:6] %}  <!-- Show first 6 categories -->
+                        <div class="col-md-4 col-lg-2 mb-3">
+                            <div class="category-card p-3 border rounded text-center">
+                                <i class="fas fa-folder fa-2x text-primary mb-2"></i>
+                                <h6 class="mb-1">{{ category.name }}</h6>
+                                <small class="text-muted">{{ category.posts.count() }} posts</small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% if categories|length > 6 %}
+                        <div class="col-12 text-center mt-3">
+                            <a href="{{ url_for('admin.manage_categories') }}" class="btn btn-sm btn-outline-info">
+                                View All {{ categories|length }} Categories
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-tags fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No categories found</p>
+                        <a href="{{ url_for('admin.manage_categories') }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-1"></i>Create First Category
+                        </a>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -69,7 +168,7 @@
     <!-- Users Section -->
     <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-            <h5 class="mb-0"><i class="bi bi-people-fill"></i> User Management</h5>
+            <h5 class="mb-0"><i class="fas fa-users me-2"></i>User Management</h5>
             <span>Total: {{ users|length }}</span>
         </div>
         <div class="card-body">
@@ -81,16 +180,23 @@
                             <th>Email</th>
                             <th>Joined</th>
                             <th>Status</th>
-			    <th>Admin</th>
+                            <th>Admin</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for user in users %}
                         <tr>
-                            <td>{{ user.username }}</td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-sm bg-light rounded-circle d-flex align-items-center justify-content-center me-2">
+                                        <i class="fas fa-user text-primary"></i>
+                                    </div>
+                                    {{ user.username }}
+                                </div>
+                            </td>
                             <td>{{ user.email }}</td>
-                            <td>{{ user.created_at.strftime('%Y-%m-%d') if user.created_at else 'N/A' }}</td>
+                            <td>{{ user.date_r if user.date_r else 'N/A' }}</td>
                             <td>
                                 {% if user.is_banned %}
                                 <span class="badge bg-danger">Banned</span>
@@ -98,28 +204,28 @@
                                 <span class="badge bg-success">Active</span>
                                 {% endif %}
                             </td>
-			    <td>
-				    {% if user.is_admin %}
-				    <span class="badge bg-success">Admin</span>
-				    {% else %}
-				    <span class="badge bg-danger">Not Admin</span>
-				    {% endif %}
-			    </td>
+                            <td>
+                                {% if user.is_admin %}
+                                <span class="badge bg-success">Admin</span>
+                                {% else %}
+                                <span class="badge bg-secondary">User</span>
+                                {% endif %}
+                            </td>
                             <td>
                                 <div class="btn-group btn-group-sm">
                                     <a href="{{ url_for('admin.admin_user_action', user_id=user.id) }}" 
                                        class="btn btn-outline-primary" title="User Actions">
-                                        Warn user
+                                        <i class="fas fa-exclamation-triangle"></i>
                                     </a>
                                     {% if user.is_banned %}
                                     <a href="{{ url_for('admin.admin_unban_user', user_id=user.id) }}" 
                                        class="btn btn-outline-success" title="Unban User">
-                                        Unban
+                                        <i class="fas fa-check"></i>
                                     </a>
                                     {% else %}
                                     <a href="{{ url_for('admin.admin_ban_user', user_id=user.id) }}" 
                                        class="btn btn-outline-warning" title="Ban User">
-                                        Ban
+                                        <i class="fas fa-ban"></i>
                                     </a>
                                     {% endif %}
                                 </div>
@@ -135,7 +241,7 @@
     <!-- Posts Section -->
     <div class="card mb-4">
         <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
-            <h5 class="mb-0"><i class="bi bi-file-post"></i> Post Management</h5>
+            <h5 class="mb-0"><i class="fas fa-file-alt me-2"></i>Post Management</h5>
             <span>Total: {{ posts|length }}</span>
         </div>
         <div class="card-body">
@@ -145,6 +251,7 @@
                         <tr>
                             <th>Title</th>
                             <th>Author</th>
+                            <th>Category</th>
                             <th>Created</th>
                             <th>Status</th>
                             <th>Actions</th>
@@ -155,7 +262,12 @@
                         <tr>
                             <td>{{ post.title|truncate(30) }}</td>
                             <td>{{ post.author.username if post.author else 'Unknown' }}</td>
-                            <td>{{ post.created_at.strftime('%Y-%m-%d') if post.created_at else 'N/A' }}</td>
+                            <td>
+                                <span class="badge bg-info">
+                                    {{ post.category_obj.name if post.category_obj else 'Uncategorized' }}
+                                </span>
+                            </td>
+                            <td>{{ post.date_pub if post.date_pub else 'N/A' }}</td>
                             <td>
                                 {% if post.is_blocked %}
                                 <span class="badge bg-danger">Blocked</span>
@@ -167,24 +279,24 @@
                                 <div class="btn-group btn-group-sm">
                                     <a href="{{ url_for('admin.see_more', post_id=post.id) }}" 
                                        class="btn btn-outline-info" title="View Post" target="_blank">
-                                        Read more
+                                        <i class="fas fa-eye"></i>
                                     </a>
                                     <form method="POST" action="{{ url_for('admin.admin_delete_post', post_id=post.id) }}" 
                                           class="d-inline delete-form">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                         <button type="submit" class="btn btn-outline-danger" title="Delete Post">
-                                            Delete
+                                            <i class="fas fa-trash"></i>
                                         </button>
                                     </form>
                                     {% if post.is_blocked %}
                                     <a href="{{ url_for('admin.admin_unblock_post', post_id=post.id) }}" 
                                        class="btn btn-outline-success" title="Unblock Post">
-                                        Unblock
+                                        <i class="fas fa-check"></i>
                                     </a>
                                     {% else %}
                                     <a href="{{ url_for('admin.admin_block_post', post_id=post.id) }}" 
                                        class="btn btn-outline-warning" title="Block Post">
-                                        Block
+                                        <i class="fas fa-ban"></i>
                                     </a>
                                     {% endif %}
                                 </div>
@@ -218,22 +330,113 @@
 </div>
 
 <style>
-.card {
-    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-    border: 1px solid rgba(0, 0, 0, 0.125);
+:root {
+    --primary-color: #4361ee;
+    --secondary-color: #3a0ca3;
+    --success-color: #2ecc71;
+    --info-color: #3498db;
+    --warning-color: #f39c12;
+    --danger-color: #e74c3c;
+    --light-bg: #f8f9fa;
 }
+
+body {
+    background-color: #f5f7f9;
+    font-family: 'Inter', 'Segoe UI', Roboto, sans-serif;
+}
+
+.card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    margin-bottom: 1.5rem;
+}
+
 .card-header {
+    border-radius: 12px 12px 0 0 !important;
+    padding: 1rem 1.5rem;
     font-weight: 600;
 }
+
+.stat-card {
+    border-radius: 12px;
+    transition: transform 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+}
+
+.stat-icon {
+    opacity: 0.8;
+}
+
+.btn-action {
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    transition: all 0.3s ease;
+}
+
+.btn-action:hover {
+    background: linear-gradient(135deg, #e9ecef, #dee2e6);
+    transform: translateY(-2px);
+    border-color: #4361ee;
+}
+
 .table th {
     border-top: none;
     font-weight: 600;
+    background-color: #f8f9fa;
+    padding: 1rem 0.75rem;
 }
-.btn-group-sm > .btn {
-    padding: 0.25rem 0.5rem;
+
+.table td {
+    padding: 1rem 0.75rem;
+    vertical-align: middle;
 }
+
 .badge {
     font-size: 0.75em;
+    padding: 0.5em 0.75em;
+    border-radius: 6px;
+}
+
+.avatar-sm {
+    width: 32px;
+    height: 32px;
+}
+
+.category-card {
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.category-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    border-color: var(--primary-color) !important;
+}
+
+.btn-group-sm > .btn {
+    padding: 0.35rem 0.5rem;
+    border-radius: 6px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .d-flex.flex-wrap {
+        justify-content: center;
+    }
+    
+    .btn-action {
+        margin-bottom: 0.5rem;
+    }
+    
+    .table-responsive {
+        font-size: 0.875rem;
+    }
 }
 </style>
 

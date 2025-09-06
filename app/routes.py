@@ -330,7 +330,7 @@ def category_posts(category_id):
     category = Category.query.get_or_404(category_id)
 
     # Fetch posts in this category (and optionally in its subcategories)
-    posts = Post.query.filter_by(category_id=category.id).order_by(Post.created_at.desc()).all()
+    posts = Post.query.filter_by(category_id=category.id).order_by(Post.date_pub.desc()).all()
 
     return render_template("category_posts.html", category=category, posts=posts)
 

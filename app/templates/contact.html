@@ -1,29 +1,235 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="container mt-5">
+<div class="container py-5">
     <div class="row justify-content-center">
-        <div class="col-md-8">
-            <h1 class="text-center mb-4">Contact Us</h1>
-            <form method="POST" action="">
-                {{ form.hidden_tag() }}
-                <div class="form-group">
-                    {{ form.name.label(class="form-label") }}
-                    {{ form.name(class="form-control", placeholder="Your Name") }}
+        <div class="col-lg-10">
+            <!-- Header Section -->
+            <div class="text-center mb-5">
+                <h1 class="display-4 fw-bold text-primary mb-3">Get In Touch</h1>
+                <p class="lead text-muted">We'd love to hear from you. Send us a message and we'll respond as soon as possible.</p>
+            </div>
+
+            <div class="row g-5">
+                <!-- Contact Information -->
+                <div class="col-md-5">
+                    <div class="card border-0 shadow-lg h-100">
+                        <div class="card-body p-4 p-lg-5">
+                            <h3 class="h4 fw-bold text-dark mb-4">Contact Information</h3>
+                            
+                            <div class="d-flex align-items-start mb-4">
+                                <div class="bg-primary bg-opacity-10 p-3 rounded-circle me-3">
+                                    <i class="bi bi-geo-alt-fill text-primary fs-5"></i>
+                                </div>
+                                <div>
+                                    <h5 class="h6 fw-bold mb-1">Address</h5>
+                                    <p class="text-muted mb-0">123 Political Avenue<br>Capital City, PC 10001</p>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex align-items-start mb-4">
+                                <div class="bg-primary bg-opacity-10 p-3 rounded-circle me-3">
+                                    <i class="bi bi-envelope-fill text-primary fs-5"></i>
+                                </div>
+                                <div>
+                                    <h5 class="h6 fw-bold mb-1">Email</h5>
+                                    <p class="text-muted mb-0">contact@arvalblog.com</p>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex align-items-start mb-4">
+                                <div class="bg-primary bg-opacity-10 p-3 rounded-circle me-3">
+                                    <i class="bi bi-telephone-fill text-primary fs-5"></i>
+                                </div>
+                                <div>
+                                    <h5 class="h6 fw-bold mb-1">Phone</h5>
+                                    <p class="text-muted mb-0">+1 (555) 123-4567</p>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex align-items-start">
+                                <div class="bg-primary bg-opacity-10 p-3 rounded-circle me-3">
+                                    <i class="bi bi-clock-fill text-primary fs-5"></i>
+                                </div>
+                                <div>
+                                    <h5 class="h6 fw-bold mb-1">Response Time</h5>
+                                    <p class="text-muted mb-0">Typically within 24 hours</p>
+                                </div>
+                            </div>
+                            
+                            <hr class="my-4">
+                            
+                            <div class="mt-4">
+                                <h5 class="h6 fw-bold mb-3">Follow Us</h5>
+                                <div class="d-flex gap-3">
+                                    <a href="#" class="text-decoration-none">
+                                        <div class="bg-primary bg-opacity-10 p-3 rounded-circle">
+                                            <i class="bi bi-facebook text-primary fs-5"></i>
+                                        </div>
+                                    </a>
+                                    <a href="#" class="text-decoration-none">
+                                        <div class="bg-primary bg-opacity-10 p-3 rounded-circle">
+                                            <i class="bi bi-twitter text-primary fs-5"></i>
+                                        </div>
+                                    </a>
+                                    <a href="#" class="text-decoration-none">
+                                        <div class="bg-primary bg-opacity-10 p-3 rounded-circle">
+                                            <i class="bi bi-linkedin text-primary fs-5"></i>
+                                        </div>
+                                    </a>
+                                    <a href="#" class="text-decoration-none">
+                                        <div class="bg-primary bg-opacity-10 p-3 rounded-circle">
+                                            <i class="bi bi-instagram text-primary fs-5"></i>
+                                        </div>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="form-group">
-                    {{ form.email.label(class="form-label") }}
-                    {{ form.email(class="form-control", placeholder="Your Email") }}
+                
+                <!-- Contact Form -->
+                <div class="col-md-7">
+                    <div class="card border-0 shadow-lg">
+                        <div class="card-body p-4 p-lg-5">
+                            <h3 class="h4 fw-bold text-dark mb-4">Send Us a Message</h3>
+                            
+                            <form method="POST" action="" class="needs-validation" novalidate>
+                                {{ form.hidden_tag() }}
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group mb-4">
+                                            {{ form.name.label(class="form-label fw-semibold") }}
+                                            <div class="input-group">
+                                                <span class="input-group-text bg-light border-end-0">
+                                                    <i class="bi bi-person text-muted"></i>
+                                                </span>
+                                                {{ form.name(class="form-control py-3 border-start-0", placeholder="Your Full Name") }}
+                                            </div>
+                                            {% for error in form.name.errors %}
+                                                <div class="invalid-feedback d-block">{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group mb-4">
+                                            {{ form.email.label(class="form-label fw-semibold") }}
+                                            <div class="input-group">
+                                                <span class="input-group-text bg-light border-end-0">
+                                                    <i class="bi bi-envelope text-muted"></i>
+                                                </span>
+                                                {{ form.email(class="form-control py-3 border-start-0", placeholder="your.email@example.com") }}
+                                            </div>
+                                            {% for error in form.email.errors %}
+                                                <div class="invalid-feedback d-block">{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group mb-4">
+                                    {{ form.message.label(class="form-label fw-semibold") }}
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light align-items-start border-end-0 pt-3">
+                                            <i class="bi bi-chat-left-text text-muted"></i>
+                                        </span>
+                                        {{ form.message(class="form-control py-3 border-start-0", rows="5", placeholder="Please share your thoughts, questions, or concerns...") }}
+                                    </div>
+                                    {% for error in form.message.errors %}
+                                        <div class="invalid-feedback d-block">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <div class="form-group text-center mt-4">
+                                    {{ form.submit(class="btn btn-primary btn-lg px-5 py-3 rounded-pill fw-semibold") }}
+                                </div>
+                            </form>
+                        </div>
+                    </div>
                 </div>
-                <div class="form-group">
-                    {{ form.message.label(class="form-label") }}
-                    {{ form.message(class="form-control", rows="5", placeholder="Your Message") }}
-                </div>
-                <div class="mb-3 form-group text-center">
-                    {{ form.submit(class="btn btn-primary") }}
-                </div>
-            </form>
+            </div>
         </div>
     </div>
 </div>
+
+<style>
+    .form-control {
+        border-left: 0;
+        border-right: 0;
+        border-top: 0;
+        border-radius: 0;
+        border-bottom: 1px solid #dee2e6;
+        padding: 0.75rem 0;
+        transition: all 0.3s ease;
+    }
+    
+    .form-control:focus {
+        box-shadow: none;
+        border-bottom-color: #4f46e5;
+    }
+    
+    .input-group-text {
+        background-color: #f8f9fa;
+        border-right: 0;
+        border-top: 0;
+        border-left: 0;
+        border-bottom: 1px solid #dee2e6;
+        border-radius: 0;
+        transition: all 0.3s ease;
+    }
+    
+    .form-control:focus + .input-group-text,
+    .form-control:focus ~ .input-group-text {
+        border-bottom-color: #4f46e5;
+    }
+    
+    .card {
+        border-radius: 16px;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1) !important;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+        border: none;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(79, 70, 229, 0.3);
+    }
+    
+    @media (max-width: 768px) {
+        .display-4 {
+            font-size: 2.5rem;
+        }
+    }
+</style>
+
+<script>
+    // Form validation
+    document.addEventListener('DOMContentLoaded', function() {
+        // Fetch all the forms we want to apply custom Bootstrap validation styles to
+        var forms = document.querySelectorAll('.needs-validation')
+        
+        // Loop over them and prevent submission
+        Array.prototype.slice.call(forms)
+            .forEach(function (form) {
+                form.addEventListener('submit', function (event) {
+                    if (!form.checkValidity()) {
+                        event.preventDefault()
+                        event.stopPropagation()
+                    }
+                    
+                    form.classList.add('was-validated')
+                }, false)
+            })
+    });
+</script>
 {% endblock %}

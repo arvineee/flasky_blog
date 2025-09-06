@@ -142,3 +142,29 @@ class NewsletterForm(FlaskForm):
     subject = StringField('Subject', validators=[DataRequired()])
     message = TextAreaField('Message', validators=[DataRequired()])
     submit = SubmitField('Send Newsletter')
+
+class CategoryForm(FlaskForm):
+    name = StringField(
+        'Category Name', 
+        validators=[
+            DataRequired(), 
+            Length(max=100, message="Category name cannot exceed 100 characters")
+        ]
+    )
+    parent_id = SelectField(
+        'Parent Category', 
+        coerce=int, 
+        choices=[], 
+        validate_choice=False
+    )
+    submit = SubmitField('Submit')
+    
+    def __init__(self, *args, **kwargs):
+        # Import Category inside the method to avoid circular imports
+        from app.models import Category
+        super(CategoryForm, self).__init__(*args, **kwargs)
+        
+        # Populate parent category choices
+        self.parent_id.choices = [(0, 'None')] + [
+            (c.id, c.name) for c in Category.query.filter_by(parent_id=None).all()
+        ]

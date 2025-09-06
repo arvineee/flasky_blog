@@ -1,0 +1,163 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-md-10">
+            <div class="card shadow-lg border-0">
+                {% if post.image_url %}
+                    <img src="{{ url_for('static', filename='images/' + post.image_url) }}" class="card-img-top rounded-top" alt="{{ post.title }}">
+                {% endif %}
+                <div class="card-body p-5">
+                    <h1 class="card-title text-center text-dark fw-bold display-4">{{ post.title }}</h1>
+                    <p class="text-muted text-center"><small>By <strong>{{ post.author.username }}</strong> on <span>{{ post.date_pub }}</span></small></p>
+                    <p class="text-muted text-center"><small>Category: <strong>{{ post.category }}</strong></small></p>
+                    <hr class="my-4">
+                    <div class="content text-justify text-secondary lead mb-4">
+                        {{ post.desc | safe }}
+                    </div>
+
+                    <!-- Action buttons container -->
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <!-- Like Button -->
+                        <button class="btn btn-outline-danger like-btn" data-post-id="{{ post.id }}">
+                            ❤️ Like (<span id="like-count-{{ post.id }}">{{ post.likes.count() }}</span>)
+                        </button>
+
+                        <!-- Edit and Delete buttons for post author -->
+                        {% if current_user.is_authenticated and (current_user.is_admin or post.author == current_user) %}
+                        <div class="btn-group">
+                            {% if current_user.is_authenticated and current_user.is_admin %}
+                                <a class="btn btn-primary btn-sm" href="{{ url_for('admin.edit_post', post_id=post.id) }}">Edit Post</a>
+                            {% endif %}
+                            
+                            {% if post.author == current_user %}
+                                <form method="POST" action="{{ url_for('main.delete_post', post_id=post.id) }}" class="d-inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this post?')">Delete Post</button>
+                                </form>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <form action="{{ url_for('main.add_comment', post_id=post.id) }}" method="POST">
+                        {{ form.hidden_tag() }}
+                        <div class="form-group">
+                            {{ form.comment(class="form-control", placeholder="Add a comment...") }}
+                        </div>
+                        <button type="submit" class="btn btn-primary mt-3">Submit Comment</button>
+                    </form>
+                    
+                    <!-- Start of comments section -->
+                    <div class="card mt-4">
+                        <div class="card-body">
+                            {% for comment in comments %}
+                                <div class="mb-3">
+                                    <p class="mb-0"><strong>{{ comment.user.username }}</strong> on {{ comment.date_posted }}:</p>
+                                    <p>{{ comment.content }}</p>
+                                    {% if current_user.is_authenticated and (current_user.is_admin or comment.user == current_user) %}
+                                        <form action="{{ url_for('main.delete_comment', comment_id=comment.id) }}" method="POST" class="d-inline">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <button type="submit" class="btn btn-danger btn-sm"
+                                                    onclick="return confirm('Are you sure you want to delete this comment?')">
+                                                Delete
+                                            </button>
+                                        </form>
+                                    {% endif %}
+                                    <hr class="my-2">
+                                </div>
+                            {% endfor %}
+                            {% if comments|length == 0 %}
+                                <p class="text-muted text-center">No comments yet. Be the first to comment!</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <!-- End of comments section -->
+
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{{ url_for('main.index') }}" class="btn btn-outline-primary btn-lg rounded-pill">Back to Posts</a>
+                        <a class='btn btn-outline-primary btn-lg rounded-pill' href="{{ url_for('main.share_post', post_id=post.id) }}">Share</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="shareModal" tabindex="-1" aria-labelledby="shareModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="shareModalLabel">Share This Post</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted">Share this post with your friends and followers:</p>
+                <div class="d-flex justify-content-around">
+                    <a href="#" class="btn btn-outline-primary rounded-circle"><i class="bi bi-facebook"></i></a>
+                    <a href="#" class="btn btn-outline-primary rounded-circle"><i class="bi bi-twitter"></i></a>
+                    <a href="#" class="btn btn-outline-danger rounded-circle"><i class="bi bi-envelope"></i></a>
+                    <a href="#" class="btn btn-outline-success rounded-circle"><i class="bi bi-whatsapp"></i></a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript for like button functionality -->
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const likeButtons = document.querySelectorAll(".like-btn");
+    
+    likeButtons.forEach(button => {
+        button.addEventListener("click", function() {
+            const postId = this.getAttribute("data-post-id");
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute("content");
+            
+            fetch(`/like_post/${postId}`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": csrfToken
+                },
+                credentials: "same-origin"
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === "success") {
+                    // Update like count
+                    document.getElementById(`like-count-${postId}`).textContent = data.like_count;
+                    
+                    // Show toast notification
+                    const toast = new bootstrap.Toast(document.getElementById('likeToast'));
+                    const toastBody = document.querySelector('#likeToast .toast-body');
+                    toastBody.textContent = `You ${data.action} this post!`;
+                    toast.show();
+                } else {
+                    alert("Error: " + data.message);
+                }
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                alert("An error occurred while processing your request.");
+            });
+        });
+    });
+});
+</script>
+
+<script>
+// Pass recommended posts data to JavaScript
+const recommendedPosts = [
+    {% for post in recommended_posts %}
+    {
+        id: {{ post.id }},
+        title: "{{ post.title|escapejs }}",
+        desc: "{{ post.desc|striptags|escapejs }}",
+        image_url: "{{ post.image_url|default('')|escapejs }}"
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+];
+</script>
+{% endblock %}
