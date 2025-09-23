@@ -1,47 +1,64 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="container mt-4">
+<div class="container py-5">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12 text-center">
+            <h1 class="display-5 fw-bold text-primary mb-3">
+                <i class="fas fa-plus-circle me-2"></i>Create New Post
+            </h1>
+            <p class="lead text-muted">Share your ideas with the world</p>
+        </div>
+    </div>
+
+    <!-- Main Form Card -->
     <div class="row justify-content-center">
         <div class="col-lg-10 col-xl-8">
-            <!-- Header Section -->
-            <div class="d-flex align-items-center mb-5">
-                <a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-outline-secondary btn-sm me-3">
-                    <i class="fas fa-arrow-left me-1"></i> Back
-                </a>
-                <h2 class="mb-0 text-primary fw-bold">Create New Post</h2>
-            </div>
-            
-            <!-- Form Card -->
-            <div class="card shadow-sm border-0">
+            <div class="card shadow-lg border-0">
                 <div class="card-header bg-gradient-primary text-white py-3">
-                    <h4 class="card-title mb-0">
+                    <h5 class="card-title mb-0">
                         <i class="fas fa-pen-fancy me-2"></i>Compose New Content
-                    </h4>
+                    </h5>
                 </div>
+                
                 <div class="card-body p-4">
-                    <form action="{{ url_for('admin.new_post') }}" method="POST" enctype="multipart/form-data" novalidate>
+                    <form action="{{ url_for('admin.new_post') }}" method="POST" enctype="multipart/form-data">
                         {{ form.hidden_tag() }}
                         
                         <!-- Title Field -->
                         <div class="mb-4">
-                            <label class="form-label fw-semibold">{{ form.title.label }}</label>
-                            {{ form.title(class="form-control form-control-lg" + (' is-invalid' if form.title.errors else ''), placeholder="Enter a compelling title") }}
+                            <label class="form-label fw-semibold text-dark">{{ form.title.label }}</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0">
+                                    <i class="fas fa-heading text-primary"></i>
+                                </span>
+                                {{ form.title(class="form-control form-control-lg border-start-0" + (' is-invalid' if form.title.errors else ''), placeholder="Enter a compelling title") }}
+                            </div>
                             {% for error in form.title.errors %}
                             <div class="invalid-feedback d-block">{{ error }}</div>
                             {% endfor %}
-                            <div class="form-text">Catch readers' attention with an engaging title</div>
+                            <div class="form-text mt-2">Catch readers' attention with an engaging title</div>
                         </div>
 
                         <!-- Category Field -->
                         <div class="mb-4">
-                            <label class="form-label fw-semibold">{{ form.category.label }}</label>
-                            {% if form.category.choices %}
-                                {{ form.category(class="form-select form-select-lg" + (' is-invalid' if form.category.errors else '')) }}
-                            {% else %}
-                                <select class="form-select form-select-lg is-invalid" disabled>
-                                    <option>No categories available</option>
-                                </select>
-                                <div class="invalid-feedback d-block">Please create categories first in the admin panel</div>
+                            <label class="form-label fw-semibold text-dark">{{ form.category.label }}</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0">
+                                    <i class="fas fa-folder text-primary"></i>
+                                </span>
+                                {% if form.category.choices %}
+                                    {{ form.category(class="form-select form-select-lg border-start-0" + (' is-invalid' if form.category.errors else '')) }}
+                                {% else %}
+                                    <select class="form-select form-select-lg is-invalid border-start-0" disabled>
+                                        <option>No categories available</option>
+                                    </select>
+                                {% endif %}
+                            </div>
+                            {% if not form.category.choices %}
+                            <div class="alert alert-warning mt-2" role="alert">
+                                <i class="fas fa-exclamation-triangle me-2"></i>Please create categories first in the admin panel
+                            </div>
                             {% endif %}
                             {% for error in form.category.errors %}
                             <div class="invalid-feedback d-block">{{ error }}</div>
@@ -50,8 +67,11 @@
 
                         <!-- Content Editor -->
                         <div class="mb-4">
-                            <label class="form-label fw-semibold">{{ form.desc.label }}</label>
-                            {{ form.desc(class="form-control" + (' is-invalid' if form.desc.errors else '')) }}
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label class="form-label fw-semibold text-dark mb-0">{{ form.desc.label }}</label>
+                                <small class="text-muted">Rich text editing enabled</small>
+                            </div>
+                            {{ form.desc(class="form-control ckeditor-field" + (' is-invalid' if form.desc.errors else ''), rows="10") }}
                             {% for error in form.desc.errors %}
                             <div class="invalid-feedback d-block">{{ error }}</div>
                             {% endfor %}
@@ -59,31 +79,64 @@
 
                         <!-- Image Upload -->
                         <div class="mb-4">
-                            <label class="form-label fw-semibold">{{ form.image.label }}</label>
-                            <div class="file-upload-area border rounded p-3 bg-light">
-                                {{ form.image(class="form-control" + (' is-invalid' if form.image.errors else ''), 
-                                    onchange="previewImage(this)") }}
-                                <div class="form-text mt-2">
-                                    <i class="fas fa-info-circle me-1"></i>
-                                    Allowed formats: JPEG, PNG, GIF (Max 5MB)
+                            <label class="form-label fw-semibold text-dark">{{ form.image.label }}</label>
+                            <div class="file-upload-area border rounded-3 p-4 text-center bg-light">
+                                <div class="mb-3">
+                                    <i class="fas fa-cloud-upload-alt fa-3x text-primary"></i>
                                 </div>
-                                <div class="image-preview mt-3 text-center" id="imagePreview" style="display: none;">
-                                    <img id="preview" class="img-fluid rounded" style="max-height: 200px;">
-                                    <button type="button" class="btn btn-sm btn-danger mt-2" onclick="removeImage()">
-                                        <i class="fas fa-times me-1"></i>Remove
-                                    </button>
+                                <div class="mb-3">
+                                    {{ form.image(class="form-control d-none", id="imageUpload", accept="image/*", onchange="previewImage(this)") }}
+                                    <label for="imageUpload" class="btn btn-outline-primary rounded-pill px-4">
+                                        <i class="fas fa-upload me-2"></i>Choose Image
+                                    </label>
                                 </div>
+                                <p class="small text-muted mb-0">Allowed formats: JPEG, PNG, GIF (Max 5MB)</p>
+                                <div id="fileName" class="small text-dark mt-2"></div>
+                                
+                                {% for error in form.image.errors %}
+                                <div class="invalid-feedback d-block">{{ error }}</div>
+                                {% endfor %}
                             </div>
-                            {% for error in form.image.errors %}
-                            <div class="invalid-feedback d-block">{{ error }}</div>
-                            {% endfor %}
+                            
+                            <!-- Image Preview -->
+                            <div class="image-preview mt-3 text-center" id="imagePreview" style="display: none;">
+                                <p class="fw-semibold mb-2">Image Preview:</p>
+                                <img id="preview" class="img-thumbnail rounded" style="max-height: 200px;">
+                                <button type="button" class="btn btn-sm btn-danger mt-2 rounded-pill" onclick="removeImage()">
+                                    <i class="fas fa-times me-1"></i>Remove
+                                </button>
+                            </div>
                         </div>
 
-                        <!-- Submit Button -->
-                        <div class="d-grid gap-2 mt-5">
-                            {{ form.submit(class="btn btn-primary btn-lg py-3 fw-semibold") }}
+                        <!-- Action Buttons -->
+                        <div class="d-flex justify-content-between align-items-center mt-5 pt-4 border-top">
+                            <a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-outline-secondary rounded-pill px-4">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                            </a>
+                            <div>
+                                <button type="reset" class="btn btn-outline-danger rounded-pill px-4 me-2">
+                                    <i class="fas fa-undo me-2"></i>Reset
+                                </button>
+                                {{ form.submit(class="btn btn-primary rounded-pill px-4") }}
+                            </div>
                         </div>
                     </form>
+                </div>
+            </div>
+            
+            <!-- Tips Card -->
+            <div class="card border-0 mt-4 bg-light">
+                <div class="card-body p-4">
+                    <h6 class="card-title mb-3 text-primary">
+                        <i class="fas fa-lightbulb me-2"></i>Creating Great Content
+                    </h6>
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Start with a clear and engaging title</li>
+                        <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Choose the most relevant category for your content</li>
+                        <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Use images to make your post more engaging</li>
+                        <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Format your content for readability with headings and lists</li>
+                        <li><i class="fas fa-check-circle text-success me-2"></i>Proofread before publishing</li>
+                    </ul>
                 </div>
             </div>
         </div>
@@ -93,94 +146,144 @@
 {{ ckeditor.load() }}
 {{ ckeditor.config(name='desc', height=400, 
     toolbar=[
-        'heading', '|', 'bold', 'italic', 'link', 'bulletedList', 
-        'numberedList', 'blockQuote', '|', 'undo', 'redo'
+        'heading', '|', 'bold', 'italic', 'underline', 'strikethrough', '|',
+        'link', 'bulletedList', 'numberedList', 'blockQuote', '|',
+        'imageUpload', 'mediaEmbed', '|', 'undo', 'redo'
     ]) }}
 
 <style>
-    :root {
-        --primary-color: #4361ee;
-        --secondary-color: #3a0ca3;
-        --light-bg: #f8f9fa;
-        --card-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+body {
+    background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
+    min-height: 100vh;
+}
+
+.card {
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #4361ee 0%, #3a0ca3 100%);
+}
+
+.card-header {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.form-control, .form-select {
+    border-radius: 10px;
+    padding: 12px 16px;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus, .form-select:focus {
+    box-shadow: 0 0 0 4px rgba(67, 97, 238, 0.15);
+    border-color: #86b7fe;
+}
+
+.input-group-text {
+    border-radius: 10px 0 0 10px;
+}
+
+.ckeditor-field {
+    min-height: 300px;
+}
+
+.file-upload-area {
+    transition: all 0.3s ease;
+    border: 2px dashed #dee2e6;
+}
+
+.file-upload-area:hover {
+    border-color: #4361ee;
+    background-color: rgba(67, 97, 238, 0.05);
+}
+
+.btn {
+    padding: 10px 24px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.image-preview {
+    transition: all 0.3s ease;
+}
+
+.image-preview:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.alert {
+    border-radius: 10px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .display-5 {
+        font-size: 2.2rem;
     }
     
-    body {
-        background-color: var(--light-bg);
-        font-family: 'Inter', 'Segoe UI', Roboto, sans-serif;
+    .card-body {
+        padding: 1.5rem;
     }
     
-    .card {
-        border-radius: 12px;
-        overflow: hidden;
+    .d-flex.justify-content-between {
+        flex-direction: column;
+        gap: 1rem;
     }
     
-    .bg-gradient-primary {
-        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    .btn {
+        width: 100%;
     }
-    
-    .form-control, .form-select {
-        border-radius: 8px;
-        padding: 12px 16px;
-        border: 1px solid #dee2e6;
-        transition: all 0.3s ease;
-    }
-    
-    .form-control:focus, .form-select:focus {
-        border-color: var(--primary-color);
-        box-shadow: 0 0 0 0.25rem rgba(67, 97, 238, 0.15);
-    }
-    
-    .form-control-lg {
-        font-size: 1.1rem;
-    }
-    
-    .file-upload-area {
-        border-radius: 8px;
-        transition: all 0.3s ease;
-    }
-    
-    .file-upload-area:hover {
-        border-color: var(--primary-color);
-    }
-    
-    .btn-primary {
-        background-color: var(--primary-color);
-        border-color: var(--primary-color);
-        border-radius: 8px;
-        transition: all 0.3s ease;
-    }
-    
-    .btn-primary:hover {
-        background-color: var(--secondary-color);
-        border-color: var(--secondary-color);
-        transform: translateY(-2px);
-    }
+}
 </style>
 
 <script>
-    function previewImage(input) {
-        const preview = document.getElementById('preview');
-        const imagePreview = document.getElementById('imagePreview');
-        
-        if (input.files && input.files[0]) {
-            const reader = new FileReader();
-            
-            reader.onload = function(e) {
-                preview.src = e.target.result;
-                imagePreview.style.display = 'block';
-            }
-            
-            reader.readAsDataURL(input.files[0]);
-        }
-    }
+document.addEventListener('DOMContentLoaded', function() {
+    // File name display for image upload
+    const imageUpload = document.getElementById('imageUpload');
+    const fileName = document.getElementById('fileName');
     
-    function removeImage() {
-        const fileInput = document.querySelector('input[type="file"]');
-        const imagePreview = document.getElementById('imagePreview');
-        
-        fileInput.value = '';
-        imagePreview.style.display = 'none';
+    if (imageUpload && fileName) {
+        imageUpload.addEventListener('change', function() {
+            if (this.files.length > 0) {
+                fileName.textContent = 'Selected file: ' + this.files[0].name;
+            } else {
+                fileName.textContent = '';
+            }
+        });
     }
+});
+
+function previewImage(input) {
+    const preview = document.getElementById('preview');
+    const imagePreview = document.getElementById('imagePreview');
+    
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+            preview.src = e.target.result;
+            imagePreview.style.display = 'block';
+        }
+        
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+function removeImage() {
+    const fileInput = document.getElementById('imageUpload');
+    const imagePreview = document.getElementById('imagePreview');
+    const fileName = document.getElementById('fileName');
+    
+    fileInput.value = '';
+    imagePreview.style.display = 'none';
+    fileName.textContent = '';
+}
 </script>
 {% endblock %}

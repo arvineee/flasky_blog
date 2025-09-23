@@ -1,70 +1,1023 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-10">
-            <h1 class="text-center mb-4">Privacy Policy</h1>
+<div class="privacy-container">
+    <div class="privacy-header">
+        <div class="privacy-breadcrumb">
+            <a href="{{ url_for('main.index') }}">Home</a> / Privacy Policy
+        </div>
+        <h1 class="privacy-title">Privacy Policy</h1>
+        <p class="privacy-subtitle">Last Updated: <span id="current-date"></span></p>
+        <div class="privacy-summary">
+            <p>At <strong>Arval-Blog</strong>, we are committed to protecting your privacy and ensuring transparency about how we handle your personal information. This policy explains our practices in clear, straightforward language.</p>
+        </div>
+    </div>
 
-            <section class="mb-5">
-                <h2>Introduction</h2>
-		<p>At <b>Arval-Blog</b>, we respect your privacy and are committed to protecting your personal information. This Privacy Policy explains how we collect, use, and safeguard your data when you visit our blog or interact with our services. By using our site, you consent to our practices as described here.</p>
+    <div class="privacy-content">
+        <!-- Table of Contents -->
+        <div class="privacy-toc">
+            <h3>Contents</h3>
+            <ul>
+                <li><a href="#introduction">Introduction</a></li>
+                <li><a href="#information-collected">Information We Collect</a></li>
+                <li><a href="#information-use">How We Use Your Information</a></li>
+                <li><a href="#information-sharing">Sharing Your Information</a></li>
+                <li><a href="#cookies">Cookies & Tracking Technologies</a></li>
+                <li><a href="#data-security">Data Security</a></li>
+                <li><a href="#your-rights">Your Rights & Choices</a></li>
+                <li><a href="#policy-changes">Policy Changes</a></li>
+                <li><a href="#contact">Contact Us</a></li>
+            </ul>
+        </div>
+
+        <!-- Policy Sections -->
+        <div class="privacy-sections">
+            <section id="introduction" class="privacy-section">
+                <div class="section-header">
+                    <div class="section-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M12 16V12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M12 8H12.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <h2>Introduction</h2>
+                </div>
+                <div class="section-content">
+                    <p>At <strong>Arval-Blog</strong>, we respect your privacy and are committed to protecting your personal information in accordance with global privacy standards and regulations. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our blog or interact with our services.</p>
+                    <p>By using our site, you consent to the practices described in this policy. We encourage you to read this document carefully to understand our views and practices regarding your personal data.</p>
+                </div>
             </section>
 
-            <section class="mb-5">
-                <h2>Information We Collect</h2>
-                <ul>
-                    <li><strong>Personal Data:</strong> When you comment on posts, subscribe to our newsletter, or fill out contact forms, we might collect your name, email address, and any other information you willingly provide.</li>
-                    <li><strong>Usage Data:</strong> We collect information on how you interact with our blog, including pages visited, time spent on pages, and other analytics data to improve user experience.</li>
-                    <li><strong>Cookies:</strong> We use cookies to enhance your user experience. You can choose to disable cookies in your browser settings, though this might affect the functionality of our site.</li>
-                </ul>
+            <section id="information-collected" class="privacy-section">
+                <div class="section-header">
+                    <div class="section-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M21 12C21 13.1819 20.7672 14.3522 20.3149 15.4442C19.8626 16.5361 19.1997 17.5282 18.364 18.364C17.5282 19.1997 16.5361 19.8626 15.4442 20.3149C14.3522 20.7672 13.1819 21 12 21C10.8181 21 9.64778 20.7672 8.55585 20.3149C7.46392 19.8626 6.47177 19.1997 5.63604 18.364C4.80031 17.5282 4.13738 16.5361 3.68508 15.4442C3.23279 14.3522 3 13.1819 3 12C3 9.61305 3.94821 7.32387 5.63604 5.63604C7.32387 3.94821 9.61305 3 12 3C14.3869 3 16.6761 3.94821 18.364 5.63604C20.0518 7.32387 21 9.61305 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M12 12L16 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M12 12L8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M12 12V16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <h2>Information We Collect</h2>
+                </div>
+                <div class="section-content">
+                    <div class="info-category">
+                        <h4>Personal Data</h4>
+                        <p>When you interact with our services, we may collect information that identifies you personally, including:</p>
+                        <ul>
+                            <li><strong>Account Information:</strong> Name, email address, and username when you create an account or comment on posts</li>
+                            <li><strong>Communication Data:</strong> Information you provide when contacting us through forms or email</li>
+                            <li><strong>Subscription Data:</strong> Email address and preferences when you subscribe to our newsletter</li>
+                            <li><strong>User Content:</strong> Comments, posts, or other content you submit to our platform</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="info-category">
+                        <h4>Usage Data</h4>
+                        <p>We automatically collect information about how you interact with our blog, including:</p>
+                        <ul>
+                            <li>Pages visited, time spent on pages, and navigation paths</li>
+                            <li>Device information (browser type, operating system, device type)</li>
+                            <li>IP address and general location data (city/country level)</li>
+                            <li>Referring websites and search terms</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="info-category">
+                        <h4>Cookies and Similar Technologies</h4>
+                        <p>We use cookies and similar tracking technologies to enhance your experience, analyze site usage, and personalize content. You can control cookies through your browser settings, though this may affect functionality.</p>
+                    </div>
+                </div>
             </section>
 
-            <section class="mb-5">
-                <h2>How We Use Your Information</h2>
-                <ul>
-                    <li>To improve our blog's content and user experience based on how visitors use our site.</li>
-                    <li>To respond to your inquiries, comments, or for customer service purposes.</li>
-                    <li>For sending newsletters and updates if you've subscribed, with an easy opt-out option in every email.</li>
-                    <li>To protect our blog from abuse, spam, and other malicious activities.</li>
-                </ul>
+            <section id="information-use" class="privacy-section">
+                <div class="section-header">
+                    <div class="section-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M17 8H17.01M17 2C19.7614 2 22 4.23858 22 7C22 9.76142 19.7614 12 17 12C14.2386 12 12 9.76142 12 7C12 4.23858 14.2386 2 17 2ZM2 18.5C2 16.683 3.683 15 5.5 15H13.5C15.317 15 17 16.683 17 18.5C17 20.317 15.317 22 13.5 22H5.5C3.683 22 2 20.317 2 18.5Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <h2>How We Use Your Information</h2>
+                </div>
+                <div class="section-content">
+                    <p>We use your information for the following purposes:</p>
+                    
+                    <div class="usage-grid">
+                        <div class="usage-item">
+                            <div class="usage-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                            <div class="usage-text">
+                                <h4>Service Delivery</h4>
+                                <p>To provide, maintain, and improve our services</p>
+                            </div>
+                        </div>
+                        
+                        <div class="usage-item">
+                            <div class="usage-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M21 15C21 15.5304 20.7893 16.0391 20.4142 16.4142C20.0391 16.7893 19.5304 17 19 17H7L3 21V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H19C19.5304 3 20.0391 3.21071 20.4142 3.58579C20.7893 3.96086 21 4.46957 21 5V15Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                            <div class="usage-text">
+                                <h4>Communication</h4>
+                                <p>To respond to your inquiries and provide customer support</p>
+                            </div>
+                        </div>
+                        
+                        <div class="usage-item">
+                            <div class="usage-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M22 12H18L15 21L9 3L6 12H2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                            <div class="usage-text">
+                                <h4>Personalization</h4>
+                                <p>To tailor content and recommendations to your interests</p>
+                            </div>
+                        </div>
+                        
+                        <div class="usage-item">
+                            <div class="usage-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M12 16V12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M12 8H12.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                            <div class="usage-text">
+                                <h4>Analytics</h4>
+                                <p>To analyze trends and improve our services</p>
+                            </div>
+                        </div>
+                        
+                        <div class="usage-item">
+                            <div class="usage-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M12 6V12L16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                            <div class="usage-text">
+                                <h4>Marketing</h4>
+                                <p>To send newsletters and updates (with opt-out option)</p>
+                            </div>
+                        </div>
+                        
+                        <div class="usage-item">
+                            <div class="usage-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M16 16L12 12L8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                            <div class="usage-text">
+                                <h4>Security</h4>
+                                <p>To protect our blog from abuse, spam, and malicious activities</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="legal-basis">
+                        <h4>Legal Basis for Processing</h4>
+                        <p>We process your personal data based on one or more of the following legal grounds:</p>
+                        <ul>
+                            <li><strong>Consent:</strong> Where you have given us clear consent</li>
+                            <li><strong>Contract:</strong> Where processing is necessary for a contract with you</li>
+                            <li><strong>Legal Obligation:</strong> Where processing is necessary to comply with the law</li>
+                            <li><strong>Legitimate Interests:</strong> Where processing is necessary for our legitimate interests</li>
+                        </ul>
+                    </div>
+                </div>
             </section>
 
-            <section class="mb-5">
-                <h2>Sharing Your Information</h2>
-                <p>We do not sell, trade, or otherwise transfer your personal data to outside parties without your consent. We might share information with:</p>
-                <ul>
-                    <li>Service providers who help us maintain our blog (like hosting services), but under strict confidentiality agreements.</li>
-                    <li>If legally required, to comply with law enforcement or legal processes.</li>
-                </ul>
+            <section id="information-sharing" class="privacy-section">
+                <div class="section-header">
+                    <div class="section-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M18 9C18 10.6569 16.6569 12 15 12C13.3431 12 12 10.6569 12 9C12 7.34315 13.3431 6 15 6C16.6569 6 18 7.34315 18 9Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M6 9C6 10.6569 4.65685 12 3 12C1.34315 12 0 10.6569 0 9C0 7.34315 1.34315 6 3 6C4.65685 6 6 7.34315 6 9Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M18 3C18 4.65685 16.6569 6 15 6C13.3431 6 12 4.65685 12 3C12 1.34315 13.3431 0 15 0C16.6569 0 18 1.34315 18 3Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M6 15C6 16.6569 4.65685 18 3 18C1.34315 18 0 16.6569 0 15C0 13.3431 1.34315 12 3 12C4.65685 12 6 13.3431 6 15Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M18 15C18 16.6569 16.6569 18 15 18C13.3431 18 12 16.6569 12 15C12 13.3431 13.3431 12 15 12C16.6569 12 18 13.3431 18 15Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M6 3C6 4.65685 4.65685 6 3 6C1.34315 6 0 4.65685 0 3C0 1.34315 1.34315 0 3 0C4.65685 0 6 1.34315 6 3Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <h2>Sharing Your Information</h2>
+                </div>
+                <div class="section-content">
+                    <p>We do not sell, trade, or otherwise transfer your personal data to third parties for their marketing purposes. We may share your information with:</p>
+                    
+                    <div class="sharing-grid">
+                        <div class="sharing-item">
+                            <h4>Service Providers</h4>
+                            <p>Trusted third parties who assist us in operating our website, conducting our business, or serving our users, under strict confidentiality agreements</p>
+                        </div>
+                        
+                        <div class="sharing-item">
+                            <h4>Legal Requirements</h4>
+                            <p>When required to comply with legal obligations, court orders, or governmental requests</p>
+                        </div>
+                        
+                        <div class="sharing-item">
+                            <h4>Business Transfers</h4>
+                            <p>In connection with a merger, acquisition, or sale of all or a portion of our assets</p>
+                        </div>
+                        
+                        <div class="sharing-item">
+                            <h4>Protection of Rights</h4>
+                            <p>When we believe disclosure is necessary to protect our rights, property, or safety, or that of others</p>
+                        </div>
+                    </div>
+                    
+                    <div class="international-transfer">
+                        <h4>International Data Transfers</h4>
+                        <p>Your information may be transferred to and processed in countries other than your own. We ensure appropriate safeguards are in place to protect your data in accordance with this privacy policy.</p>
+                    </div>
+                </div>
             </section>
 
-            <section class="mb-5">
-                <h2>Your Rights</h2>
-                <ul>
-                    <li><strong>Access:</strong> You have the right to request access to your personal data we hold.</li>
-                    <li><strong>Correction:</strong> You can request correction of inaccurate data about you.</li>
-                    <li><strong>Deletion:</strong> You can ask us to delete your personal data where there is no compelling reason for us to continue processing it.</li>
-                    <li><strong>Opt-out:</strong> You can opt out of marketing communications at any time by clicking the unsubscribe link in the emails.</li>
-                </ul>
-                <p>To exercise these rights, please contact us at <a href="{{url_for('main.contact')}}">Contact Us</a>.</p>
+            <section id="cookies" class="privacy-section">
+                <div class="section-header">
+                    <div class="section-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2C12 2 8 3 8 7C8 9 9.5 9.5 9.5 11.5C9.5 13.5 8 14 8 16C8 19 12 22 12 22" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M12 2C12 2 16 3 16 7C16 9 14.5 9.5 14.5 11.5C14.5 13.5 16 14 16 16C16 19 12 22 12 22" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <circle cx="12" cy="7" r="1" fill="currentColor"/>
+                            <circle cx="9" cy="11" r="1" fill="currentColor"/>
+                            <circle cx="15" cy="11" r="1" fill="currentColor"/>
+                            <circle cx="12" cy="15" r="1" fill="currentColor"/>
+                            <circle cx="8" cy="17" r="1" fill="currentColor"/>
+                            <circle cx="16" cy="17" r="1" fill="currentColor"/>
+                        </svg>
+                    </div>
+                    <h2>Cookies & Tracking Technologies</h2>
+                </div>
+                <div class="section-content">
+                    <p>We use cookies and similar technologies to enhance your experience, analyze site usage, and personalize content. Here's how we use these technologies:</p>
+                    
+                    <div class="cookie-types">
+                        <div class="cookie-type">
+                            <h4>Essential Cookies</h4>
+                            <p>Required for basic site functionality and security</p>
+                        </div>
+                        
+                        <div class="cookie-type">
+                            <h4>Analytical/Performance Cookies</h4>
+                            <p>Help us understand how visitors interact with our website</p>
+                        </div>
+                        
+                        <div class="cookie-type">
+                            <h4>Functionality Cookies</h4>
+                            <p>Enable enhanced functionality and personalization</p>
+                        </div>
+                        
+                        <div class="cookie-type">
+                            <h4>Targeting Cookies</h4>
+                            <p>Used to deliver relevant advertisements and track campaign performance</p>
+                        </div>
+                    </div>
+                    
+                    <div class="cookie-controls">
+                        <h4>Cookie Controls</h4>
+                        <p>You can control cookies through your browser settings. Most browsers allow you to refuse cookies or delete them. However, blocking some types of cookies may impact your experience on our website.</p>
+                        
+                        <div class="browser-links">
+                            <p>Learn how to manage cookies in popular browsers:</p>
+                            <div class="browser-buttons">
+                                <a href="https://support.google.com/chrome/answer/95647" target="_blank" class="browser-btn">Chrome</a>
+                                <a href="https://support.mozilla.org/en-US/kb/enable-and-disable-cookies-website-preferences" target="_blank" class="browser-btn">Firefox</a>
+                                <a href="https://support.microsoft.com/en-us/help/4027947/microsoft-edge-delete-cookies" target="_blank" class="browser-btn">Edge</a>
+                                <a href="https://support.apple.com/guide/safari/manage-cookies-and-website-data-sfri11471/mac" target="_blank" class="browser-btn">Safari</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </section>
 
-            <section class="mb-5">
-                <h2>Security</h2>
-                <p>We take the security of your data seriously and use industry-standard practices to protect your information. However, no method of transmission over the Internet or method of electronic storage is 100% secure. Therefore, while we strive to use commercially acceptable means to protect your personal information, we cannot guarantee its absolute security.</p>
+            <section id="data-security" class="privacy-section">
+                <div class="section-header">
+                    <div class="section-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M19 11C19 11 21 9 21 6C21 3 19.5 2 17 2C14.5 2 13 3 13 6C13 9 15 11 15 11" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M5 11C5 11 3 9 3 6C3 3 4.5 2 7 2C9.5 2 11 3 11 6C11 9 9 11 9 11" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M5 11H19V22H5V11Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M12 15V19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M9 17H15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <h2>Data Security</h2>
+                </div>
+                <div class="section-content">
+                    <p>We implement appropriate technical and organizational measures to protect your personal data against unauthorized access, alteration, disclosure, or destruction. Our security measures include:</p>
+                    
+                    <div class="security-features">
+                        <div class="security-item">
+                            <h4>Encryption</h4>
+                            <p>Data encryption in transit and at rest using industry-standard protocols</p>
+                        </div>
+                        
+                        <div class="security-item">
+                            <h4>Access Controls</h4>
+                            <p>Strict access controls limiting who can access your personal information</p>
+                        </div>
+                        
+                        <div class="security-item">
+                            <h4>Regular Audits</h4>
+                            <p>Regular security assessments and vulnerability testing</p>
+                        </div>
+                        
+                        <div class="security-item">
+                            <h4>Employee Training</h4>
+                            <p>Comprehensive privacy and security training for all staff</p>
+                        </div>
+                    </div>
+                    
+                    <div class="security-note">
+                        <p>While we implement robust security measures, no method of transmission over the Internet or electronic storage is 100% secure. We strive to use commercially acceptable means to protect your personal information but cannot guarantee its absolute security.</p>
+                    </div>
+                </div>
             </section>
 
-            <section class="mb-5">
-                <h2>Changes to This Privacy Policy</h2>
-                <p>We may update our Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page. You are advised to review this Privacy Policy periodically for any changes. Changes are effective immediately after they are posted on this page.</p>
+            <section id="your-rights" class="privacy-section">
+                <div class="section-header">
+                    <div class="section-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M9 12L11 14L15 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <h2>Your Rights & Choices</h2>
+                </div>
+                <div class="section-content">
+                    <p>Depending on your location, you may have the following rights regarding your personal data:</p>
+                    
+                    <div class="rights-grid">
+                        <div class="right-item">
+                            <h4>Access</h4>
+                            <p>Request access to the personal data we hold about you</p>
+                        </div>
+                        
+                        <div class="right-item">
+                            <h4>Correction</h4>
+                            <p>Request correction of inaccurate or incomplete data</p>
+                        </div>
+                        
+                        <div class="right-item">
+                            <h4>Deletion</h4>
+                            <p>Request deletion of your personal data under certain circumstances</p>
+                        </div>
+                        
+                        <div class="right-item">
+                            <h4>Restriction</h4>
+                            <p>Request restriction of processing of your personal data</p>
+                        </div>
+                        
+                        <div class="right-item">
+                            <h4>Portability</h4>
+                            <p>Request transfer of your data to another organization</p>
+                        </div>
+                        
+                        <div class="right-item">
+                            <h4>Objection</h4>
+                            <p>Object to processing of your personal data</p>
+                        </div>
+                        
+                        <div class="right-item">
+                            <h4>Withdraw Consent</h4>
+                            <p>Withdraw consent where we rely on consent to process your data</p>
+                        </div>
+                        
+                        <div class="right-item">
+                            <h4>Opt-Out</h4>
+                            <p>Opt out of marketing communications at any time</p>
+                        </div>
+                    </div>
+                    
+                    <div class="rights-exercise">
+                        <p>To exercise any of these rights, please contact us using the details provided in the "Contact Us" section. We will respond to your request within the timeframe required by applicable law.</p>
+                    </div>
+                </div>
             </section>
 
-            <section class="mb-5">
-                <h2>Contact Us</h2>
-		<p>If you have any questions about this Privacy Policy, please <a href="{{url_for('main.contact')}}">Contact Us</a>.</p>
+            <section id="policy-changes" class="privacy-section">
+                <div class="section-header">
+                    <div class="section-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M4 4.5V8.5H4.5M20 4.5V8.5H19.5M4 19.5V15.5H4.5M20 19.5V15.5H19.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <rect x="4.5" y="4.5" width="15" height="15" rx="2" stroke="currentColor" stroke-width="2"/>
+                            <path d="M12 9.5V14.5L15 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <h2>Policy Changes</h2>
+                </div>
+                <div class="section-content">
+                    <p>We may update this Privacy Policy from time to time to reflect changes in our practices, technology, legal requirements, or other factors. When we make changes, we will update the "Last Updated" date at the top of this policy.</p>
+                    
+                    <div class="changes-notice">
+                        <h4>Notification of Changes</h4>
+                        <p>For significant changes, we will notify you through appropriate channels, which may include email notifications or prominent notices on our website. We encourage you to review this policy periodically to stay informed about how we are protecting your information.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="contact" class="privacy-section">
+                <div class="section-header">
+                    <div class="section-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M4 4H20C21.1 4 22 4.9 22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6C2 4.9 2.9 4 4 4Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M22 6L12 13L2 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <h2>Contact Us</h2>
+                </div>
+                <div class="section-content">
+                    <p>If you have any questions, concerns, or requests regarding this Privacy Policy or our data practices, please contact us:</p>
+                    
+                    <div class="contact-options">
+                        <div class="contact-option">
+                            <h4>Email</h4>
+                            <p>Send us an email at <a href="mailto:privacy@arval-blog.com">privacy@arval-blog.com</a></p>
+                        </div>
+                        
+                        <div class="contact-option">
+                            <h4>Contact Form</h4>
+                            <p>Use our <a href="{{url_for('main.contact')}}">online contact form</a></p>
+                        </div>
+                        
+                        <div class="contact-option">
+                            <h4>Postal Mail</h4>
+                            <p>Arval-Blog Privacy Team<br>
+                            [Your Company Address]<br>
+                            [City, State, ZIP Code]</p>
+                        </div>
+                    </div>
+                    
+                    <div class="response-time">
+                        <p>We strive to respond to all legitimate requests within 30 days. Occasionally, it may take longer if your request is particularly complex or you have made several requests.</p>
+                    </div>
+                </div>
             </section>
         </div>
     </div>
 </div>
+
+<style>
+    /* Modern Privacy Policy Styles */
+    .privacy-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem 1.5rem;
+        font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+        color: #1e293b;
+        line-height: 1.6;
+    }
+
+    .privacy-header {
+        text-align: center;
+        margin-bottom: 3rem;
+        padding-bottom: 2rem;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .privacy-breadcrumb {
+        font-size: 0.875rem;
+        color: #64748b;
+        margin-bottom: 1rem;
+    }
+
+    .privacy-breadcrumb a {
+        color: #3b82f6;
+        text-decoration: none;
+        transition: color 0.2s ease;
+    }
+
+    .privacy-breadcrumb a:hover {
+        color: #2563eb;
+    }
+
+    .privacy-title {
+        font-size: 2.5rem;
+        font-weight: 800;
+        color: #1e293b;
+        margin-bottom: 0.5rem;
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .privacy-subtitle {
+        font-size: 1rem;
+        color: #64748b;
+        margin-bottom: 1.5rem;
+    }
+
+    .privacy-summary {
+        max-width: 800px;
+        margin: 0 auto;
+        background: #f1f5f9;
+        padding: 1.5rem;
+        border-radius: 12px;
+        border-left: 4px solid #3b82f6;
+    }
+
+    .privacy-summary p {
+        margin: 0;
+        font-size: 1.125rem;
+        color: #475569;
+    }
+
+    .privacy-content {
+        display: grid;
+        grid-template-columns: 250px 1fr;
+        gap: 2rem;
+    }
+
+    .privacy-toc {
+        position: sticky;
+        top: 2rem;
+        align-self: start;
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+
+    .privacy-toc h3 {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #e2e8f0;
+    }
+
+    .privacy-toc ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .privacy-toc li {
+        margin-bottom: 0.75rem;
+    }
+
+    .privacy-toc a {
+        display: block;
+        color: #64748b;
+        text-decoration: none;
+        font-weight: 500;
+        padding: 0.5rem 0.75rem;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+    }
+
+    .privacy-toc a:hover,
+    .privacy-toc a:focus {
+        color: #3b82f6;
+        background: #f1f5f9;
+    }
+
+    .privacy-sections {
+        display: flex;
+        flex-direction: column;
+        gap: 2rem;
+    }
+
+    .privacy-section {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .privacy-section:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+
+    .section-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .section-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 48px;
+        height: 48px;
+        background: #eff6ff;
+        border-radius: 10px;
+        margin-right: 1rem;
+        color: #3b82f6;
+    }
+
+    .section-header h2 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin: 0;
+    }
+
+    .section-content p {
+        color: #64748b;
+        margin-bottom: 1rem;
+    }
+
+    .section-content ul {
+        color: #64748b;
+        margin-bottom: 1rem;
+        padding-left: 1.5rem;
+    }
+
+    .section-content li {
+        margin-bottom: 0.5rem;
+    }
+
+    .info-category {
+        margin-bottom: 2rem;
+    }
+
+    .info-category h4 {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 0.5rem;
+    }
+
+    .usage-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1.5rem;
+        margin: 2rem 0;
+    }
+
+    .usage-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .usage-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        width: 40px;
+        height: 40px;
+        background: #f8fafc;
+        border-radius: 8px;
+        color: #3b82f6;
+    }
+
+    .usage-text h4 {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #1e293b;
+        margin: 0 0 0.25rem 0;
+    }
+
+    .usage-text p {
+        margin: 0;
+        font-size: 0.9rem;
+        color: #64748b;
+    }
+
+    .legal-basis {
+        background: #f8fafc;
+        padding: 1.5rem;
+        border-radius: 8px;
+        margin: 2rem 0;
+    }
+
+    .legal-basis h4 {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 1rem;
+    }
+
+    .sharing-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin: 2rem 0;
+    }
+
+    .sharing-item {
+        background: #f8fafc;
+        padding: 1.5rem;
+        border-radius: 8px;
+    }
+
+    .sharing-item h4 {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #1e293b;
+        margin: 0 0 0.5rem 0;
+    }
+
+    .sharing-item p {
+        margin: 0;
+        font-size: 0.9rem;
+        color: #64748b;
+    }
+
+    .international-transfer {
+        background: #eff6ff;
+        padding: 1.5rem;
+        border-radius: 8px;
+        margin: 2rem 0;
+    }
+
+    .international-transfer h4 {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 1rem;
+    }
+
+    .cookie-types {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin: 2rem 0;
+    }
+
+    .cookie-type {
+        background: #f8fafc;
+        padding: 1.5rem;
+        border-radius: 8px;
+    }
+
+    .cookie-type h4 {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #1e293b;
+        margin: 0 0 0.5rem 0;
+    }
+
+    .cookie-type p {
+        margin: 0;
+        font-size: 0.9rem;
+        color: #64748b;
+    }
+
+    .cookie-controls {
+        background: #eff6ff;
+        padding: 1.5rem;
+        border-radius: 8px;
+        margin: 2rem 0;
+    }
+
+    .cookie-controls h4 {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 1rem;
+    }
+
+    .browser-links p {
+        margin-bottom: 1rem;
+    }
+
+    .browser-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+    }
+
+    .browser-btn {
+        display: inline-block;
+        padding: 0.5rem 1rem;
+        background: #3b82f6;
+        color: white;
+        text-decoration: none;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        transition: background 0.2s ease;
+    }
+
+    .browser-btn:hover {
+        background: #2563eb;
+    }
+
+    .security-features {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin: 2rem 0;
+    }
+
+    .security-item {
+        background: #f8fafc;
+        padding: 1.5rem;
+        border-radius: 8px;
+    }
+
+    .security-item h4 {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #1e293b;
+        margin: 0 0 0.5rem 0;
+    }
+
+    .security-item p {
+        margin: 0;
+        font-size: 0.9rem;
+        color: #64748b;
+    }
+
+    .security-note {
+        background: #fef3c7;
+        padding: 1.5rem;
+        border-radius: 8px;
+        border-left: 4px solid #f59e0b;
+    }
+
+    .rights-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin: 2rem 0;
+    }
+
+    .right-item {
+        background: #f8fafc;
+        padding: 1.5rem;
+        border-radius: 8px;
+    }
+
+    .right-item h4 {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #1e293b;
+        margin: 0 0 0.5rem 0;
+    }
+
+    .right-item p {
+        margin: 0;
+        font-size: 0.9rem;
+        color: #64748b;
+    }
+
+    .rights-exercise {
+        background: #eff6ff;
+        padding: 1.5rem;
+        border-radius: 8px;
+        margin: 2rem 0;
+    }
+
+    .changes-notice {
+        background: #f0f9ff;
+        padding: 1.5rem;
+        border-radius: 8px;
+        margin: 2rem 0;
+    }
+
+    .changes-notice h4 {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 1rem;
+    }
+
+    .contact-options {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin: 2rem 0;
+    }
+
+    .contact-option {
+        background: #f8fafc;
+        padding: 1.5rem;
+        border-radius: 8px;
+    }
+
+    .contact-option h4 {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #1e293b;
+        margin: 0 0 0.5rem 0;
+    }
+
+    .contact-option p {
+        margin: 0;
+        font-size: 0.9rem;
+        color: #64748b;
+    }
+
+    .contact-option a {
+        color: #3b82f6;
+        text-decoration: none;
+    }
+
+    .contact-option a:hover {
+        text-decoration: underline;
+    }
+
+    .response-time {
+        background: #f0f9ff;
+        padding: 1.5rem;
+        border-radius: 8px;
+        margin: 2rem 0;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 900px) {
+        .privacy-content {
+            grid-template-columns: 1fr;
+        }
+        
+        .privacy-toc {
+            position: static;
+            margin-bottom: 2rem;
+        }
+    }
+
+    @media (max-width: 640px) {
+        .privacy-title {
+            font-size: 2rem;
+        }
+        
+        .privacy-section {
+            padding: 1.5rem;
+        }
+        
+        .section-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .section-icon {
+            margin-bottom: 1rem;
+        }
+        
+        .usage-grid,
+        .sharing-grid,
+        .cookie-types,
+        .security-features,
+        .rights-grid,
+        .contact-options {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<script>
+    // Set current date
+    document.getElementById('current-date').textContent = new Date().toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+
+    // Smooth scrolling for table of contents links
+    document.querySelectorAll('.privacy-toc a').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const targetId = this.getAttribute('href');
+            const targetElement = document.querySelector(targetId);
+            if (targetElement) {
+                window.scrollTo({
+                    top: targetElement.offsetTop - 20,
+                    behavior: 'smooth'
+                });
+            }
+        });
+    });
+
+    // Highlight current section in TOC when scrolling
+    window.addEventListener('scroll', function() {
+        const sections = document.querySelectorAll('.privacy-section');
+        const navLinks = document.querySelectorAll('.privacy-toc a');
+        
+        let currentSection = '';
+        
+        sections.forEach(section => {
+            const sectionTop = section.offsetTop;
+            if (pageYOffset >= sectionTop - 100) {
+                currentSection = '#' + section.getAttribute('id');
+            }
+        });
+        
+        navLinks.forEach(link => {
+            link.classList.remove('active');
+            if (link.getAttribute('href') === currentSection) {
+                link.classList.add('active');
+            }
+        });
+    });
+</script>
 {% endblock %}

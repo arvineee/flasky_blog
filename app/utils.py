@@ -2,6 +2,28 @@
 import bleach
 from app.models import Post, User
 from flask import url_for
+import hashlib
+import os
+
+def allowed_file(filename, extensions=None):
+    if not extensions:
+        extensions = ['jpg', 'jpeg', 'png', 'gif']
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in extensions
+
+
+
+def get_avatar_url(email, username, size=32):
+    """
+    Generate a Gravatar URL or fallback to UI Avatars based on email or username
+    """
+    if email:
+        # Try Gravatar first
+        email_hash = hashlib.md5(email.lower().encode('utf-8')).hexdigest()
+        gravatar_url = f"https://www.gravatar.com/avatar/{email_hash}?s={size}&d=identicon"
+        return gravatar_url
+    else:
+        # Fallback to UI Avatars
+        return f"https://ui-avatars.com/api/?name={username}&background=random&size={size}"
 
 def get_recommended_posts(current_post_id=None, limit=3):
     """

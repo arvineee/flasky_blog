@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <p class="card-text small text-muted">${post.desc ? post.desc.substring(0, 100) + '...' : ''}</p>
                             </div>
                             <div class="card-footer bg-transparent">
-                                <a href="/see_more/${post.id}" class="btn btn-primary btn-sm w-100">
+                                <a href="/admin/see_more/${post.id}" class="btn btn-primary btn-sm w-100">
                                     Read More <i class="fas fa-arrow-right ms-1"></i>
                                 </a>
                             </div>
@@ -73,7 +73,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Only run on article pages or after some reading time on index
-    const isArticlePage = window.location.pathname.includes('/see_more/');
+    const isArticlePage = window.location.pathname.includes('admin/see_more/');
     const isIndexPage = window.location.pathname === '/';
     
     if (isArticlePage) {

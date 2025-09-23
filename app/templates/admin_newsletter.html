@@ -1,55 +1,305 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="container mt-4">
+<div class="container py-5">
+    <!-- Header Section -->
+    <div class="row mb-5">
+        <div class="col-12 text-center">
+            <h1 class="display-5 fw-bold text-primary mb-3">
+                <i class="fas fa-paper-plane me-2"></i>Send Newsletter
+            </h1>
+            <p class="lead text-muted">Connect with your subscribers</p>
+        </div>
+    </div>
+
+    <!-- Main Form Card -->
     <div class="row justify-content-center">
-        <div class="col-lg-8">
-            <div class="card shadow">
-                <div class="card-header bg-primary text-white">
-                    <h4 class="mb-0">Send Newsletter</h4>
+        <div class="col-lg-10 col-xl-8">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-gradient-primary text-white py-3">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-bullhorn me-2"></i>Compose Newsletter
+                    </h5>
                 </div>
-                <div class="card-body">
-                    <div class="alert alert-info">
-                        <i class="bi bi-info-circle"></i>
-                        This newsletter will be sent to <strong>{{ subscribers_count }}</strong> active subscribers.
-                    </div>
-                    
-                    <form method="POST">
-                        {{ form.hidden_tag() }}
-                        
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">{{ form.subject.label }}</label>
-                            {{ form.subject(class="form-control" + (' is-invalid' if form.subject.errors else '')) }}
-                            {% for error in form.subject.errors %}
-                                <div class="invalid-feedback">{{ error }}</div>
-                            {% endfor %}
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">{{ form.message.label }}</label>
-                            {{ form.message(class="form-control", rows="10", 
-                                placeholder="Write your newsletter content here...") }}
-                            {% for error in form.message.errors %}
-                                <div class="invalid-feedback">{{ error }}</div>
-                            {% endfor %}
-                            <div class="form-text">
-                                This message will be sent to all active subscribers. An unsubscribe link will be automatically added.
+                
+                <div class="card-body p-4">
+                    <!-- Subscriber Stats -->
+                    <div class="alert alert-info border-0 bg-light-info">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-grow-1">
+                                <h6 class="alert-heading mb-1 text-info">
+                                    <i class="fas fa-users me-2"></i>Audience Reach
+                                </h6>
+                                <p class="mb-0">This newsletter will be delivered to <strong class="text-dark">{{ subscribers_count }}</strong> active subscribers.</p>
+                            </div>
+                            <div class="flex-shrink-0 ms-3">
+                                <i class="fas fa-envelope-open-text fa-2x text-info"></i>
                             </div>
                         </div>
+                    </div>
+
+                    <form method="POST" id="newsletterForm">
+                        {{ form.hidden_tag() }}
                         
-                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                            <a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-secondary me-md-2">
-                                Cancel
+                        <!-- Subject Field -->
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold text-dark">{{ form.subject.label }}</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0">
+                                    <i class="fas fa-tag text-primary"></i>
+                                </span>
+                                {{ form.subject(class="form-control form-control-lg border-start-0" + (' is-invalid' if form.subject.errors else ''), placeholder="Enter an engaging subject line") }}
+                            </div>
+                            {% for error in form.subject.errors %}
+                            <div class="invalid-feedback d-block">{{ error }}</div>
+                            {% endfor %}
+                            <div class="form-text mt-2">A good subject line increases open rates</div>
+                        </div>
+
+                        <!-- Message Field -->
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label class="form-label fw-semibold text-dark mb-0">{{ form.message.label }}</label>
+                                <span class="badge bg-primary" id="charCount">0 characters</span>
+                            </div>
+                            {{ form.message(class="form-control", rows="10", 
+                                placeholder="Write your newsletter content here...", 
+                                oninput="updateCharCount(this)") }}
+                            {% for error in form.message.errors %}
+                            <div class="invalid-feedback d-block">{{ error }}</div>
+                            {% endfor %}
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>
+                                An unsubscribe link will be automatically added to the bottom of your message.
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="d-flex justify-content-between align-items-center mt-5 pt-4 border-top">
+                            <a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-outline-secondary rounded-pill px-4">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
                             </a>
-                            <button type="submit" class="btn btn-primary" 
-                                    onclick="return confirm('Are you sure you want to send this newsletter to all subscribers?')">
-                                <i class="bi bi-send"></i> Send Newsletter
-                            </button>
+                            <div>
+                                <button type="button" class="btn btn-outline-info rounded-pill px-4 me-2" data-bs-toggle="modal" data-bs-target="#previewModal">
+                                    <i class="fas fa-eye me-2"></i>Preview
+                                </button>
+                                <button type="submit" class="btn btn-primary rounded-pill px-4" id="sendButton">
+                                    <i class="fas fa-paper-plane me-2"></i>Send Newsletter
+                                </button>
+                            </div>
                         </div>
                     </form>
+                </div>
+            </div>
+            
+            <!-- Tips Card -->
+            <div class="card border-0 mt-4 bg-light">
+                <div class="card-body p-4">
+                    <h6 class="card-title mb-3 text-primary">
+                        <i class="fas fa-lightbulb me-2"></i>Newsletter Best Practices
+                    </h6>
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Keep subject lines under 50 characters</li>
+                        <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Personalize content when possible</li>
+                        <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Include a clear call-to-action</li>
+                        <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Optimize for mobile devices</li>
+                        <li><i class="fas fa-check-circle text-success me-2"></i>Test before sending to all subscribers</li>
+                    </ul>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Preview Modal -->
+<div class="modal fade" id="previewModal" tabindex="-1" aria-labelledby="previewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="previewModalLabel">
+                    <i class="fas fa-eye me-2"></i>Newsletter Preview
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="border-bottom pb-3 mb-3">
+                    <h6 class="text-muted">Subject:</h6>
+                    <h4 id="previewSubject" class="text-primary">Your subject will appear here</h4>
+                </div>
+                <div>
+                    <h6 class="text-muted">Content:</h6>
+                    <div id="previewContent" class="bg-light p-3 rounded" style="min-height: 200px;">
+                        Your newsletter content will appear here
+                    </div>
+                </div>
+                <div class="mt-3 text-muted small">
+                    <i class="fas fa-info-circle me-1"></i>
+                    An unsubscribe link will be automatically added to the bottom of your message.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary rounded-pill" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div class="modal fade" id="confirmationModal" tabindex="-1" aria-labelledby="confirmationModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title" id="confirmationModalLabel">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Confirm Sending
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to send this newsletter to <strong>{{ subscribers_count }}</strong> subscribers?</p>
+                <p class="text-muted small">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary rounded-pill" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary rounded-pill" id="confirmSend">Yes, Send Newsletter</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+body {
+    background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
+    min-height: 100vh;
+}
+
+.card {
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #4361ee 0%, #3a0ca3 100%);
+}
+
+.card-header {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.form-control, .form-select {
+    border-radius: 10px;
+    padding: 12px 16px;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus, .form-select:focus {
+    box-shadow: 0 0 0 4px rgba(67, 97, 238, 0.15);
+    border-color: #86b7fe;
+}
+
+.input-group-text {
+    border-radius: 10px 0 0 10px;
+}
+
+.btn {
+    padding: 10px 24px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.alert {
+    border-radius: 12px;
+    border: none;
+}
+
+.bg-light-info {
+    background-color: rgba(13, 202, 240, 0.15) !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .display-5 {
+        font-size: 2.2rem;
+    }
+    
+    .card-body {
+        padding: 1.5rem;
+    }
+    
+    .d-flex.justify-content-between {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .btn {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Character count for message
+    const messageField = document.querySelector('textarea[name="message"]');
+    if (messageField) {
+        updateCharCount(messageField);
+    }
+    
+    // Preview modal functionality
+    const previewModal = document.getElementById('previewModal');
+    if (previewModal) {
+        previewModal.addEventListener('show.bs.modal', function() {
+            const subject = document.querySelector('input[name="subject"]').value || 'Your subject will appear here';
+            const message = document.querySelector('textarea[name="message"]').value || 'Your newsletter content will appear here';
+            
+            document.getElementById('previewSubject').textContent = subject;
+            document.getElementById('previewContent').textContent = message;
+        });
+    }
+    
+    // Confirmation modal for sending
+    const confirmationModal = new bootstrap.Modal(document.getElementById('confirmationModal'));
+    const sendButton = document.getElementById('sendButton');
+    const confirmSend = document.getElementById('confirmSend');
+    const newsletterForm = document.getElementById('newsletterForm');
+    
+    if (sendButton && confirmSend && newsletterForm) {
+        sendButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Basic validation
+            const subject = document.querySelector('input[name="subject"]').value;
+            const message = document.querySelector('textarea[name="message"]').value;
+            
+            if (!subject.trim()) {
+                alert('Please enter a subject for your newsletter');
+                return;
+            }
+            
+            if (!message.trim()) {
+                alert('Please enter content for your newsletter');
+                return;
+            }
+            
+            confirmationModal.show();
+        });
+        
+        confirmSend.addEventListener('click', function() {
+            newsletterForm.submit();
+        });
+    }
+});
+
+function updateCharCount(textarea) {
+    const charCount = document.getElementById('charCount');
+    if (charCount) {
+        charCount.textContent = textarea.value.length + ' characters';
+    }
+}
+</script>
 {% endblock %}

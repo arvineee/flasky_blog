@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <h1>API Documentation</h1>
+    <p>Use our API to create and manage posts programmatically.</p>
+    
+    <h2>Authentication</h2>
+    <p>All API requests require an API key in the <code>X-API-Key</code> header.</p>
+    
+    <h2>Endpoints</h2>
+    
+    <h3>Create a Post</h3>
+    <p><code>POST /api/posts</code></p>
+    <p>Parameters (form-data):</p>
+    <ul>
+        <li><code>title</code> (required) - Post title</li>
+        <li><code>content</code> (required) - Post content (HTML allowed)</li>
+        <li><code>category_id</code> (optional) - Category ID</li>
+        <li><code>image</code> (optional) - Featured image</li>
+    </ul>
+    
+    <h3>List Posts</h3>
+    <p><code>GET /api/posts?page=1&per_page=10</code></p>
+    
+    <h3>Get Categories</h3>
+    <p><code>GET /api/categories</code></p>
+    
+    <h2>Example Usage</h2>
+    <pre>
+curl -X POST \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -F "title=My New Post" \
+  -F "content=This is the content of my post" \
+  -F "category_id=1" \
+  -F "image=@/path/to/image.jpg" \
+  {{ url_for('api.create_post', _external=True) }}
+    </pre>
+</div>
+{% endblock %}

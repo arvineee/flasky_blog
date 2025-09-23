@@ -1,55 +1,351 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container mt-4">
-    <h1 class="text-center mb-4">Traffic Statistics</h1>
+<div class="container py-5">
+    <!-- Header Section -->
+    <div class="row mb-5">
+        <div class="col-12 text-center">
+            <h1 class="display-5 fw-bold text-primary mb-3">
+                <i class="fas fa-chart-line me-2"></i>Traffic Analytics
+            </h1>
+            <p class="lead text-muted">Monitor your website's traffic and user engagement</p>
+        </div>
+    </div>
 
-    <!-- Traffic Summary Section -->
-    <div class="row mb-4">
-        <div class="col-md-4">
-            <div class="card bg-light p-3">
-                <h5 class="card-title">Total Visitors</h5>
-                <p class="card-text">{{ total_visitors }}</p>
+    <!-- Summary Cards -->
+    <div class="row mb-5">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h6 class="card-title text-white-50">Total Visitors</h6>
+                            <h3 class="fw-bold mb-0">{{ total_visitors }}</h3>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fas fa-users fa-2x"></i>
+                        </div>
+                    </div>
+                    <div class="progress mt-3 bg-white bg-opacity-25" style="height: 5px;">
+                        <div class="progress-bar bg-white" style="width: 100%"></div>
+                    </div>
+                </div>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="card bg-light p-3">
-                <h5 class="card-title">Total Time Spent</h5>
-                <p class="card-text">{{ total_time_spent }} seconds</p>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h6 class="card-title text-white-50">Total Time Spent</h6>
+                            <h3 class="fw-bold mb-0">{{ total_time_spent|round(2) }}</h3>
+                            <small>seconds</small>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fas fa-clock fa-2x"></i>
+                        </div>
+                    </div>
+                    <div class="progress mt-3 bg-white bg-opacity-25" style="height: 5px;">
+                        <div class="progress-bar bg-white" style="width: 100%"></div>
+                    </div>
+                </div>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="card bg-light p-3">
-                <h5 class="card-title">Average Time Per Visitor</h5>
-                <p class="card-text">{{ avg_time_per_visitor }} seconds</p>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h6 class="card-title text-white-50">Avg. Time/Visitor</h6>
+                            <h3 class="fw-bold mb-0">{{ avg_time_per_visitor|round(2) }}</h3>
+                            <small>seconds</small>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fas fa-user-clock fa-2x"></i>
+                        </div>
+                    </div>
+                    <div class="progress mt-3 bg-white bg-opacity-25" style="height: 5px;">
+                        <div class="progress-bar bg-white" style="width: 100%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card bg-warning text-dark">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h6 class="card-title text-dark-50">Total Records</h6>
+                            <h3 class="fw-bold mb-0">{{ traffic_stats|length }}</h3>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fas fa-database fa-2x"></i>
+                        </div>
+                    </div>
+                    <div class="progress mt-3 bg-dark bg-opacity-25" style="height: 5px;">
+                        <div class="progress-bar bg-dark" style="width: 100%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters and Controls -->
+    <div class="card mb-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0"><i class="fas fa-filter me-2"></i>Filter Data</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Time Range</label>
+                    <select class="form-select" id="timeRange">
+                        <option value="7">Last 7 Days</option>
+                        <option value="30" selected>Last 30 Days</option>
+                        <option value="90">Last 90 Days</option>
+                        <option value="365">Last Year</option>
+                    </select>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Sort By</label>
+                    <select class="form-select" id="sortBy">
+                        <option value="timestamp" selected>Date (Newest First)</option>
+                        <option value="visitors">Visitors (High to Low)</option>
+                        <option value="time">Time Spent (High to Low)</option>
+                    </select>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Search</label>
+                    <input type="text" class="form-control" placeholder="Search endpoint or IP..." id="searchInput">
+                </div>
             </div>
         </div>
     </div>
 
     <!-- Traffic Data Table -->
-    <div class="table-responsive">
-        <table class="table table-striped table-bordered">
-            <thead class="table-dark">
-                <tr>
-                    <th>Endpoint</th>
-                    <th>Visitor IP</th>
-                    <th>Visitors</th>
-                    <th>Total Time Spent</th>
-                    <th>Timestamp</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for stat in traffic_stats %}
-                <tr>
-                    <td>{{ stat.endpoint }}</td>
-                    <td>{{ stat.visitor_ip }}</td>
-                    <td>{{ stat.visitor_count }}</td>
-                    <td>{{ stat.total_time_spent }}</td>
-                    <td>{{ stat.timestamp }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <div class="card">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-table me-2"></i>Traffic Data</h5>
+            <span class="badge bg-light text-primary">{{ traffic_stats|length }} records</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0" id="trafficTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Endpoint</th>
+                            <th>Visitor IP</th>
+                            <th>Visitors</th>
+                            <th>Total Time Spent</th>
+                            <th>Avg. Time</th>
+                            <th class="pe-4">Timestamp</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for stat in traffic_stats %}
+                        <tr>
+                            <td class="ps-4">
+                                <span class="endpoint-badge">{{ stat.endpoint|truncate(30) }}</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary">{{ stat.visitor_ip }}</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-primary rounded-pill">{{ stat.visitor_count }}</span>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-grow-1 me-2">
+                                        <div class="progress" style="height: 6px;">
+                                            <div class="progress-bar bg-success" 
+                                                 style="width: {{ (stat.total_time_spent / (total_time_spent or 1)) * 100 }}%">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <span class="text-nowrap">{{ stat.total_time_spent|round(2) }}s</span>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge bg-info">
+                                    {{ (stat.total_time_spent / (stat.visitor_count or 1))|round(2) }}s
+                                </span>
+                            </td>
+                            <td class="pe-4">
+                                <small class="text-muted">{{ stat.timestamp.strftime('%Y-%m-%d %H:%M') if stat.timestamp else 'N/A' }}</small>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer bg-light">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <select class="form-select form-select-sm d-inline-block" style="width: auto;">
+                        <option>10 rows</option>
+                        <option selected>25 rows</option>
+                        <option>50 rows</option>
+                        <option>100 rows</option>
+                    </select>
+                </div>
+                <div>
+                    <nav aria-label="Traffic data navigation">
+                        <ul class="pagination pagination-sm mb-0">
+                            <li class="page-item disabled"><a class="page-link" href="#">Previous</a></li>
+                            <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                            <li class="page-item"><a class="page-link" href="#">2</a></li>
+                            <li class="page-item"><a class="page-link" href="#">3</a></li>
+                            <li class="page-item"><a class="page-link" href="#">Next</a></li>
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
     </div>
+
+    <!-- No Data Message -->
+    {% if not traffic_stats %}
+    <div class="text-center py-5 my-5">
+        <i class="fas fa-chart-bar fa-4x text-muted mb-3"></i>
+        <h4 class="text-muted">No traffic data available</h4>
+        <p class="text-muted">Traffic statistics will appear here as visitors browse your site.</p>
+    </div>
+    {% endif %}
 </div>
+
+<style>
+body {
+    background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
+    min-height: 100vh;
+}
+
+.card {
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    margin-bottom: 1.5rem;
+}
+
+.card-header {
+    border-radius: 16px 16px 0 0 !important;
+    padding: 1rem 1.5rem;
+    font-weight: 600;
+}
+
+.stat-card {
+    border-radius: 16px;
+    transition: transform 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+}
+
+.stat-icon {
+    opacity: 0.8;
+}
+
+.table th {
+    border-top: none;
+    font-weight: 600;
+    background-color: #f8f9fa;
+    padding: 1rem 0.75rem;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    letter-spacing: 0.5px;
+    color: #6c757d;
+}
+
+.table td {
+    padding: 1rem 0.75rem;
+    vertical-align: middle;
+}
+
+.badge {
+    font-size: 0.75em;
+    padding: 0.5em 0.75em;
+    border-radius: 6px;
+}
+
+.endpoint-badge {
+    background-color: #f0f4ff;
+    padding: 0.35rem 0.65rem;
+    border-radius: 6px;
+    font-family: monospace;
+    font-size: 0.85rem;
+}
+
+.progress {
+    border-radius: 10px;
+}
+
+.progress-bar {
+    border-radius: 10px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .display-5 {
+        font-size: 2.2rem;
+    }
+    
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+    
+    .endpoint-badge {
+        max-width: 120px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Basic search functionality
+    const searchInput = document.getElementById('searchInput');
+    const trafficTable = document.getElementById('trafficTable');
+    
+    if (searchInput && trafficTable) {
+        searchInput.addEventListener('keyup', function() {
+            const searchText = this.value.toLowerCase();
+            const rows = trafficTable.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+            
+            for (let i = 0; i < rows.length; i++) {
+                const endpoint = rows[i].getElementsByTagName('td')[0].textContent.toLowerCase();
+                const ip = rows[i].getElementsByTagName('td')[1].textContent.toLowerCase();
+                
+                if (endpoint.includes(searchText) || ip.includes(searchText)) {
+                    rows[i].style.display = '';
+                } else {
+                    rows[i].style.display = 'none';
+                }
+            }
+        });
+    }
+    
+    // Sort functionality (basic implementation)
+    const sortBy = document.getElementById('sortBy');
+    
+    if (sortBy) {
+        sortBy.addEventListener('change', function() {
+            // This would typically be handled server-side
+            alert('Sorting would be implemented with a server request in a real application');
+        });
+    }
+    
+    // Time range filter
+    const timeRange = document.getElementById('timeRange');
+    
+    if (timeRange) {
+        timeRange.addEventListener('change', function() {
+            // This would typically be handled server-side
+            alert('Time filtering would be implemented with a server request in a real application');
+        });
+    }
+});
+</script>
 {% endblock %}

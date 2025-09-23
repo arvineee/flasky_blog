@@ -1,0 +1,801 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header Section -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="h2 fw-bold text-primary">
+                    <i class="fas fa-shield-alt me-2"></i>Advanced Protection Dashboard
+                </h1>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-warning" data-bs-toggle="modal" data-bs-target="#quickActionsModal">
+                        <i class="fas fa-bolt me-1"></i>Quick Actions
+                    </button>
+                    <a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+                    </a>
+                </div>
+            </div>
+            <p class="text-muted">Comprehensive security monitoring and threat protection management</p>
+        </div>
+    </div>
+
+    <!-- Real-time Alert Banner -->
+    {% if stats.system_load > 0.8 %}
+    <div class="alert alert-warning alert-dismissible fade show d-flex align-items-center" role="alert">
+        <i class="fas fa-exclamation-triangle fa-2x me-3"></i>
+        <div class="flex-grow-1">
+            <h5 class="alert-heading mb-1">High System Load Detected</h5>
+            <p class="mb-0">Current system load: <strong>{{ "%.1f"|format(stats.system_load * 100) }}%</strong>. Protection levels have been automatically adjusted.</p>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endif %}
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <!-- Protection Status -->
+        <div class="col-xl-2 col-md-4 col-6 mb-4">
+            <div class="card stat-card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h6 class="card-title text-white-50">Protection Mode</h6>
+                            <h4 class="fw-bold mb-0">
+                                <span class="badge bg-{{ 'success' if config.MODE == 'active' else 'warning' if config.MODE == 'monitor' else 'danger' }} text-uppercase fs-6">
+                                    {{ config.MODE }}
+                                </span>
+                            </h4>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fas fa-shield-alt fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Requests Blocked -->
+        <div class="col-xl-2 col-md-4 col-6 mb-4">
+            <div class="card stat-card bg-danger text-white">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h6 class="card-title text-white-50">Blocked Requests</h6>
+                            <h3 class="fw-bold mb-0">{{ stats.requests_blocked }}</h3>
+                            <small class="text-white-50">Total: {{ stats.total_requests }}</small>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fas fa-ban fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- IPs Banned -->
+        <div class="col-xl-2 col-md-4 col-6 mb-4">
+            <div class="card stat-card bg-warning text-dark">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h6 class="card-title text-dark-50">Banned IPs</h6>
+                            <h3 class="fw-bold mb-0">{{ stats.currently_banned }}</h3>
+                            <small class="text-dark-50">SYN: {{ stats.syn_banned }}</small>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fas fa-user-slash fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Load -->
+        <div class="col-xl-2 col-md-4 col-6 mb-4">
+            <div class="card stat-card bg-{{ 'danger' if stats.system_load > 0.8 else 'warning' if stats.system_load > 0.6 else 'info' }} text-white">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h6 class="card-title text-white-50">System Load</h6>
+                            <h3 class="fw-bold mb-0">{{ "%.1f"|format(stats.system_load * 100) }}%</h3>
+                            <small class="text-white-50">Memory: {{ "%.1f"|format(stats.memory_usage * 100) }}%</small>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fas fa-server fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Challenges Served -->
+        <div class="col-xl-2 col-md-4 col-6 mb-4">
+            <div class="card stat-card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h6 class="card-title text-white-50">Challenges</h6>
+                            <h3 class="fw-bold mb-0">{{ stats.challenges_served }}</h3>
+                            <small class="text-white-50">Active: {{ stats.active_challenges }}</small>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fas fa-puzzle-piece fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Uptime -->
+        <div class="col-xl-2 col-md-4 col-6 mb-4">
+            <div class="card stat-card bg-dark text-white">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h6 class="card-title text-white-50">Uptime</h6>
+                            <h3 class="fw-bold mb-0">{{ "%.1f"|format(stats.uptime / 3600) }}h</h3>
+                            <small class="text-white-50">RPS: {{ stats.current_rps }}</small>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fas fa-clock fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats Row -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-light">
+                <div class="card-body py-3">
+                    <div class="row text-center">
+                        <div class="col-md-2 col-4 border-end">
+                            <small class="text-muted">Redis Status</small>
+                            <div class="fw-bold text-{{ 'success' if stats.redis_connected else 'danger' }}">
+                                {{ 'Connected' if stats.redis_connected else 'Disconnected' }}
+                            </div>
+                        </div>
+                        <div class="col-md-2 col-4 border-end">
+                            <small class="text-muted">GeoIP Status</small>
+                            <div class="fw-bold text-{{ 'success' if stats.geoip_available else 'warning' }}">
+                                {{ 'Available' if stats.geoip_available else 'Unavailable' }}
+                            </div>
+                        </div>
+                        <div class="col-md-2 col-4 border-end">
+                            <small class="text-muted">Tracked IPs</small>
+                            <div class="fw-bold text-info">{{ stats.total_tracked_ips }}</div>
+                        </div>
+                        <div class="col-md-2 col-4 border-end">
+                            <small class="text-muted">API Keys</small>
+                            <div class="fw-bold text-primary">{{ stats.api_keys }}</div>
+                        </div>
+                        <div class="col-md-2 col-4 border-end">
+                            <small class="text-muted">WAF Rules</small>
+                            <div class="fw-bold text-warning">{{ stats.waf_rules }}</div>
+                        </div>
+                        <div class="col-md-2 col-4">
+                            <small class="text-muted">Active Sessions</small>
+                            <div class="fw-bold text-success">{{ stats.active_sessions }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Protection Configuration Cards -->
+    <div class="row mb-4">
+        <!-- Main Configuration -->
+        <div class="col-lg-8 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-cog me-2"></i>Protection Configuration</h5>
+                    <span class="badge bg-light text-primary">Real-time</span>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('advanced_protection.update_config') }}" id="configForm">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Protection Mode</label>
+                                <select class="form-select" name="protection_mode">
+                                    <option value="active" {{ 'selected' if config.MODE == 'active' }}>Active Protection</option>
+                                    <option value="monitor" {{ 'selected' if config.MODE == 'monitor' }}>Monitor Only</option>
+                                    <option value="under_attack" {{ 'selected' if config.MODE == 'under_attack' }}>Under Attack</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Request Limit (per minute)</label>
+                                <input type="number" class="form-control" name="request_limit" 
+                                       value="{{ config.REQUEST_LIMIT }}" min="10" max="10000">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Window Size (seconds)</label>
+                                <input type="number" class="form-control" name="window_size" 
+                                       value="{{ config.WINDOW_SIZE }}" min="10" max="3600">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Ban Time (seconds)</label>
+                                <input type="number" class="form-control" name="ban_time" 
+                                       value="{{ config.BAN_TIME }}" min="60" max="86400">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">SYN Flood Threshold</label>
+                                <input type="number" class="form-control" name="syn_flood_threshold" 
+                                       value="{{ config.SYN_FLOOD_THRESHOLD }}" min="10" max="1000">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Auto Ban</label>
+                                <select class="form-select" name="auto_ban">
+                                    <option value="true" {{ 'selected' if config.AUTO_BAN }}>Enabled</option>
+                                    <option value="false" {{ 'selected' if not config.AUTO_BAN }}>Disabled</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" name="waf_enabled" 
+                                   id="waf_enabled" {{ 'checked' if config.WAF_ENABLED }}>
+                            <label class="form-check-label" for="waf_enabled">WAF Protection</label>
+                        </div>
+
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" name="js_challenge_enabled" 
+                                   id="js_challenge_enabled" {{ 'checked' if config.JS_CHALLENGE_ENABLED }}>
+                            <label class="form-check-label" for="js_challenge_enabled">JavaScript Challenges</label>
+                        </div>
+
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" name="captcha_enabled" 
+                                   id="captcha_enabled" {{ 'checked' if config.CAPTCHA_ENABLED }}>
+                            <label class="form-check-label" for="captcha_enabled">CAPTCHA Challenges</label>
+                        </div>
+
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" name="geo_blocking_enabled" 
+                                   id="geo_blocking_enabled" {{ 'checked' if config.GEO_BLOCKING_ENABLED }}>
+                            <label class="form-check-label" for="geo_blocking_enabled">Geographic Blocking</label>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i>Update Configuration
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Status -->
+        <div class="col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-heartbeat me-2"></i>System Status</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <span>🛡️ Protection System</span>
+                            <span class="badge bg-success">Active</span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <span>📊 Monitoring</span>
+                            <span class="badge bg-success">Running</span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <span>🔍 Threat Detection</span>
+                            <span class="badge bg-{{ 'success' if config.MODE == 'active' else 'warning' }}">{{ config.MODE|title }}</span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <span>⚡ Response Time</span>
+                            <span class="badge bg-info">< 50ms</span>
+                        </div>
+                    </div>
+
+                    <!-- System Load Progress Bars -->
+                    <div class="mt-4">
+                        <h6 class="mb-3">System Resources</h6>
+                        
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-1">
+                                <small>CPU Load</small>
+                                <small>{{ "%.1f"|format(stats.system_load * 100) }}%</small>
+                            </div>
+                            <div class="progress" style="height: 8px;">
+                                <div class="progress-bar bg-{{ 'danger' if stats.system_load > 0.8 else 'warning' if stats.system_load > 0.6 else 'success' }}" 
+                                     style="width: {{ stats.system_load * 100 }}%"></div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-1">
+                                <small>Memory Usage</small>
+                                <small>{{ "%.1f"|format(stats.memory_usage * 100) }}%</small>
+                            </div>
+                            <div class="progress" style="height: 8px;">
+                                <div class="progress-bar bg-{{ 'danger' if stats.memory_usage > 0.8 else 'warning' if stats.memory_usage > 0.6 else 'info' }}" 
+                                     style="width: {{ stats.memory_usage * 100 }}%"></div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-1">
+                                <small>Request Rate</small>
+                                <small>{{ stats.current_rps }} RPS</small>
+                            </div>
+                            <div class="progress" style="height: 8px;">
+                                <div class="progress-bar bg-{{ 'danger' if stats.current_rps > 500 else 'warning' if stats.current_rps > 100 else 'primary' }}" 
+                                     style="width: {{ [stats.current_rps / 10, 100]|min }}%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="mt-4">
+                        <h6 class="mb-3">Quick Actions</h6>
+                        <div class="d-grid gap-2">
+                            <form method="POST" action="{{ url_for('advanced_protection.clear_challenges') }}" class="d-inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                <button type="submit" class="btn btn-sm btn-outline-warning w-100">
+                                    <i class="fas fa-broom me-1"></i>Clear Challenges
+                                </button>
+                            </form>
+                            <form method="POST" action="{{ url_for('advanced_protection.flush_cache') }}" class="d-inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                <button type="submit" class="btn btn-sm btn-outline-info w-100">
+                                    <i class="fas fa-sync-alt me-1"></i>Flush Cache
+                                </button>
+                            </form>
+                            <form method="POST" action="{{ url_for('advanced_protection.unban_all_ips') }}" class="d-inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                <button type="submit" class="btn btn-sm btn-outline-danger w-100" 
+                                        onclick="return confirm('Are you sure you want to unban all IPs?')">
+                                    <i class="fas fa-unlock me-1"></i>Unban All IPs
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Country Management Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-globe-americas me-2"></i>Country Management</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('advanced_protection.update_countries') }}" id="countryForm">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Allowed Countries</h6>
+                                <p class="text-muted small">Select countries that are allowed to access your site</p>
+                                <div class="mb-3">
+                                    <select class="form-select" multiple size="8" name="allowed_countries">
+                                        {% for code, name in countries_list %}
+                                        <option value="{{ code }}" {{ 'selected' if code in allowed_countries }}>{{ name }} ({{ code }})</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="d-flex gap-2">
+                                    <button type="button" class="btn btn-sm btn-outline-success" onclick="selectAll('allowed_countries')">
+                                        <i class="fas fa-check-square me-1"></i>Select All
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="deselectAll('allowed_countries')">
+                                        <i class="fas fa-times-circle me-1"></i>Deselect All
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <h6>Blocked Countries</h6>
+                                <p class="text-muted small">Select countries that are blocked from accessing your site</p>
+                                <div class="mb-3">
+                                    <select class="form-select" multiple size="8" name="blocked_countries">
+                                        {% for code, name in countries_list %}
+                                        <option value="{{ code }}" {{ 'selected' if code in blocked_countries }}>{{ name }} ({{ code }})</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="d-flex gap-2">
+                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="selectAll('blocked_countries')">
+                                        <i class="fas fa-check-square me-1"></i>Select All
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="deselectAll('blocked_countries')">
+                                        <i class="fas fa-times-circle me-1"></i>Deselect All
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Note:</strong> If you select countries in both lists, the "Blocked" list will take precedence. 
+                                To allow all countries except specific ones, select all countries in "Allowed" and only the blocked ones in "Blocked".
+                            </div>
+                        </div>
+                        
+                        <div class="mt-3">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-save me-1"></i>Update Country Settings
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="resetCountryForm()">
+                                <i class="fas fa-undo me-1"></i>Reset to Default
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Threat Intelligence Section -->
+    <div class="row">
+        <!-- Recent Security Events -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>Recent Security Events</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Time</th>
+                                    <th>IP</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for event in stats.recent_events %}
+                                <tr>
+                                    <td><span class="badge bg-danger">{{ event.type }}</span></td>
+                                    <td><small>{{ event.time }}</small></td>
+                                    <td><code>{{ event.ip }}</code></td>
+                                    <td><small>{{ event.description }}</small></td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted">No recent security events</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Threat Sources -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="fas fa-globe me-2"></i>Top Threat Sources</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Country</th>
+                                    <th>Threat Count</th>
+                                    <th>Risk Level</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for source in stats.top_threat_sources %}
+                                <tr>
+                                    <td>{{ source.country }}</td>
+                                    <td>{{ source.count }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ 'danger' if source.risk == 'high' else 'warning' if source.risk == 'medium' else 'info' }}">
+                                            {{ source.risk|title }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted">No threat data available</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Banned IPs Section -->
+    <div class="row">
+        <!-- Regular Banned IPs -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i class="fas fa-ban me-2"></i>Banned IP Addresses ({{ banned_ips|length }})</h5>
+                </div>
+                <div class="card-body">
+                    {% if banned_ips %}
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead>
+                                <tr>
+                                    <th>IP Address</th>
+                                    <th>Reason</th>
+                                    <th>Banned Until</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for ip, data in banned_ips.items() %}
+                                <tr>
+                                    <td><code>{{ ip }}</code></td>
+                                    <td><small>{{ data.reason }}</small></td>
+                                    <td><small>
+                                        {% if data.expires %}
+                                            {{ data.expires|string|truncate(16, True, '') }}
+                                        {% else %}
+                                            Auto-expire
+                                        {% endif %}
+                                    </small></td>
+                                    <td>
+                                        <form method="POST" action="{{ url_for('advanced_protection.unban_ip_route', ip=ip) }}" class="d-inline">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                            <button type="submit" class="btn btn-sm btn-outline-success">Unban</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center">No IPs currently banned</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- SYN Flood Banned IPs -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="fas fa-network-wired me-2"></i>SYN Flood Banned IPs ({{ syn_banned_ips|length }})</h5>
+                </div>
+                <div class="card-body">
+                    {% if syn_banned_ips %}
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead>
+                                <tr>
+                                    <th>IP Address</th>
+                                    <th>Reason</th>
+                                    <th>Banned Until</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for ip, data in syn_banned_ips.items() %}
+                                <tr>
+                                    <td><code>{{ ip }}</code></td>
+                                    <td><small>{{ data.reason }}</small></td>
+                                    <td><small>
+                                        {% if data.expires %}
+                                            {{ data.expires|string|truncate(16, True, '') }}
+                                        {% else %}
+                                            Auto-expire
+                                        {% endif %}
+                                    </small></td>
+                                    <td>
+                                        <form method="POST" action="{{ url_for('advanced_protection.unban_syn_ip_route', ip=ip) }}" class="d-inline">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                            <button type="submit" class="btn btn-sm btn-outline-success">Unban</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center">No IPs banned for SYN flooding</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions Modal -->
+<div class="modal fade" id="quickActionsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="fas fa-bolt me-2"></i>Quick Actions</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-6">
+                        <form method="POST" action="{{ url_for('advanced_protection.set_protection_mode', mode='under_attack') }}" class="d-inline w-100">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                            <button type="submit" class="btn btn-outline-primary w-100 h-100 p-3">
+                                <i class="fas fa-fire fa-2x mb-2"></i><br>
+                                <span>🚨 Under Attack</span>
+                            </button>
+                        </form>
+                    </div>
+                    <div class="col-6">
+                        <form method="POST" action="{{ url_for('advanced_protection.set_protection_mode', mode='active') }}" class="d-inline w-100">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                            <button type="submit" class="btn btn-outline-success w-100 h-100 p-3">
+                                <i class="fas fa-shield-alt fa-2x mb-2"></i><br>
+                                <span>🛡️ Active Protection</span>
+                            </button>
+                        </form>
+                    </div>
+                    <div class="col-6">
+                        <form method="POST" action="{{ url_for('advanced_protection.set_protection_mode', mode='monitor') }}" class="d-inline w-100">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                            <button type="submit" class="btn btn-outline-warning w-100 h-100 p-3">
+                                <i class="fas fa-eye fa-2x mb-2"></i><br>
+                                <span>👁️ Monitor Only</span>
+                            </button>
+                        </form>
+                    </div>
+                    <div class="col-6">
+                        <a href="{{ url_for('advanced_protection.export_logs') }}" class="btn btn-outline-info w-100 h-100 p-3 text-decoration-none">
+                            <i class="fas fa-download fa-2x mb-2"></i><br>
+                            <span>📥 Export Logs</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.stat-card {
+    transition: transform 0.2s ease-in-out;
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.stat-icon {
+    opacity: 0.7;
+}
+
+.progress {
+    border-radius: 10px;
+}
+
+.progress-bar {
+    border-radius: 10px;
+}
+
+.table th {
+    border-top: none;
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.badge {
+    font-size: 0.75em;
+}
+
+.country-select {
+    min-height: 200px;
+}
+</style>
+
+<script>
+// Auto-refresh the page every 30 seconds to update stats
+setTimeout(function() {
+    window.location.reload();
+}, 30000);
+
+// Confirmations for destructive actions
+document.addEventListener('DOMContentLoaded', function() {
+    const destructiveButtons = document.querySelectorAll('button[class*="btn-outline-danger"]');
+    destructiveButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            if (!confirm('Are you sure you want to perform this action?')) {
+                e.preventDefault();
+            }
+        });
+    });
+});
+
+// Real-time stats update (simplified)
+function updateStats() {
+    fetch('/advanced-protection/admin/dashboard/stats')
+        .then(response => response.json())
+        .then(data => {
+            // Update stats dynamically if needed
+            console.log('Stats updated:', data);
+        })
+        .catch(error => console.error('Error updating stats:', error));
+}
+
+// Update stats every 10 seconds
+setInterval(updateStats, 10000);
+
+// Country management functions
+function selectAll(selectId) {
+    const selectElement = document.querySelector(`select[name="${selectId}"]`);
+    for (let i = 0; i < selectElement.options.length; i++) {
+        selectElement.options[i].selected = true;
+    }
+}
+
+function deselectAll(selectId) {
+    const selectElement = document.querySelector(`select[name="${selectId}"]`);
+    for (let i = 0; i < selectElement.options.length; i++) {
+        selectElement.options[i].selected = false;
+    }
+}
+
+function resetCountryForm() {
+    if (confirm('Are you sure you want to reset country settings to default?')) {
+        // Reset to default countries (US, CA, GB, AU, DE, FR,KE)
+        const defaultAllowed = ['US', 'CA', 'GB', 'AU', 'DE', 'FR','KE'];
+        
+        const allowedSelect = document.querySelector('select[name="allowed_countries"]');
+        const blockedSelect = document.querySelector('select[name="blocked_countries"]');
+        
+        // Clear all selections first
+        for (let i = 0; i < allowedSelect.options.length; i++) {
+            allowedSelect.options[i].selected = false;
+            blockedSelect.options[i].selected = false;
+        }
+        
+        // Select default allowed countries
+        for (let i = 0; i < allowedSelect.options.length; i++) {
+            if (defaultAllowed.includes(allowedSelect.options[i].value)) {
+                allowedSelect.options[i].selected = true;
+            }
+        }
+    }
+}
+
+// Form validation
+document.getElementById('countryForm').addEventListener('submit', function(e) {
+    const allowedCountries = Array.from(document.querySelector('select[name="allowed_countries"]').selectedOptions).map(o => o.value);
+    const blockedCountries = Array.from(document.querySelector('select[name="blocked_countries"]').selectedOptions).map(o => o.value);
+    
+    // Check for countries in both lists
+    const conflicts = allowedCountries.filter(country => blockedCountries.includes(country));
+    
+    if (conflicts.length > 0) {
+        e.preventDefault();
+        alert('Warning: Some countries are selected in both allowed and blocked lists. Blocked list takes precedence.');
+        return false;
+    }
+});
+</script>
+{% endblock %}

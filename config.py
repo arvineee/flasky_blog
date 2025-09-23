@@ -11,3 +11,16 @@ class Config:
     MAIL_USERNAME = os.environ.get("MAIL_USERNAME")
     MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD")
     MAIL_DEFAULT_SENDER = os.environ.get("MAIL_USERNAME")
+    
+    # Advanced Protection Settings
+    REDIS_URL = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
+    GEOIP_DATABASE_PATH = os.environ.get('GEOIP_DATABASE_PATH', None)
+
+    # Protection settings (defaults)
+    PROTECTION_MODE = 'active'
+    REQUEST_LIMIT = 100
+    WINDOW_SIZE = 60
+    BAN_TIME = 300
+    AUTO_BAN = True
+    WAF_ENABLED = True
+    JS_CHALLENGE_ENABLED = True

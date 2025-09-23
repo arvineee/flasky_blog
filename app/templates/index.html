@@ -1,52 +1,80 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="container-xxl mt-5">
+<div class="container-xxl mt-4">
     <div class="row">
-        <!-- Sidebar for Announcements -->
+        <!-- Sidebar for Announcements and Newsletter -->
         <div class="col-lg-4 col-md-5 mb-4">
-            <div class="card announcement-card">
-                <div class="card-header bg-gradient-primary text-white">
-                    <h4 class="card-title mb-0 d-flex align-items-center">
-                        <i class="fas fa-bullhorn me-2"></i>Latest Announcements
-                    </h4>
-                </div>
-                <div class="card-body">
-                    {% for announcement in announcements %}
-                        <div class="announcement-item mb-3 pb-3 border-bottom">
-                            <h5 class="fw-semibold">{{ announcement.title }}</h5>
-                            <small class="text-muted d-block mb-2">
-                                <i class="fas fa-user me-1"></i>Posted by {{ announcement.author.username }} 
-                                <i class="fas fa-calendar ms-2 me-1"></i>{{ announcement.date_created }}
-                            </small>
-                            <p class="card-text text-truncate">{{ announcement.content | truncate(100) }}</p>
-                            <div class="d-flex justify-content-between align-items-center">
-                                <a href="{{ url_for('main.announcement_detail', announcement_id=announcement.id) }}" class="btn btn-sm btn-outline-primary rounded-pill">
-                                    Read More <i class="fas fa-arrow-right ms-1"></i>
-                                </a>
+            <div class="sticky-top" style="top: 100px;">
+                <!-- Announcements Card -->
+                <div class="card announcement-card mb-4">
+                    <div class="card-header bg-gradient-primary text-white">
+                        <h4 class="card-title mb-0 d-flex align-items-center">
+                            <i class="bg-gradient-primary fas fa-bullhorn me-2"></i>Latest Announcements
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        {% for announcement in announcements %}
+                            <div class="announcement-item mb-3 pb-3 border-bottom">
+                                <h5 class="fw-semibold">{{ announcement.title }}</h5>
+                                <small class="text-muted d-block mb-2">
+                                    <i class="fas fa-user me-1"></i>Posted by {{ announcement.author.username }} 
+                                    <i class="fas fa-calendar ms-2 me-1"></i>{{ announcement.date_created.strftime('%b %d, %Y') }}
+                                </small>
+                                <p class="card-text text-truncate">{{ announcement.content | truncate(100) }}</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <a href="{{ url_for('main.announcement_detail', announcement_id=announcement.id) }}" 
+                                       class="btn btn-sm btn-outline-primary rounded-pill">
+                                        Read More <i class="fas fa-arrow-right ms-1"></i>
+                                    </a>
 
-                                <!-- Delete Button -->
-                                {% if current_user.is_authenticated and current_user.is_admin %}
-                                <form action="{{ url_for('admin.delete_announcement', announcement_id=announcement.id) }}" method="POST" class="d-inline">
-                                    <button type="submit" class="btn btn-sm btn-danger rounded-pill"
-                                            onclick="return confirm('Are you sure you want to delete this announcement?')">
-                                        <i class="fas fa-trash-alt me-1"></i>Delete
-                                    </button>
-                                </form>
-                                {% endif %}
+                                    {% if current_user.is_authenticated and current_user.is_admin %}
+                                    <form action="{{ url_for('admin.delete_announcement', announcement_id=announcement.id) }}" 
+                                          method="POST" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-danger rounded-pill"
+                                                onclick="return confirm('Are you sure you want to delete this announcement?')">
+                                            <i class="fas fa-trash-alt me-1"></i>Delete
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </div>
                             </div>
+                        {% else %}
+                            <p class="text-center text-muted py-3">
+                                <i class="fas fa-inbox fs-2 d-block mb-2"></i>
+                                No announcements available.
+                            </p>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Newsletter Signup Card -->
+                <div class="card newsletter-card">
+                    <div class="card-body text-center p-4">
+                        <div class="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
+                             style="width: 60px; height: 60px;">
+                            <i class="fas fa-envelope-open-text text-primary fs-4"></i>
                         </div>
-                    {% else %}
-                        <p class="text-center text-muted py-3">
-                            <i class="fas fa-inbox fs-2 d-block mb-2"></i>
-                            No announcements available.
-                        </p>
-                    {% endfor %}
-                    
-                    <div class="text-center mt-4">
-                        <a href="{{ url_for('newsletter.subscribe') }}" class="btn btn-primary rounded-pill px-4">
-                            <i class="fas fa-envelope me-2"></i>Subscribe to Newsletter
+                        <h5>Stay Updated</h5>
+                        <p class="text-muted">Subscribe to our newsletter for the latest updates and exclusive content.</p>
+                        <button type="button" class="btn btn-primary rounded-pill px-4 w-100" data-bs-toggle="modal" data-bs-target="#newsletterModal">
+                            <i class="fas fa-envelope me-2"></i>Subscribe Now
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Trending Topics Card -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-fire me-2 text-danger"></i>Trending Topics</h5>
+                    </div>
+                    <div class="card-body">
+                        {% for category in category_structure[:5] %}
+                        <a href="{{ url_for('main.category_posts', category_id=category.category.id) }}" 
+                           class="badge bg-light text-dark me-1 mb-2 text-decoration-none">
+                            {{ category.category.name }} <span class="text-muted">({{ category.category.posts.count() }})</span>
                         </a>
+                        {% endfor %}
                     </div>
                 </div>
             </div>
@@ -54,51 +82,114 @@
 
         <!-- Main Content (Posts Section) -->
         <div class="col-lg-8 col-md-7">
-            {% for post in posts %}
-                <div class="card post-card mb-5 overflow-hidden">
-                    {% if post.image_url %}
-                        <div class="post-image-container">
-                            <img src="{{ url_for('static', filename='images/' + post.image_url) }}" alt="Post Image" class="post-image">
-                            <div class="post-overlay"></div>
-                        </div>
-                    {% endif %}
-                    
-                    <div class="card-body p-4">
-                        <h2 class="post-title">{{ post.title }}</h2>
-                        <p class="post-description">{{ post.desc | safe | truncate(150) }}</p>
-                        
-                        <!-- Metadata Section -->
-                        <div class="post-meta mb-3">
-                            <div class="d-flex flex-wrap gap-3">
-                                <span class="meta-item">
-                                    <i class="fas fa-user me-1"></i>
-                                    <strong>{{ post.author.username }}</strong>
-                                </span>
-                                <span class="meta-item">
-                                    <i class="fas fa-calendar me-1"></i>
-                                    <strong>{{ post.date_pub }}</strong>
-                                </span>
-                                <span class="meta-item">
-                                    <i class="fas fa-folder me-1"></i>
-                                    <strong>{{ post.category_obj.name if post.category_obj else "Uncategorized" }}</strong>
-                                </span>
-                                <span class="meta-item">
-                                    <i class="fas fa-eye me-1"></i>
-                                    <span class="badge bg-primary rounded-pill">{{ post.views }}</span>
-                                </span>
+            <!-- Welcome Header -->
+            <div class="welcome-header mb-4 p-4 rounded-4 bg-gradient-primary text-white">
+                <h1 class="display-6 fw-bold">Welcome to Our Blog</h1>
+                <p class="mb-0">Discover the latest stories, insights, and announcements from our community</p>
+            </div>
+            
+            <!-- Posts Filter Tabs -->
+            <ul class="nav nav-tabs mb-4" id="postsFilterTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="recent-tab" data-bs-toggle="tab" data-bs-target="#recent" 
+                            type="button" role="tab" aria-controls="recent" aria-selected="true">
+                        <i class="fas fa-clock me-1"></i>Recent
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="popular-tab" data-bs-toggle="tab" data-bs-target="#popular" 
+                            type="button" role="tab" aria-controls="popular" aria-selected="false">
+                        <i class="fas fa-chart-line me-1"></i>Popular
+                    </button>
+                </li>
+                {% if current_user.is_authenticated %}
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="following-tab" data-bs-toggle="tab" data-bs-target="#following" 
+                            type="button" role="tab" aria-controls="following" aria-selected="false">
+                        <i class="fas fa-user-friends me-1"></i>Following
+                    </button>
+                </li>
+                {% endif %}
+            </ul>
+
+            <!-- Posts Content -->
+            <div class="tab-content" id="postsFilterTabsContent">
+                <!-- Recent Posts -->
+                <div class="tab-pane fade show active" id="recent" role="tabpanel" aria-labelledby="recent-tab">
+                    <div class="row" id="postsContainer">
+                        {% for post in posts %}
+                        <div class="col-sm-6 col-lg-6 mb-4">
+                            <div class="card post-card h-100">
+                                {% if post.image_url %}
+                                <div class="post-image-container">
+                                    <img src="{{ url_for('static', filename='images/' + post.image_url) }}" 
+                                         alt="Post Image" class="post-image">
+                                    <div class="post-overlay"></div>
+                                    <div class="category-badge">
+                                        <span class="badge bg-primary">{{ post.category_obj.name if post.category_obj else "Uncategorized" }}</span>
+                                    </div>
+                                </div>
+                                {% endif %}
+                                
+                                <div class="card-body">
+                                    <h3 class="post-title">{{ post.title }}</h3>
+                                    <p class="post-description">{{ post.desc | striptags | truncate(120) }}</p>
+                                    
+                                    <!-- Metadata Section -->
+                                    <div class="post-meta mb-3">
+                                        <div class="d-flex align-items-center">
+                                            <img src="https://ui-avatars.com/api/?name={{ post.author.username }}&background=random" 
+                                                 class="rounded-circle me-2" width="24" height="24" alt="Author">
+                                            <span class="meta-item">
+                                                <strong>{{ post.author.username }}</strong>
+                                            </span>
+                                            <span class="meta-item mx-2">•</span>
+                                            <span class="meta-item">
+                                                {{ post.date_pub.strftime('%b %d, %Y') }}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Engagement Stats -->
+                                    <div class="d-flex justify-content-between align-items-center mt-auto">
+                                        <div class="engagement-stats">
+                                            <span class="me-3"><i class="fas fa-eye me-1"></i> {{ post.views }}</span>
+                                            <span class="me-3"><i class="fas fa-heart me-1"></i> {{ post.like_count }}</span>
+                                         <span><i class="fas fa-comment me-1"></i> {{ post.comment_count }}</span>
+                                        </div>
+                                        <a href="{{ url_for('admin.see_more', post_id=post.id) }}" 
+                                           class="btn btn-sm btn-outline-primary rounded-pill">
+                                            Read <i class="fas fa-arrow-right ms-1"></i>
+                                        </a>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-
-                        <!-- Read More Button -->
-                        <div class="text-end">
-                            <a href="{{ url_for('admin.see_more', post_id=post.id) }}" 
-                               class="btn btn-primary rounded-pill px-4">
-                               Read More <i class="fas fa-arrow-right ms-1"></i>
-                            </a>
-                        </div>
+                        {% endfor %}
                     </div>
                 </div>
-            {% endfor %}
+
+                <!-- Popular Posts (placeholder) -->
+                <div class="tab-pane fade" id="popular" role="tabpanel" aria-labelledby="popular-tab">
+                    <div class="text-center py-5">
+                        <i class="fas fa-chart-line fa-3x text-primary mb-3"></i>
+                        <h4>Most Popular Posts</h4>
+                        <p class="text-muted">Posts with the highest engagement will appear here.</p>
+                    </div>
+                </div>
+
+                <!-- Following Posts (placeholder) -->
+                {% if current_user.is_authenticated %}
+                <div class="tab-pane fade" id="following" role="tabpanel" aria-labelledby="following-tab">
+                    <div class="text-center py-5">
+                        <i class="fas fa-user-friends fa-3x text-primary mb-3"></i>
+                        <h4>Posts from Authors You Follow</h4>
+                        <p class="text-muted">When you follow authors, their posts will appear here.</p>
+                        <a href="#" class="btn btn-primary rounded-pill">Discover Authors</a>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
             
             <!-- Pagination Controls -->
             {% if pagination.pages > 1 %}
@@ -151,6 +242,92 @@
             {% endif %}
         </div>
     </div>
+
+    <!-- Featured Post Carousel - Moved to bottom -->
+    {% if posts|length > 0 %}
+    <div class="row mt-5">
+        <div class="col-12">
+            <h2 class="section-title mb-4"><i class="fas fa-star me-2 text-warning"></i>Featured Stories</h2>
+            <div id="featuredCarousel" class="carousel slide" data-bs-ride="carousel">
+                <div class="carousel-indicators">
+                    {% for i in range([posts|length, 3]|min) %}
+                    <button type="button" data-bs-target="#featuredCarousel" data-bs-slide-to="{{ i }}" 
+                            class="{% if loop.first %}active{% endif %}" aria-current="true" aria-label="Slide {{ i+1 }}"></button>
+                    {% endfor %}
+                </div>
+                <div class="carousel-inner rounded-4">
+                    {% for post in posts[:3] %}
+                    <div class="carousel-item {% if loop.first %}active{% endif %}">
+                        <div class="row g-0 featured-post">
+                            <div class="col-md-6">
+                                {% if post.image_url %}
+                                <img src="{{ url_for('static', filename='images/' + post.image_url) }}" 
+                                     class="img-fluid rounded-start h-100 object-fit-cover" alt="{{ post.title }}">
+                                {% else %}
+                                <div class="bg-secondary h-100 d-flex align-items-center justify-content-center">
+                                    <i class="fas fa-image fa-3x text-light"></i>
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card-body h-100 d-flex flex-column justify-content-center p-4">
+                                    <span class="badge bg-primary mb-2">{{ post.category_obj.name if post.category_obj else "Uncategorized" }}</span>
+                                    <h2 class="featured-title">{{ post.title }}</h2>
+                                    <p class="featured-excerpt">{{ post.desc|striptags|truncate(200) }}</p>
+                                    <div class="d-flex align-items-center mt-3">
+                                        <img src="https://ui-avatars.com/api/?name={{ post.author.username }}&background=random" 
+                                             class="rounded-circle me-2" width="32" height="32" alt="Author">
+                                        <span class="text-muted">{{ post.author.username }}</span>
+                                        <span class="text-muted mx-2">•</span>
+                                        <span class="text-muted">{{ post.date_pub.strftime('%b %d, %Y') }}</span>
+                                    </div>
+                                    <a href="{{ url_for('admin.see_more', post_id=post.id) }}" 
+                                       class="btn btn-primary mt-3 rounded-pill">Read Story</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <button class="carousel-control-prev" type="button" data-bs-target="#featuredCarousel" data-bs-slide="prev">
+                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Previous</span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#featuredCarousel" data-bs-slide="next">
+                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Next</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Newsletter Modal -->
+<div class="modal fade" id="newsletterModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Subscribe to our Newsletter</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Stay updated with the latest content. No spam, just great articles.</p>
+                <form action="{{ url_for('newsletter.subscribe') }}" method="POST">
+                    <div class="mb-3">
+                        <input type="email" class="form-control" name="email" placeholder="Your email address" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Subscribe</button>
+                </form>
+                <div class="form-check mt-3">
+                    <input type="checkbox" class="form-check-input" id="dontShowAgain">
+                    <label class="form-check-label small text-muted" for="dontShowAgain">
+                        Don't show this again
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <style>
@@ -166,54 +343,90 @@
         --transition: all 0.3s ease;
     }
     
-    body {
-        font-family: 'Inter', 'Segoe UI', Roboto, sans-serif;
-        background-color: var(--light-bg);
-        color: var(--dark-text);
-        line-height: 1.6;
+    /* Welcome Header */
+    .welcome-header {
+        background: linear-gradient(135deg, #4361ee 0%, #3a0ca3 100%);
+        box-shadow: 0 5px 15px rgba(67, 97, 238, 0.2);
     }
     
-    /* Card Styles */
-    .card {
+    /* Section Title */
+    .section-title {
+        font-family: 'Playfair Display', serif;
+        font-weight: 700;
+        color: var(--dark-text);
+        position: relative;
+        padding-bottom: 0.5rem;
+    }
+    
+    .section-title:after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 60px;
+        height: 3px;
+        background: var(--primary-color);
+        border-radius: 2px;
+    }
+    
+    /* Featured Post Carousel - Smaller size */
+    .featured-post {
+        height: 320px;
+        background-color: var(--light-bg);
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: var(--card-shadow);
+    }
+    
+    .featured-title {
+        font-family: 'Playfair Display', serif;
+        font-weight: 700;
+        font-size: 1.8rem;
+        line-height: 1.2;
+        margin-bottom: 0.8rem;
+    }
+    
+    .featured-excerpt {
+        font-size: 1rem;
+        color: var(--light-text);
+        margin-bottom: 1.2rem;
+    }
+    
+    .carousel-control-prev, .carousel-control-next {
+        width: 40px;
+        height: 40px;
+        background-color: rgba(0,0,0,0.3);
+        border-radius: 50%;
+        top: 50%;
+        transform: translateY(-50%);
+        opacity: 0;
+        transition: var(--transition);
+    }
+    
+    #featuredCarousel:hover .carousel-control-prev,
+    #featuredCarousel:hover .carousel-control-next {
+        opacity: 1;
+    }
+    
+    /* Post Cards - Improved aesthetics */
+    .post-card {
         border: none;
         border-radius: 12px;
         box-shadow: var(--card-shadow);
         transition: var(--transition);
         overflow: hidden;
+        height: 100%;
     }
     
-    .card:hover {
+    .post-card:hover {
         box-shadow: var(--card-hover-shadow);
         transform: translateY(-5px);
-    }
-    
-    .card-header.bg-gradient-primary {
-        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-    }
-    
-    /* Announcement Card */
-    .announcement-card .announcement-item {
-        transition: var(--transition);
-    }
-    
-    .announcement-card .announcement-item:hover {
-        background-color: rgba(67, 97, 238, 0.05);
-        border-radius: 8px;
-        padding-left: 10px;
-        padding-right: 10px;
-        margin-left: -10px;
-        margin-right: -10px;
-    }
-    
-    /* Post Cards */
-    .post-card {
-        transition: var(--transition);
     }
     
     .post-image-container {
         position: relative;
         overflow: hidden;
-        height: 300px;
+        height: 200px;
     }
     
     .post-image {
@@ -233,6 +446,12 @@
         opacity: 0.7;
     }
     
+    .category-badge {
+        position: absolute;
+        top: 15px;
+        left: 15px;
+    }
+    
     .post-card:hover .post-image {
         transform: scale(1.05);
     }
@@ -240,122 +459,206 @@
     .post-title {
         font-family: 'Montserrat', sans-serif;
         font-weight: 700;
-        font-size: 1.8rem;
-        margin-bottom: 1rem;
+        font-size: 1.3rem;
+        margin-bottom: 0.8rem;
         color: var(--dark-text);
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
     }
     
     .post-description {
-        font-size: 1.1rem;
+        font-size: 0.95rem;
         color: var(--light-text);
         margin-bottom: 1.5rem;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
     }
     
     .post-meta .meta-item {
         display: flex;
         align-items: center;
+        font-size: 0.85rem;
+        color: var(--light-text);
+    }
+    
+    .engagement-stats {
         font-size: 0.9rem;
         color: var(--light-text);
     }
     
-    /* Buttons */
-    .btn {
-        font-weight: 500;
+    /* Newsletter Card - Improved */
+    .newsletter-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 12px;
         transition: var(--transition);
     }
     
-    .btn-primary {
-        background-color: var(--primary-color);
-        border-color: var(--primary-color);
+    .newsletter-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
     }
     
-    .btn-primary:hover {
-        background-color: var(--secondary-color);
-        border-color: var(--secondary-color);
-        transform: translateY(-2px);
+    .newsletter-card .text-muted {
+        color: rgba(255, 255, 255, 0.8) !important;
     }
     
-    .btn-outline-primary {
-        color: var(--primary-color);
-        border-color: var(--primary-color);
+    /* Nav Tabs - Improved */
+    .nav-tabs {
+        border-bottom: 1px solid rgba(0,0,0,0.1);
     }
     
-    .btn-outline-primary:hover {
-        background-color: var(--primary-color);
-        color: white;
-    }
-    
-    /* Pagination */
-    .pagination .page-link {
-        border-radius: 8px;
-        margin: 0 4px;
+    .nav-tabs .nav-link {
         border: none;
-        color: var(--dark-text);
+        color: var(--light-text);
+        font-weight: 500;
+        padding: 0.75rem 1.25rem;
+        border-radius: 8px 8px 0 0;
+        transition: var(--transition);
     }
     
-    .pagination .page-item.active .page-link {
-        background-color: var(--primary-color);
-        color: white;
+    .nav-tabs .nav-link:hover {
+        color: var(--primary-color);
+        background-color: rgba(67, 97, 238, 0.05);
     }
     
-    .pagination .page-link:hover {
-        background-color: var(--light-bg);
+    .nav-tabs .nav-link.active {
+        color: var(--primary-color);
+        background-color: transparent;
+        border-bottom: 3px solid var(--primary-color);
     }
     
-    /* Sticky sidebar for larger screens */
-    @media (min-width: 992px) {
-        .col-lg-4 {
-            position: sticky;
-            top: 100px;
-            height: fit-content;
-            max-height: calc(100vh - 120px);
-            overflow-y: auto;
-        }
-        
-        /* Custom scrollbar for sticky sidebar */
-        .col-lg-4::-webkit-scrollbar {
-            width: 6px;
-        }
-        
-        .col-lg-4::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        
-        .col-lg-4::-webkit-scrollbar-thumb {
-            background: #ccc;
-            border-radius: 3px;
-        }
-        
-        .col-lg-4::-webkit-scrollbar-thumb:hover {
-            background: #aaa;
-        }
+    /* Modal Improvements */
+    .modal-content {
+        border-radius: 12px;
+        border: none;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+    }
+    
+    .modal-header {
+        border-bottom: 1px solid rgba(0,0,0,0.1);
+        padding: 1.2rem 1.5rem;
+    }
+    
+    .modal-body {
+        padding: 1.5rem;
     }
     
     /* Responsive adjustments */
+    @media (max-width: 992px) {
+        .featured-post {
+            height: auto;
+            flex-direction: column !important;
+        }
+        
+        .featured-title {
+            font-size: 1.6rem;
+        }
+        
+        .sticky-top {
+            position: relative !important;
+            top: 0 !important;
+        }
+    }
+    
     @media (max-width: 768px) {
         .post-title {
-            font-size: 1.5rem;
+            font-size: 1.2rem;
         }
         
         .post-image-container {
-            height: 200px;
+            height: 180px;
+        }
+        
+        .featured-title {
+            font-size: 1.4rem;
+        }
+        
+        .featured-excerpt {
+            font-size: 0.9rem;
+        }
+        
+        .welcome-header h1 {
+            font-size: 1.8rem;
         }
     }
 </style>
 
 <script>
-// Pass recommended posts data to JavaScript
-const recommendedPosts = [
-    {% for post in recommended_posts %}
-    {
-        id: {{ post.id }},
-        title: "{{ post.title|escapejs }}",
-        desc: "{{ post.desc|striptags|escapejs }}",
-        image_url: "{{ post.image_url|default('')|escapejs }}",
-        url: "{{ url_for('admin.see_more', post_id=post.id) }}"
-    }{% if not loop.last %},{% endif %}
-    {% endfor %}
-];
+// Initialize featured posts carousel
+var featuredCarousel = document.getElementById('featuredCarousel');
+if (featuredCarousel) {
+    var carousel = new bootstrap.Carousel(featuredCarousel, {
+        interval: 5000,
+        wrap: true
+    });
+}
+
+// Filter tabs functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const filterTabs = document.querySelectorAll('[data-bs-toggle="tab"]');
+    
+    filterTabs.forEach(tab => {
+        tab.addEventListener('shown.bs.tab', function(event) {
+            const target = event.target.getAttribute('data-bs-target');
+            // Here you would typically load content for the selected tab
+            console.log('Tab shown:', target);
+        });
+    });
+    
+    // Newsletter modal handling
+    const dontShowAgain = document.getElementById('dontShowAgain');
+    const newsletterModal = document.getElementById('newsletterModal');
+    
+    // Check if user has previously opted out
+    if (localStorage.getItem('dontShowNewsletterModal') !== 'true') {
+        // Show modal after 60 seconds instead of 30
+        setTimeout(function() {
+            if (!newsletterModal.classList.contains('show')) {
+                const modal = new bootstrap.Modal(newsletterModal);
+                modal.show();
+            }
+        }, 60000);
+    }
+    
+    // Handle "Don't show again" checkbox
+    if (dontShowAgain) {
+        dontShowAgain.addEventListener('change', function() {
+            if (this.checked) {
+                localStorage.setItem('dontShowNewsletterModal', 'true');
+            } else {
+                localStorage.removeItem('dontShowNewsletterModal');
+            }
+        });
+    }
+});
+
+// Handle newsletter form submission
+function handleNewsletterSubmit(event) {
+    event.preventDefault();
+    const formData = new FormData(event.target);
+    const email = formData.get('email');
+    
+    // Simple email validation
+    if (!email || !email.includes('@')) {
+        alert('Please enter a valid email address.');
+        return false;
+    }
+    
+    // Submit the form (you would typically use AJAX here)
+    event.target.submit();
+    
+    // Close the modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('newsletterModal'));
+    modal.hide();
+    
+    return false;
+}
 </script>
 
 {% endblock %}

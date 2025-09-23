@@ -1,37 +1,229 @@
 {% extends 'base.html' %}
 
-{% block title %}Create Announcement{% endblock %}
-
 {% block content %}
-<div class="container mt-4">
-    <h1>Create a New Announcement</h1>
-    <form method="POST">
-        {{ form.hidden_tag() }}
-
-        <!-- Title -->
-        <div class="form-group mb-3">
-            {{ form.title.label(class="form-label") }}
-            {{ form.title(class="form-control", placeholder="Enter announcement title") }}
+<div class="container py-5">
+    <!-- Header Section -->
+    <div class="row mb-5">
+        <div class="col-12 text-center">
+            <h1 class="display-5 fw-bold text-primary mb-3">
+                <i class="fas fa-bullhorn me-2"></i>Create Announcement
+            </h1>
+            <p class="lead text-muted">Share important updates with your audience</p>
         </div>
+    </div>
 
-        <!-- Message -->
-        <div class="form-group mb-3">
-            {{ form.message.label(class="form-label") }}
-            {{ form.message(class="form-control", rows="4", placeholder="Enter announcement message") }}
+    <!-- Main Form Card -->
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-xl-6">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-gradient-primary text-white py-3">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-megaphone me-2"></i>New Announcement
+                    </h5>
+                </div>
+                
+                <div class="card-body p-4">
+                    <form method="POST" id="announcementForm">
+                        {{ form.hidden_tag() }}
+                        
+                        <!-- Title Field -->
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold text-dark">{{ form.title.label }}</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0">
+                                    <i class="fas fa-heading text-primary"></i>
+                                </span>
+                                {{ form.title(class="form-control form-control-lg border-start-0" + (' is-invalid' if form.title.errors else ''), placeholder="Enter announcement title") }}
+                            </div>
+                            {% for error in form.title.errors %}
+                            <div class="invalid-feedback d-block">{{ error }}</div>
+                            {% endfor %}
+                            <div class="form-text mt-2">Keep it concise and attention-grabbing</div>
+                        </div>
+
+                        <!-- Message Field -->
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label class="form-label fw-semibold text-dark mb-0">{{ form.message.label }}</label>
+                                <span class="badge bg-primary" id="charCount">0 characters</span>
+                            </div>
+                            {{ form.message(class="form-control", rows="6", 
+                                placeholder="Enter your announcement message here...", 
+                                oninput="updateCharCount(this)") }}
+                            {% for error in form.message.errors %}
+                            <div class="invalid-feedback d-block">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+                            <a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-outline-secondary rounded-pill px-4">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                            </a>
+                            <div>
+                                <button type="reset" class="btn btn-outline-danger rounded-pill px-4 me-2">
+                                    <i class="fas fa-undo me-2"></i>Reset
+                                </button>
+                                {{ form.submit(class="btn btn-primary rounded-pill px-4") }}
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Tips Card -->
+            <div class="card border-0 mt-4 bg-light">
+                <div class="card-body p-4">
+                    <h6 class="card-title mb-3 text-primary">
+                        <i class="fas fa-lightbulb me-2"></i>Announcement Best Practices
+                    </h6>
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Keep titles short and descriptive</li>
+                        <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Be clear and concise in your message</li>
+                        <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Include important dates and deadlines</li>
+                        <li><i class="fas fa-check-circle text-success me-2"></i>Provide contact information for questions</li>
+                    </ul>
+                </div>
+            </div>
         </div>
-
-        <!-- Submit Button -->
-        <div class="form-group">
-            {{ form.submit(class="btn btn-primary") }}
-        </div>
-    </form>
-
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        {% for category, message in messages %}
-          <div class="alert alert-{{ category }} mt-3">{{ message }}</div>
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
+    </div>
 </div>
+
+<style>
+body {
+    background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
+    min-height: 100vh;
+}
+
+.card {
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #4361ee 0%, #3a0ca3 100%);
+}
+
+.card-header {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.form-control, .form-select {
+    border-radius: 10px;
+    padding: 12px 16px;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus, .form-select:focus {
+    box-shadow: 0 0 0 4px rgba(67, 97, 238, 0.15);
+    border-color: #86b7fe;
+}
+
+.input-group-text {
+    border-radius: 10px 0 0 10px;
+}
+
+.btn {
+    padding: 10px 24px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.alert {
+    border-radius: 12px;
+    border: none;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .display-5 {
+        font-size: 2.2rem;
+    }
+    
+    .card-body {
+        padding: 1.5rem;
+    }
+    
+    .d-flex.justify-content-between {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .btn {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Character count for message
+    const messageField = document.querySelector('textarea[name="message"]');
+    if (messageField) {
+        updateCharCount(messageField);
+    }
+    
+    // Form validation
+    const announcementForm = document.getElementById('announcementForm');
+    if (announcementForm) {
+        announcementForm.addEventListener('submit', function(e) {
+            const title = document.querySelector('input[name="title"]').value;
+            const message = document.querySelector('textarea[name="message"]').value;
+            
+            if (!title.trim()) {
+                e.preventDefault();
+                alert('Please enter a title for your announcement');
+                return;
+            }
+            
+            if (!message.trim()) {
+                e.preventDefault();
+                alert('Please enter a message for your announcement');
+                return;
+            }
+        });
+    }
+});
+
+function updateCharCount(textarea) {
+    const charCount = document.getElementById('charCount');
+    if (charCount) {
+        charCount.textContent = textarea.value.length + ' characters';
+    }
+}
+</script>
+
+<!-- Flash Messages -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="flash-messages">
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show position-fixed top-0 end-0 m-4" role="alert" style="z-index: 1050; min-width: 300px;">
+          <i class="fas fa-{% if category == 'success' %}check-circle{% else %}exclamation-triangle{% endif %} me-2"></i>
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
+    </div>
+    
+    <script>
+    // Auto-dismiss flash messages after 5 seconds
+    document.addEventListener('DOMContentLoaded', function() {
+        const alerts = document.querySelectorAll('.alert-dismissible');
+        alerts.forEach(function(alert) {
+            setTimeout(function() {
+                const bsAlert = new bootstrap.Alert(alert);
+                bsAlert.close();
+            }, 5000);
+        });
+    });
+    </script>
+  {% endif %}
+{% endwith %}
 {% endblock %}

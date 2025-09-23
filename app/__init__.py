@@ -15,6 +15,8 @@ import click
 from flask.cli import with_appcontext
 import os
 from .ddos_protection import ddos_protection
+from app.advanced_protection import advanced_protection
+import geoip2.database
 
 # Load environment variables
 load_dotenv()
@@ -48,18 +50,18 @@ def create_app():
             return ''
         value = str(value)
         escape_map = {
-            '\\': '\\\\',
-            '"': '\\"',
-            "'": "\\'",
-            '\n': '\\n',
-            '\r': '\\r',
-            '\t': '\\t',
-            '<': '\\u003C',
-            '>': '\\u003E',
-            '&': '\\u0026',
-            '=': '\\u003D',
-            '-': '\\u002D',
-            ';': '\\u003B',
+            #"\": "\\",
+            '"': '\"',
+            "'": "\'",
+            '\n': '\n',
+            '\r': '\r',
+            '\t': '\t',
+            '<': '\u003C',
+            '>': '\u003E',
+            '&': '\u0026',
+            '=': '\u003D',
+            '-': '\u002D',
+            ';': '\u003B',
         }
         return ''.join(escape_map.get(c, c) for c in value)
 
@@ -71,6 +73,7 @@ def create_app():
     ckeditor.init_app(app)
     migrate.init_app(app, db)
     mail.init_app(app)
+    advanced_protection.init_app(app)
 
     # Initialize DDoS protection AFTER other extensions
     ddos_protection.init_app(app)
@@ -83,11 +86,16 @@ def create_app():
     from app.routes import main
     from app.admin_routes import admin_bp
     from app.newsletter_route import newsletter_bp
+    from app.api_routes import api_bp
+    from app.advanced_protection import advanced_protection_bp
 
     # Register blueprints
     app.register_blueprint(admin_bp, url_prefix="/admin")
     app.register_blueprint(newsletter_bp)
     app.register_blueprint(main)
+    app.register_blueprint(api_bp)
+    csrf.exempt(api_bp)
+    #app.register_blueprint(advanced_protection_bp)
     logger.debug("Blueprints registered: admin_bp, newsletter_bp, main_bp")
 
     UPLOAD_FOLDER = os.path.join(app.root_path, "static", "images")
@@ -98,6 +106,33 @@ def create_app():
     VIDEO_UPLOAD_FOLDER = os.path.join(app.root_path, "static", "videos")
     os.makedirs(VIDEO_UPLOAD_FOLDER, exist_ok=True)
     app.config["VIDEO_UPLOAD_FOLDER"] = VIDEO_UPLOAD_FOLDER
+
+
+    # Initialize GeoIP reader
+    try:
+        BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+        GEOIP_DB_PATH = os.path.join(BASE_DIR, "geoip", "GeoLite2-Country.mmdb")
+        
+        # Set the path in app config for admin routes to use
+        app.config['GEOIP_DATABASE_PATH'] = GEOIP_DB_PATH
+        
+        if os.path.exists(GEOIP_DB_PATH):
+            app.geoip_reader = geoip2.database.Reader(GEOIP_DB_PATH)
+            logger.info("GeoIP database loaded successfully")
+            
+            # Test the GeoIP reader with a known IP
+            try:
+                test_ip = "8.8.8.8"  # Google DNS
+                response = app.geoip_reader.country(test_ip)
+                logger.info(f"GeoIP test successful: {test_ip} -> {response.country.name}")
+            except Exception as test_e:
+                logger.error(f"GeoIP test failed: {test_e}")
+        else:
+            logger.warning(f"GeoIP database file not found at {GEOIP_DB_PATH}")
+            app.geoip_reader = None
+    except Exception as e:
+        logger.error(f"Failed to load GeoIP database: {str(e)}")
+        app.geoip_reader = None
 
     # Request timing and traffic logging
     from app.models import TrafficStats, Category
@@ -149,6 +184,39 @@ def create_app():
     @app.context_processor
     def inject_now():
         return {'now': datetime.utcnow()}
+
+    # Add to the CLI commands section
+    @app.cli.command("generate-api-key")
+    @with_appcontext
+    def generate_api_key():
+        """Generate an API key for a user"""
+        from app.models import User, ApiKey
+        import secrets
+
+        username = input("Username: ").strip()
+        user = User.query.filter_by(username=username).first()
+        if not user:
+            print(f"User '{username}' not found.")
+            return
+        permissions = input("Permissions (comma-separated, default: post:create): ").strip()
+        if not permissions:
+            permissions = "post:create"    
+            # Generate a secure API key
+            api_key = secrets.token_urlsafe(32)
+
+            # Create the API key record
+            key_record = ApiKey(
+                    key=api_key,
+                    user_id=user.id,
+                    permissions=permissions
+                    )
+            db.session.add(key_record)
+            db.session.commit()
+
+            print(f"API Key for {username}: {api_key}")
+            print(f"Permissions: {permissions}")
+            print("Keep this key secure as it cannot be retrieved again!")
+    
 
     @app.context_processor
     def inject_categories():

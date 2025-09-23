@@ -11,7 +11,7 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(150), nullable=False, unique=True, index=True)
     password_hash = db.Column(db.String(256))
     is_admin = db.Column(db.Boolean, default=False)
-    date_r = db.Column(db.String(), default=date.today)
+    date_r = db.Column(db.DateTime, default=datetime.utcnow)
     is_banned = db.Column(db.Boolean, default=False)
     warning_message = db.Column(db.String(500), nullable=True)
 
@@ -26,6 +26,11 @@ class User(UserMixin, db.Model):
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+
+    # Add this method to the User class
+    def get_avatar_url(self, size=32):
+        from app.utils import get_avatar_url
+        return get_avatar_url(self.email, self.username, size)
 
 # ---------------------- Category Model ----------------------
 class Category(db.Model):
@@ -50,7 +55,7 @@ class Post(db.Model):
     id = db.Column(db.Integer, primary_key=True, index=True)
     title = db.Column(db.String(100), nullable=False)
     desc = db.Column(db.Text, nullable=False)
-    date_pub = db.Column(db.String(), default=date.today)
+    date_pub = db.Column(db.DateTime, default=datetime.utcnow)
     image_url = db.Column(db.String(), nullable=True)
     author_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     category_id = db.Column(db.Integer, db.ForeignKey('category.id'))
@@ -60,6 +65,11 @@ class Post(db.Model):
 
     comments = db.relationship('Comment', backref='post', lazy='dynamic', cascade='all, delete-orphan')
     likes = db.relationship('Like', backref='post', lazy='dynamic', cascade='all, delete-orphan')
+
+    # Add this property to the Post class
+    @property
+    def comment_count(self):
+        return self.comments.count()
 
     def __repr__(self):
         return f'<Post {self.title} by {self.author.username} on {self.date_pub}>'
@@ -140,3 +150,15 @@ class AdsTxt(db.Model):
     updated_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
     updater = db.relationship('User', backref='ads_txt_updates')
+
+# ----------------------Api model-------------------------------
+class ApiKey(db.Model):
+    __tablename__ = 'api_key'
+    id = db.Column(db.Integer, primary_key=True)
+    key = db.Column(db.String(64), unique=True, nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    is_active = db.Column(db.Boolean, default=True)
+    permissions = db.Column(db.String(500), default='post:create')  #comma separated permisions
+
+    user = db.relationship('User', backref=db.backref('api_keys', lazy='dynamic'))

@@ -55,4 +55,57 @@
 .btn-icon:hover {
     background: rgba(255, 255, 255, 0.8);
     color: black;
+
+}
+
+/* User Management Styles */
+.avatar-sm {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.collapse-section {
+    transition: all 0.3s ease;
+}
+
+.filter-badge {
+    cursor: pointer;
+}
+
+.filter-badge.active {
+    background-color: var(--primary-color) !important;
+    color: white !important;
+}
+
+/* Table row actions */
+.table-hover tbody tr:hover {
+    background-color: rgba(67, 97, 238, 0.05);
+}
+
+/* Responsive adjustments for user table */
+@media (max-width: 992px) {
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+
+    .btn-group-sm > .btn {
+        padding: 0.25rem 0.4rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .user-management-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.25rem;
+    }
+
+    .user-management-actions .btn {
+        margin-bottom: 0.25rem;
+    }
 }

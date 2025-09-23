@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Security Challenge - {{ config.SITE_NAME }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .challenge-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            padding: 2.5rem;
+            max-width: 500px;
+            width: 100%;
+        }
+        .security-icon {
+            font-size: 3rem;
+            color: #4361ee;
+            margin-bottom: 1.5rem;
+        }
+        .math-challenge {
+            font-size: 2rem;
+            font-weight: bold;
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 10px;
+            text-align: center;
+            margin: 1.5rem 0;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #4361ee, #3a0ca3);
+            border: none;
+            padding: 0.75rem 2rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(67, 97, 238, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="challenge-card">
+        <div class="text-center">
+            <div class="security-icon">
+                <i class="fas fa-shield-alt"></i>
+            </div>
+            <h2 class="mb-3">Security Verification</h2>
+            <p class="text-muted">Please complete this quick challenge to ensure you're human</p>
+            
+            <div class="math-challenge">
+                {{ a }} + {{ b }} = ?
+            </div>
+            
+            <form method="POST" action="{{ url_for('advanced_protection.verify_challenge') }}">
+                <input type="hidden" name="challenge_id" value="{{ challenge_id }}">
+                <input type="hidden" name="next" value="{{ next_url }}">
+                
+                <div class="mb-3">
+                    <input type="number" name="answer" class="form-control form-control-lg" 
+                           placeholder="Enter the answer" required autofocus>
+                </div>
+                
+                <button type="submit" class="btn btn-primary btn-lg w-100">
+                    <i class="fas fa-check-circle me-2"></i>Verify
+                </button>
+            </form>
+            
+            <div class="mt-4 text-muted small">
+                <i class="fas fa-info-circle me-1"></i>
+                This helps us prevent automated requests and protect your account.
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

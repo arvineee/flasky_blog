@@ -1,7 +1,7 @@
 from flask import render_template, url_for, redirect, flash, request,send_file,jsonify,Blueprint,current_app,abort,make_response
 from app import  bootstrap,db,login_manager,mail
 from app.models import User, Post, Comment, Like, User,Announcement,Category,AdsTxt,NewsletterSubscriber
-from app.forms import LoginForm, RegisterForm, PostForm,CommentForm,ContactForm, ResetPasswordRequestForm, ResetPasswordForm
+from app.forms import LoginForm, RegisterForm, PostForm,CommentForm,ContactForm, ResetPasswordRequestForm, ResetPasswordForm,SubscribeForm
 from flask_login import login_user, current_user, login_required,logout_user
 from werkzeug.security import generate_password_hash
 from werkzeug.utils import secure_filename
@@ -58,22 +58,59 @@ def index():
     if current_user.is_authenticated and current_user.is_banned:
         flash("Your account has been restricted. Please contact the admin.", "danger")
         return redirect(url_for("main.logout"))
+
+    form = SubscribeForm()
     
     # Get the current page from request args or default to page 1
     page = request.args.get('page', 1, type=int)
     
     # Define how many posts to show per page
-    per_page = 5
-    recommended_posts = get_recommended_posts()
-
-    # Fetch posts with pagination, filtering out those by banned users and blocked posts
-    posts = Post.query.join(User).filter(User.is_banned == False, Post.is_blocked == False).order_by(Post.id.desc()).paginate(page=page, per_page=per_page, error_out=False)
-
+    per_page = 6
+    
+    # Get the active tab from request args or default to 'recent'
+    tab = request.args.get('tab', 'recent')
+    
+    # Base query for posts (filter out banned users and blocked posts)
+    base_query = Post.query.join(User).filter(
+        User.is_banned == False, 
+        Post.is_blocked == False
+    )
+    
+    # Apply sorting based on the selected tab
+    if tab == 'popular':
+        posts_query = base_query.order_by(Post.like_count.desc(), Post.views.desc())
+    else:  # recent is default
+        posts_query = base_query.order_by(Post.date_pub.desc())
+    
+    # Fetch posts with pagination
+    pagination = posts_query.paginate(page=page, per_page=per_page, error_out=False)
+    posts = pagination.items  # This is the actual list of posts
+    
+    # Fetch featured posts for carousel (most recent 3 posts)
+    featured_posts = base_query.order_by(Post.date_pub.desc()).limit(3).all()
+    
     # Fetch announcements, limit to the latest 5
     announcements = Announcement.query.order_by(Announcement.date_created.desc()).limit(5).all()
+    
+    # Fetch trending categories (top 5 categories by post count)
+    trending_categories = db.session.query(
+        Category, 
+        db.func.count(Post.id).label('post_count')
+    ).join(Post).group_by(Category.id).order_by(db.func.count(Post.id).desc()).limit(5).all()
+    
+    # Get recommended posts
+    recommended_posts = get_recommended_posts()
 
     # Render the index page with posts and announcements
-    return render_template('index.html', posts=posts, announcements=announcements,pagination=posts,recommended_posts=recommended_posts)
+    return render_template('index.html', 
+                         posts=posts,  # Now this is a list, not a pagination object
+                         pagination=pagination,  # Pass the pagination object separately
+                         featured_posts=featured_posts,
+                         announcements=announcements,
+                         recommended_posts=recommended_posts,
+                         trending_categories=trending_categories,
+                         active_tab=tab,
+                           form=form)
 
 
 @main.route("/login", methods=["POST", "GET"])

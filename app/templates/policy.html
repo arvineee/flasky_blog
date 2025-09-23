@@ -1,45 +1,449 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-10">
-            <h1 class="text-center mb-4">Policy</h1>
+<div class="policy-container">
+    <div class="policy-header">
+        <div class="policy-breadcrumb">
+            <a href="{{ url_for('main.index') }}">Home</a> / Policy
+        </div>
+        <h1 class="policy-title">Policy</h1>
+        <p class="policy-subtitle">Our commitment to content quality, privacy, and user experience</p>
+    </div>
 
-            <section class="mb-5">
-                <h2>Introduction</h2>
-		<p>Welcome to <b>Arval-Blog</b>. This policy outlines our commitment to upholding the highest standards of content, privacy, and user experience. By interacting with our blog, you agree to comply with the following guidelines.</p>
+    <div class="policy-content">
+        <!-- Table of Contents -->
+        <div class="policy-toc">
+            <h3>Table of Contents</h3>
+            <ul>
+                <li><a href="#introduction">Introduction</a></li>
+                <li><a href="#content-policy">Content Policy</a></li>
+                <li><a href="#user-interaction">User Interaction</a></li>
+                <li><a href="#intellectual-property">Intellectual Property</a></li>
+                <li><a href="#policy-updates">Updates to Policy</a></li>
+            </ul>
+        </div>
+
+        <!-- Policy Sections -->
+        <div class="policy-sections">
+            <section id="introduction" class="policy-section">
+                <div class="section-header">
+                    <div class="section-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M12 16V12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M12 8H12.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <h2>Introduction</h2>
+                </div>
+                <div class="section-content">
+                    <p>Welcome to <b>Arval-Blog</b>. This policy outlines our commitment to upholding the highest standards of content, privacy, and user experience. By interacting with our blog, you agree to comply with the following guidelines.</p>
+                </div>
             </section>
 
-            <section class="mb-5">
-                <h2>Content Policy</h2>
-                <ul>
-                    <li><strong>Accuracy:</strong> We strive to ensure all content is accurate and current. If inaccuracies are found, we will correct them promptly.</li>
-                    <li><strong>Originality:</strong> Plagiarism is strictly prohibited. All content must be original or properly cited.</li>
-                    <li><strong>Respect:</strong> All posts must respect the rights, privacy, and dignity of others. No hate speech or discrimination will be tolerated.</li>
-                    <li><strong>Transparency:</strong> Any sponsored content or partnerships will be clearly disclosed.</li>
-                </ul>
+            <section id="content-policy" class="policy-section">
+                <div class="section-header">
+                    <div class="section-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M14 2V8H20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M16 13H8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M16 17H8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M10 9H9H8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <h2>Content Policy</h2>
+                </div>
+                <div class="section-content">
+                    <div class="policy-list">
+                        <div class="policy-item">
+                            <div class="policy-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                            <div class="policy-text">
+                                <h4>Accuracy</h4>
+                                <p>We strive to ensure all content is accurate and current. If inaccuracies are found, we will correct them promptly.</p>
+                            </div>
+                        </div>
+                        <div class="policy-item">
+                            <div class="policy-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M9 12H12M12 12H15M12 12V9M12 12V15M12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12C21 16.9706 16.9706 21 12 21Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                            <div class="policy-text">
+                                <h4>Originality</h4>
+                                <p>Plagiarism is strictly prohibited. All content must be original or properly cited.</p>
+                            </div>
+                        </div>
+                        <div class="policy-item">
+                            <div class="policy-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M17 21V19C17 17.9391 16.5786 16.9217 15.8284 16.1716C15.0783 15.4214 14.0609 15 13 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21M23 21V19C22.9993 18.1137 22.7044 17.2528 22.1614 16.5523C21.6184 15.8519 20.8581 15.3516 20 15.13M16 3.13C16.8604 3.3503 17.623 3.8507 18.1676 4.55231C18.7122 5.25392 19.0078 6.11683 19.0078 7.005C19.0078 7.89317 18.7122 8.75608 18.1676 9.45769C17.623 10.1593 16.8604 10.6597 16 10.88M13 7C13 9.20914 11.2091 11 9 11C6.79086 11 5 9.20914 5 7C5 4.79086 6.79086 3 9 3C11.2091 3 13 4.79086 13 7Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                            <div class="policy-text">
+                                <h4>Respect</h4>
+                                <p>All posts must respect the rights, privacy, and dignity of others. No hate speech or discrimination will be tolerated.</p>
+                            </div>
+                        </div>
+                        <div class="policy-item">
+                            <div class="policy-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M9 12H12M12 12H15M12 12V9M12 12V15M12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12C21 16.9706 16.9706 21 12 21Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                            <div class="policy-text">
+                                <h4>Transparency</h4>
+                                <p>Any sponsored content or partnerships will be clearly disclosed.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </section>
 
-            <section class="mb-5">
-                <h2>User Interaction</h2>
-                <ul>
-                    <li><strong>Comments:</strong> We encourage thoughtful discussion. Comments are moderated to ensure they adhere to community standards.</li>
-                    <li><strong>Privacy:</strong> User data is handled with utmost privacy. See our <a href="{{ url_for('main.privacy_policy') }}">Privacy Policy</a> for more details.</li>
-                    <li><strong>Accountability:</strong> Users are responsible for their interactions on our platform.</li>
-                </ul>
+            <section id="user-interaction" class="policy-section">
+                <div class="section-header">
+                    <div class="section-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M17 8H17.01M17 2C19.7614 2 22 4.23858 22 7C22 9.76142 19.7614 12 17 12C14.2386 12 12 9.76142 12 7C12 4.23858 14.2386 2 17 2ZM2 18.5C2 16.683 3.683 15 5.5 15H13.5C15.317 15 17 16.683 17 18.5C17 20.317 15.317 22 13.5 22H5.5C3.683 22 2 20.317 2 18.5Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <h2>User Interaction</h2>
+                </div>
+                <div class="section-content">
+                    <div class="policy-list">
+                        <div class="policy-item">
+                            <div class="policy-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M21 15C21 15.5304 20.7893 16.0391 20.4142 16.4142C20.0391 16.7893 19.5304 17 19 17H7L3 21V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H19C19.5304 3 20.0391 3.21071 20.4142 3.58579C20.7893 3.96086 21 4.46957 21 5V15Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                            <div class="policy-text">
+                                <h4>Comments</h4>
+                                <p>We encourage thoughtful discussion. Comments are moderated to ensure they adhere to community standards.</p>
+                            </div>
+                        </div>
+                        <div class="policy-item">
+                            <div class="policy-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M12 3H5C3.89543 3 3 3.89543 3 5V19C3 20.1046 3.89543 21 5 21H19C20.1046 21 21 20.1046 21 19V12M8.5 12.5L12 9M12 9L15.5 12.5M12 9V21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                            <div class="policy-text">
+                                <h4>Privacy</h4>
+                                <p>User data is handled with utmost privacy. See our <a href="{{ url_for('main.privacy_policy') }}">Privacy Policy</a> for more details.</p>
+                            </div>
+                        </div>
+                        <div class="policy-item">
+                            <div class="policy-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M9.09 9C9.3251 8.33167 9.78915 7.76811 10.4 7.40913C11.0108 7.05016 11.7289 6.91894 12.4272 7.03871C13.1255 7.15848 13.7588 7.52152 14.2151 8.06353C14.6713 8.60553 14.9211 9.29152 14.92 10C14.92 12 11.92 13 11.92 13M12 17H12.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                            <div class="policy-text">
+                                <h4>Accountability</h4>
+                                <p>Users are responsible for their interactions on our platform.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </section>
 
-            <section class="mb-5">
-                <h2>Intellectual Property</h2>
-                <p>All content published on this blog is protected under copyright law. Unauthorized use or reproduction of any content without permission is prohibited. For inquiries about permissions, please contact us at [your contact email].</p>
+            <section id="intellectual-property" class="policy-section">
+                <div class="section-header">
+                    <div class="section-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 15V15.5V16M12 8V9M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M14.5 8.5C14.5 8.5 14.95 7.95 15.5 7.5C15.95 7.15 16.75 6.75 17.5 7.5C18.25 8.25 17.85 9.05 17.5 9.5C17.05 10.05 16.5 10.5 16.5 10.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <h2>Intellectual Property</h2>
+                </div>
+                <div class="section-content">
+                    <p>All content published on this blog is protected under copyright law. Unauthorized use or reproduction of any content without permission is prohibited. For inquiries about permissions, please contact us at [your contact email].</p>
+                </div>
             </section>
 
-            <section class="mb-5">
-                <h2>Updates to Policy</h2>
-                <p>We reserve the right to update this policy as needed. Any changes will be reflected on this page, and we encourage users to check back periodically.</p>
+            <section id="policy-updates" class="policy-section">
+                <div class="section-header">
+                    <div class="section-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M4 4.5V8.5H4.5M20 4.5V8.5H19.5M4 19.5V15.5H4.5M20 19.5V15.5H19.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <rect x="4.5" y="4.5" width="15" height="15" rx="2" stroke="currentColor" stroke-width="2"/>
+                            <path d="M12 9.5V14.5L15 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <h2>Updates to Policy</h2>
+                </div>
+                <div class="section-content">
+                    <p>We reserve the right to update this policy as needed. Any changes will be reflected on this page, and we encourage users to check back periodically.</p>
+                </div>
             </section>
         </div>
     </div>
 </div>
+
+<style>
+    /* Modern Policy Page Styles */
+    .policy-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem 1.5rem;
+        font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+        color: #1e293b;
+        line-height: 1.6;
+    }
+
+    .policy-header {
+        text-align: center;
+        margin-bottom: 3rem;
+        padding-bottom: 2rem;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .policy-breadcrumb {
+        font-size: 0.875rem;
+        color: #64748b;
+        margin-bottom: 1rem;
+    }
+
+    .policy-breadcrumb a {
+        color: #3b82f6;
+        text-decoration: none;
+        transition: color 0.2s ease;
+    }
+
+    .policy-breadcrumb a:hover {
+        color: #2563eb;
+    }
+
+    .policy-title {
+        font-size: 2.5rem;
+        font-weight: 800;
+        color: #1e293b;
+        margin-bottom: 0.5rem;
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .policy-subtitle {
+        font-size: 1.125rem;
+        color: #64748b;
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
+    .policy-content {
+        display: grid;
+        grid-template-columns: 250px 1fr;
+        gap: 2rem;
+    }
+
+    .policy-toc {
+        position: sticky;
+        top: 2rem;
+        align-self: start;
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+
+    .policy-toc h3 {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #e2e8f0;
+    }
+
+    .policy-toc ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .policy-toc li {
+        margin-bottom: 0.75rem;
+    }
+
+    .policy-toc a {
+        display: block;
+        color: #64748b;
+        text-decoration: none;
+        font-weight: 500;
+        padding: 0.5rem 0.75rem;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+    }
+
+    .policy-toc a:hover,
+    .policy-toc a:focus {
+        color: #3b82f6;
+        background: #f1f5f9;
+    }
+
+    .policy-sections {
+        display: flex;
+        flex-direction: column;
+        gap: 2rem;
+    }
+
+    .policy-section {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .policy-section:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+
+    .section-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .section-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 48px;
+        height: 48px;
+        background: #eff6ff;
+        border-radius: 10px;
+        margin-right: 1rem;
+        color: #3b82f6;
+    }
+
+    .section-header h2 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin: 0;
+    }
+
+    .section-content p {
+        color: #64748b;
+        margin-bottom: 1rem;
+    }
+
+    .policy-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .policy-item {
+        display: flex;
+        gap: 1rem;
+    }
+
+    .policy-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        width: 40px;
+        height: 40px;
+        background: #f8fafc;
+        border-radius: 8px;
+        color: #3b82f6;
+    }
+
+    .policy-text h4 {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: #1e293b;
+        margin: 0 0 0.5rem 0;
+    }
+
+    .policy-text p {
+        margin: 0;
+        color: #64748b;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 900px) {
+        .policy-content {
+            grid-template-columns: 1fr;
+        }
+        
+        .policy-toc {
+            position: static;
+            margin-bottom: 2rem;
+        }
+    }
+
+    @media (max-width: 640px) {
+        .policy-title {
+            font-size: 2rem;
+        }
+        
+        .policy-section {
+            padding: 1.5rem;
+        }
+        
+        .section-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .section-icon {
+            margin-bottom: 1rem;
+        }
+    }
+</style>
+
+<script>
+    // Smooth scrolling for table of contents links
+    document.querySelectorAll('.policy-toc a').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const targetId = this.getAttribute('href');
+            const targetElement = document.querySelector(targetId);
+            if (targetElement) {
+                window.scrollTo({
+                    top: targetElement.offsetTop - 20,
+                    behavior: 'smooth'
+                });
+            }
+        });
+    });
+
+    // Highlight current section in TOC when scrolling
+    window.addEventListener('scroll', function() {
+        const sections = document.querySelectorAll('.policy-section');
+        const navLinks = document.querySelectorAll('.policy-toc a');
+        
+        let currentSection = '';
+        
+        sections.forEach(section => {
+            const sectionTop = section.offsetTop;
+            if (pageYOffset >= sectionTop - 100) {
+                currentSection = '#' + section.getAttribute('id');
+            }
+        });
+        
+        navLinks.forEach(link => {
+            link.classList.remove('active');
+            if (link.getAttribute('href') === currentSection) {
+                link.classList.add('active');
+            }
+        });
+    });
+</script>
 {% endblock %}
