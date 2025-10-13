@@ -1,6 +1,9 @@
 {% extends 'base.html' %}
 
 {% block content %}
+{{ super() }}
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
 <div class="container-fluid py-4">
     <!-- Page Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -94,22 +97,21 @@
                 </div>
             </div>
         </div>
-    <div class="col mb-4">
-        <div class="card stat-card bg-info text-white">
-            <div class="card-body">
-                <div class="d-flex align-items-center">
-                    <div class="flex-grow-1">
-                        <h6 class="card-title text-white-50">Your Country</h6>
-                        <h3 class="fw-bold mb-0">{{ admin_country }}</h3>
-                    </div>
-                    <div class="stat-icon">
-                        <i class="fas fa-globe fa-2x"></i>
+        <div class="col mb-4">
+            <div class="card stat-card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h6 class="card-title text-white-50">Your Country</h6>
+                            <h3 class="fw-bold mb-0">{{ admin_country }}</h3>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fas fa-globe fa-2x"></i>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-</div>
     </div>
 
     <!-- Quick Actions Row -->
@@ -141,9 +143,6 @@
                         </a>
                         <a href="{{ url_for('admin.ddos_protection_management') }}" class="btn btn-action">
                             <i class="fas fa-shield-alt me-1"></i> DDoS Protection
-                        </a>
-                        <a href="{{ url_for('advanced_protection.dashboard') }}" class="btn btn-action">
-                            <i class="fas fa-user-shield me-1"></i> Advanced Protection
                         </a>
                         <a href="{{ url_for('admin.manage_categories') }}" class="btn btn-action">
                             <i class="fas fa-tags me-1"></i> Manage Categories
@@ -313,6 +312,166 @@
         </div>
     </div>
 
+    <!-- Post Management Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-file-alt me-2"></i>Post Management
+                        <span class="badge bg-light text-dark ms-2">{{ posts|length }} Posts</span>
+                    </h5>
+                    <button class="btn btn-sm btn-light" type="button" data-bs-toggle="collapse" data-bs-target="#postManagementCollapse">
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                </div>
+                <div class="collapse show" id="postManagementCollapse">
+                    <div class="card-body">
+                        <!-- Search Form -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <form method="GET" action="{{ url_for('admin.admin_dashboard') }}">
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" placeholder="Search posts by title or content..." name="post_q" value="{{ request.args.get('post_q', '') }}">
+                                        <button class="btn btn-primary" type="submit">
+                                            <i class="fas fa-search"></i>
+                                        </button>
+                                        {% if request.args.get('post_q') %}
+                                        <a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-outline-secondary">
+                                            <i class="fas fa-times"></i>
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="col-md-6 d-flex justify-content-end">
+                                <div class="btn-group">
+                                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                        <i class="fas fa-filter me-1"></i>Filter
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="{{ url_for('admin.admin_dashboard', post_filter='all') }}">All Posts</a></li>
+                                        <li><a class="dropdown-item" href="{{ url_for('admin.admin_dashboard', post_filter='blocked') }}">Blocked Posts</a></li>
+                                        <li><a class="dropdown-item" href="{{ url_for('admin.admin_dashboard', post_filter='active') }}">Active Posts</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Post Table -->
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Title</th>
+                                        <th>Author</th>
+                                        <th>Category</th>
+                                        <th>Date</th>
+                                        <th>Views</th>
+                                        <th>Likes</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for post in posts %}
+                                    <tr id="post-row-{{ post.id }}">
+                                        <td>{{ post.id }}</td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                {% if post.image_url %}
+                                                <div class="post-thumbnail me-2">
+                                                    <img src="{{ url_for('static', filename='images/' + post.image_url) }}" alt="{{ post.title }}" class="rounded" style="width: 40px; height: 40px; object-fit: cover;">
+                                                </div>
+                                                {% endif %}
+                                                <div>
+                                                    <div class="fw-bold">{{ post.title|truncate(50) }}</div>
+                                                    <small class="text-muted">{{ post.desc|striptags|truncate(30) }}</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2">
+                                                    {{ post.author.username[0]|upper }}
+                                                </div>
+                                                {{ post.author.username }}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            {% if post.category_obj %}
+                                            <span class="badge bg-info">{{ post.category_obj.name }}</span>
+                                            {% else %}
+                                            <span class="badge bg-secondary">Uncategorized</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ post.date_pub.strftime('%Y-%m-%d') }}</td>
+                                        <td>{{ post.views or 0 }}</td>
+                                        <td>{{ post.like_count or 0 }}</td>
+                                        <td id="post-status-{{ post.id }}">
+                                            {% if post.is_blocked %}
+                                            <span class="badge bg-danger">Blocked</span>
+                                            {% else %}
+                                            <span class="badge bg-success">Active</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{{ url_for('admin.see_more', post_id=post.id) }}" class="btn btn-outline-primary" title="View Post">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <a href="{{ url_for('admin.edit_post', post_id=post.id) }}" class="btn btn-outline-info" title="Edit Post">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <!-- Delete Button -->
+                                                <button type="button" class="btn btn-outline-danger post-action-btn" 
+                                                        data-action="delete"
+                                                        data-post-id="{{ post.id }}"
+                                                        data-post-title="{{ post.title }}"
+                                                        title="Delete Post">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+
+                                                <!-- Block/Unblock Button -->
+                                                {% if post.is_blocked %}
+                                                <button type="button" class="btn btn-outline-success post-action-btn" 
+                                                        data-action="unblock"
+                                                        data-post-id="{{ post.id }}"
+                                                        data-post-title="{{ post.title }}"
+                                                        title="Unblock Post">
+                                                    <i class="fas fa-check-circle"></i>
+                                                </button>
+                                                {% else %}
+                                                <button type="button" class="btn btn-outline-warning post-action-btn" 
+                                                        data-action="block" 
+                                                        data-post-id="{{ post.id }}"
+                                                        data-post-title="{{ post.title }}"
+                                                        title="Block Post">
+                                                    <i class="fas fa-ban"></i>
+                                                </button>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination (if needed) -->
+                        {% if posts|length == 0 %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">No posts found matching your criteria.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- API Management Section -->
     <div class="row mb-4">
         <div class="col-12">
@@ -392,6 +551,150 @@
             </div>
         </div>
     </div>
+
+    <!-- Advanced Protection Section -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-shield-alt me-2"></i>Advanced Protection
+                    <span class="badge bg-light text-dark ms-2">Real-time</span>
+                </h5>
+                <div>
+                    <a href="{{ url_for('advanced_protection.dashboard') }}" class="btn btn-sm btn-light me-2">
+                        <i class="fas fa-cog me-1"></i>Manage Protection
+                    </a>
+                    <a href="{{ url_for('admin.ddos_protection_management') }}" class="btn btn-sm btn-outline-light">
+                        <i class="fas fa-network-wired me-1"></i>DDoS Settings
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <h6>Protection Status</h6>
+                        <div class="row mb-3">
+                            <div class="col-md-3 col-6">
+                                <div class="border rounded p-2 text-center">
+                                    <div class="text-primary fw-bold">{{ advanced_protection.stats.total_requests if advanced_protection else 0 }}</div>
+                                    <small class="text-muted">Total Requests</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <div class="border rounded p-2 text-center">
+                                    <div class="text-danger fw-bold">{{ advanced_protection.stats.requests_blocked if advanced_protection else 0 }}</div>
+                                    <small class="text-muted">Blocked Requests</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <div class="border rounded p-2 text-center">
+                                    <div class="text-warning fw-bold">{{ advanced_protection.stats.currently_banned if advanced_protection else 0 }}</div>
+                                    <small class="text-muted">Banned IPs</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <div class="border rounded p-2 text-center">
+                                    <div class="text-success fw-bold">{{ advanced_protection.stats.challenges_served if advanced_protection else 0 }}</div>
+                                    <small class="text-muted">Challenges</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <h6>Quick Protection Actions</h6>
+                        <div class="d-flex flex-wrap gap-2 mb-3">
+                            <form method="POST" action="{{ url_for('advanced_protection.set_protection_mode', mode='under_attack') }}" class="d-inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                    <i class="fas fa-fire me-1"></i>Under Attack Mode
+                                </button>
+                            </form>
+                            <form method="POST" action="{{ url_for('advanced_protection.set_protection_mode', mode='active') }}" class="d-inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                <button type="submit" class="btn btn-sm btn-outline-success">
+                                    <i class="fas fa-shield-alt me-1"></i>Active Protection
+                                </button>
+                            </form>
+                            <form method="POST" action="{{ url_for('advanced_protection.set_protection_mode', mode='monitor') }}" class="d-inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                <button type="submit" class="btn btn-sm btn-outline-warning">
+                                    <i class="fas fa-eye me-1"></i>Monitor Only
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <h6>System Status</h6>
+                        <div class="list-group list-group-flush">
+                            <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                <span>Redis</span>
+                                <span class="badge bg-{{ 'success' if advanced_protection and advanced_protection.redis_client else 'danger' }}">
+                                    {{ 'Connected' if advanced_protection and advanced_protection.redis_client else 'Disconnected' }}
+                                </span>
+                            </div>
+                            <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                <span>GeoIP</span>
+                                <span class="badge bg-{{ 'success' if advanced_protection and advanced_protection.geoip_reader else 'warning' }}">
+                                    {{ 'Available' if advanced_protection and advanced_protection.geoip_reader else 'Unavailable' }}
+                                </span>
+                            </div>
+                            <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                <span>WAF</span>
+                                <span class="badge bg-{{ 'success' if advanced_protection and advanced_protection.config.WAF_ENABLED else 'secondary' }}">
+                                    {{ 'Enabled' if advanced_protection and advanced_protection.config.WAF_ENABLED else 'Disabled' }}
+                                </span>
+                            </div>
+                            <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                <span>Challenges</span>
+                                <span class="badge bg-{{ 'success' if advanced_protection and advanced_protection.config.JS_CHALLENGE_ENABLED else 'secondary' }}">
+                                    {{ 'Enabled' if advanced_protection and advanced_protection.config.JS_CHALLENGE_ENABLED else 'Disabled' }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Security Events -->
+                <div class="mt-3">
+                    <h6>Recent Security Events</h6>
+                    {% if advanced_protection and advanced_protection.stats.recent_events %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>IP</th>
+                                    <th>Event</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for event in advanced_protection.stats.recent_events[:5] %}
+                                <tr>
+                                    <td><small>{{ event.time }}</small></td>
+                                    <td><code>{{ event.ip }}</code></td>
+                                    <td><small>{{ event.description }}</small></td>
+                                    <td>
+                                        {% if event.type == 'IP Banned' %}
+                                        <form method="POST" action="{{ url_for('advanced_protection.unban_ip_route', ip=event.ip) }}" class="d-inline">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                            <button type="submit" class="btn btn-sm btn-outline-success">Unban</button>
+                                        </form>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center">No recent security events</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
     <!-- Toast Notification Container -->
     <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
@@ -503,6 +806,14 @@ body {
     border-radius: 6px;
 }
 
+.post-thumbnail img {
+    transition: transform 0.3s ease;
+}
+
+.post-thumbnail img:hover {
+    transform: scale(1.1);
+}
+
 /* API Section Styles */
 .api-stats-card {
     border-left: 4px solid var(--primary-color);
@@ -521,6 +832,10 @@ body {
     .table-responsive {
         font-size: 0.875rem;
     }
+    
+    .post-thumbnail {
+        display: none;
+    }
 }
 
 /* Loading spinner */
@@ -530,6 +845,7 @@ body {
 }
 </style>
 
+<script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize Toast
@@ -542,15 +858,13 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Set toast color based on type
         const toastHeader = document.querySelector('#actionToast .toast-header');
+        toastHeader.className = 'toast-header';
         if (type === 'error') {
             toastHeader.classList.add('bg-danger', 'text-white');
-            toastHeader.classList.remove('bg-success', 'bg-warning');
         } else if (type === 'warning') {
             toastHeader.classList.add('bg-warning', 'text-dark');
-            toastHeader.classList.remove('bg-success', 'bg-danger');
         } else {
             toastHeader.classList.add('bg-success', 'text-white');
-            toastHeader.classList.remove('bg-danger', 'bg-warning');
         }
         
         actionToast.show();
@@ -592,7 +906,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRFToken': '{{ csrf_token() }}'
+                    'X-Requested-With': 'XMLHttpRequest'
                 }
             })
             .then(response => {
@@ -622,11 +936,12 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Update UI after successful action
+    // Update UI after successful user action
     function updateUIAfterAction(action, userId, userName) {
         const statusElement = document.getElementById(`user-status-${userId}`);
         const roleElement = document.getElementById(`user-role-${userId}`);
-        const actionButtons = document.querySelectorAll(`#user-row-${userId} .user-action-btn`);
+        const rowElement = document.getElementById(`user-row-${userId}`);
+        const actionButtons = rowElement.querySelectorAll('.user-action-btn');
         
         switch(action) {
             case 'ban':
@@ -685,6 +1000,118 @@ document.addEventListener('DOMContentLoaded', function() {
                         btn.classList.replace('btn-outline-secondary', 'btn-outline-info');
                         btn.innerHTML = '<i class="fas fa-user-plus"></i>';
                         btn.title = 'Promote to Admin';
+                    }
+                });
+                break;
+        }
+    }
+    
+    // Handle post actions with AJAX
+    document.querySelectorAll('.post-action-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const action = this.dataset.action;
+            const postId = this.dataset.postId;
+            const postTitle = this.dataset.postTitle;
+            
+            // Show loading state
+            const originalHTML = this.innerHTML;
+            this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+            this.disabled = true;
+            
+            // Determine the endpoint based on action
+            let endpoint;
+            switch(action) {
+                case 'block':
+                    endpoint = `/admin/post/${postId}/block`;
+                    break;
+                case 'unblock':
+                    endpoint = `/admin/post/${postId}/unblock`;
+                    break;
+                case 'delete':
+                    if (!confirm(`Are you sure you want to delete the post "${postTitle}"? This action cannot be undone.`)) {
+                        this.innerHTML = originalHTML;
+                        this.disabled = false;
+                        return;
+                    }
+                    endpoint = `/admin/post/${postId}/delete`;
+                    break;
+                default:
+                    return;
+            }
+            
+            // Send AJAX request
+            fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    if (action === 'delete') {
+                        // Remove the post row from the table
+                        document.getElementById(`post-row-${postId}`).remove();
+                    } else {
+                        // Update UI based on action
+                        updatePostUIAfterAction(action, postId, postTitle);
+                    }
+                    showToast('Success', data.message || 'Action completed successfully.');
+                } else {
+                    throw new Error(data.message || 'Action failed');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('Error', error.message || 'An error occurred. Please try again.', 'error');
+            })
+            .finally(() => {
+                // Restore button state
+                this.innerHTML = originalHTML;
+                this.disabled = false;
+            });
+        });
+    });
+    
+    // Update UI after successful post action
+    function updatePostUIAfterAction(action, postId, postTitle) {
+        const statusElement = document.getElementById(`post-status-${postId}`);
+        const rowElement = document.getElementById(`post-row-${postId}`);
+        const actionButtons = rowElement.querySelectorAll('.post-action-btn');
+        
+        switch(action) {
+            case 'block':
+                if (statusElement) {
+                    statusElement.innerHTML = '<span class="badge bg-danger">Blocked</span>';
+                }
+                // Replace block button with unblock button
+                actionButtons.forEach(btn => {
+                    if (btn.dataset.action === 'block') {
+                        btn.dataset.action = 'unblock';
+                        btn.classList.replace('btn-outline-warning', 'btn-outline-success');
+                        btn.innerHTML = '<i class="fas fa-check-circle"></i>';
+                        btn.title = 'Unblock Post';
+                    }
+                });
+                break;
+                
+            case 'unblock':
+                if (statusElement) {
+                    statusElement.innerHTML = '<span class="badge bg-success">Active</span>';
+                }
+                // Replace unblock button with block button
+                actionButtons.forEach(btn => {
+                    if (btn.dataset.action === 'unblock') {
+                        btn.dataset.action = 'block';
+                        btn.classList.replace('btn-outline-success', 'btn-outline-warning');
+                        btn.innerHTML = '<i class="fas fa-ban"></i>';
+                        btn.title = 'Block Post';
                     }
                 });
                 break;

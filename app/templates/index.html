@@ -314,6 +314,7 @@
             <div class="modal-body">
                 <p>Stay updated with the latest content. No spam, just great articles.</p>
                 <form action="{{ url_for('newsletter.subscribe') }}" method="POST">
+			{{ form.hidden_tag() }}
                     <div class="mb-3">
                         <input type="email" class="form-control" name="email" placeholder="Your email address" required>
                     </div>

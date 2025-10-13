@@ -14,6 +14,8 @@ import getpass
 import click
 from flask.cli import with_appcontext
 import os
+import atexit
+import signal
 from .ddos_protection import ddos_protection
 from app.advanced_protection import advanced_protection
 import geoip2.database
@@ -37,7 +39,6 @@ ckeditor = CKEditor()
 migrate = Migrate()
 mail = Mail()
 
-
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
@@ -50,7 +51,6 @@ def create_app():
             return ''
         value = str(value)
         escape_map = {
-            #"\": "\\",
             '"': '\"',
             "'": "\'",
             '\n': '\n',
@@ -95,34 +95,31 @@ def create_app():
     app.register_blueprint(main)
     app.register_blueprint(api_bp)
     csrf.exempt(api_bp)
-    #app.register_blueprint(advanced_protection_bp)
     logger.debug("Blueprints registered: admin_bp, newsletter_bp, main_bp")
 
+    # Setup upload folders
     UPLOAD_FOLDER = os.path.join(app.root_path, "static", "images")
     os.makedirs(UPLOAD_FOLDER, exist_ok=True)
     app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
-    # Create video upload folder if it doesn't exist
     VIDEO_UPLOAD_FOLDER = os.path.join(app.root_path, "static", "videos")
     os.makedirs(VIDEO_UPLOAD_FOLDER, exist_ok=True)
     app.config["VIDEO_UPLOAD_FOLDER"] = VIDEO_UPLOAD_FOLDER
-
 
     # Initialize GeoIP reader
     try:
         BASE_DIR = os.path.abspath(os.path.dirname(__file__))
         GEOIP_DB_PATH = os.path.join(BASE_DIR, "geoip", "GeoLite2-Country.mmdb")
         
-        # Set the path in app config for admin routes to use
         app.config['GEOIP_DATABASE_PATH'] = GEOIP_DB_PATH
         
         if os.path.exists(GEOIP_DB_PATH):
             app.geoip_reader = geoip2.database.Reader(GEOIP_DB_PATH)
             logger.info("GeoIP database loaded successfully")
             
-            # Test the GeoIP reader with a known IP
+            # Test the GeoIP reader
             try:
-                test_ip = "8.8.8.8"  # Google DNS
+                test_ip = "8.8.8.8"
                 response = app.geoip_reader.country(test_ip)
                 logger.info(f"GeoIP test successful: {test_ip} -> {response.country.name}")
             except Exception as test_e:
@@ -134,14 +131,77 @@ def create_app():
         logger.error(f"Failed to load GeoIP database: {str(e)}")
         app.geoip_reader = None
 
+    # Redis automation for Termux
+    def setup_redis():
+        """Setup Redis server for Termux environment"""
+        try:
+            import redis
+            import subprocess
+            import time
+            
+            # Check if Redis is already running
+            try:
+                redis_client = redis.from_url(app.config['REDIS_URL'], socket_connect_timeout=2)
+                redis_client.ping()
+                logger.info("Redis server is already running")
+                return True
+            except (redis.ConnectionError, redis.BusyLoadingError):
+                pass
+            
+            logger.warning("Redis server not running. Attempting to start for Termux...")
+            
+            # Check if Redis is installed
+            try:
+                subprocess.run(['redis-server', '--version'], capture_output=True, check=True)
+            except (subprocess.CalledProcessError, FileNotFoundError):
+                logger.error("Redis not installed in Termux. Install with: pkg install redis")
+                return False
+            
+            # Start Redis server for Termux
+            redis_process = subprocess.Popen(
+                ['redis-server', '--save', '', '--appendonly', 'no'],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                preexec_fn=os.setsid
+            )
+            
+            # Store process reference
+            app.redis_process = redis_process
+            time.sleep(3)
+            
+            # Verify Redis started
+            redis_client = redis.from_url(app.config['REDIS_URL'], socket_connect_timeout=3)
+            redis_client.ping()
+            logger.info("Redis server started successfully in Termux")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to start Redis server: {e}")
+            logger.warning("Running without Redis - some features may not work properly")
+            return False
+
+    # Setup Redis
+    setup_redis()
+
+    def stop_redis():
+        """Stop Redis server when application exits"""
+        if hasattr(app, 'redis_process'):
+            try:
+                os.killpg(os.getpgid(app.redis_process.pid), signal.SIGTERM)
+                logger.info("Redis server stopped")
+            except Exception as e:
+                logger.error(f"Error stopping Redis: {e}")
+
+    atexit.register(stop_redis)
+
     # Request timing and traffic logging
     from app.models import TrafficStats, Category
 
     @app.before_request
     def start_timer():
         g.start_time = datetime.utcnow()
-        logger.debug("Request started: endpoint=%s, ip=%s, method=%s, start_time=%s",
-                     request.endpoint, request.remote_addr, request.method, g.start_time)
+        logger.debug("Request started: endpoint=%s, ip=%s, method=%s", 
+                    request.endpoint, request.remote_addr, request.method)
 
     @app.after_request
     def log_traffic(response):
@@ -177,15 +237,24 @@ def create_app():
     @app.errorhandler(CSRFError)
     def handle_csrf_error(e):
         logger.error("CSRF error on endpoint=%s, ip=%s: %s",
-                     request.endpoint, request.remote_addr, e.description)
+                    request.endpoint, request.remote_addr, e.description)
         return render_template('csrf_error.html', reason=e.description), 400
 
-    # Inject current time and categories into templates
+    # Context processors
     @app.context_processor
     def inject_now():
         return {'now': datetime.utcnow()}
 
-    # Add to the CLI commands section
+    @app.context_processor
+    def inject_categories():
+        categories = Category.query.filter_by(parent_id=None).order_by(Category.name).all()
+        category_structure = []
+        for cat in categories:
+            subcats = Category.query.filter_by(parent_id=cat.id).order_by(Category.name).all()
+            category_structure.append({'category': cat, 'subcategories': subcats})
+        return dict(category_structure=category_structure)
+
+    # CLI Commands
     @app.cli.command("generate-api-key")
     @with_appcontext
     def generate_api_key():
@@ -198,36 +267,25 @@ def create_app():
         if not user:
             print(f"User '{username}' not found.")
             return
+            
         permissions = input("Permissions (comma-separated, default: post:create): ").strip()
         if not permissions:
-            permissions = "post:create"    
-            # Generate a secure API key
-            api_key = secrets.token_urlsafe(32)
+            permissions = "post:create"
+            
+        # Generate secure API key
+        api_key = secrets.token_urlsafe(32)
+        key_record = ApiKey(
+            key=api_key,
+            user_id=user.id,
+            permissions=permissions
+        )
+        db.session.add(key_record)
+        db.session.commit()
 
-            # Create the API key record
-            key_record = ApiKey(
-                    key=api_key,
-                    user_id=user.id,
-                    permissions=permissions
-                    )
-            db.session.add(key_record)
-            db.session.commit()
+        print(f"API Key for {username}: {api_key}")
+        print(f"Permissions: {permissions}")
+        print("Keep this key secure as it cannot be retrieved again!")
 
-            print(f"API Key for {username}: {api_key}")
-            print(f"Permissions: {permissions}")
-            print("Keep this key secure as it cannot be retrieved again!")
-    
-
-    @app.context_processor
-    def inject_categories():
-        categories = Category.query.filter_by(parent_id=None).order_by(Category.name).all()
-        category_structure = []
-        for cat in categories:
-            subcats = Category.query.filter_by(parent_id=cat.id).order_by(Category.name).all()
-            category_structure.append({'category': cat, 'subcategories': subcats})
-        return dict(category_structure=category_structure)
-
-    # CLI command to create admin - IMPROVED VERSION
     @app.cli.command("create-admin")
     @with_appcontext
     def create_admin():
@@ -239,7 +297,6 @@ def create_app():
         while True:
             username = input("Username: ").strip()
             if username:
-                # Check if username already exists
                 if User.query.filter_by(username=username).first():
                     print("Username already exists. Please choose a different one.")
                 else:
@@ -250,7 +307,6 @@ def create_app():
         while True:
             email = input("Email: ").strip()
             if email:
-                # Check if email already exists
                 if User.query.filter_by(email=email).first():
                     print("Email already exists. Please use a different email.")
                 else:
@@ -275,7 +331,7 @@ def create_app():
             else:
                 break
 
-        # Create the admin user
+        # Create admin user
         new_user = User(
             username=username,
             email=email,
@@ -293,25 +349,15 @@ def create_app():
             db.session.rollback()
             print(f"❌ Error creating admin user: {e}")
 
-    # CLI command to initialize database
     @app.cli.command("init-db")
     @with_appcontext
     def init_db():
         """Initialize the database with default categories"""
         from app.models import Category
         
-        # Create default categories if they don't exist
         default_categories = [
-            'Technology',
-            'Science',
-            'Art',
-            'Sports',
-            'Entertainment',
-            'News',
-            'Education',
-            'Health',
-            'Travel',
-            'Food'
+            'Technology', 'Science', 'Art', 'Sports', 'Entertainment',
+            'News', 'Education', 'Health', 'Travel', 'Food'
         ]
         
         for cat_name in default_categories:
@@ -328,7 +374,6 @@ def create_app():
             db.session.rollback()
             print(f"Error initializing database: {e}")
 
-    # CLI command to list all users
     @app.cli.command("list-users")
     @with_appcontext
     def list_users():
@@ -345,5 +390,14 @@ def create_app():
             admin_status = "Yes" if user.is_admin else "No"
             confirmed_status = "Yes" if user.is_confirmed else "No"
             print(f"ID: {user.id} | Username: {user.username} | Email: {user.email} | Admin: {admin_status} | Confirmed: {confirmed_status}")
+
+    @app.cli.command("start-redis")
+    @with_appcontext
+    def start_redis():
+        """Manually start Redis server for Termux"""
+        if setup_redis():
+            print("✅ Redis server started successfully")
+        else:
+            print("❌ Failed to start Redis server")
 
     return app

@@ -64,61 +64,83 @@ def send_warning_email(user_email, message_body):
 @login_required
 @admin_required
 def admin_dashboard():
-    # Get search query and filter
-    search_query = request.args.get('q', '')
-    filter_type = request.args.get('filter', 'all')
+    # Get user search query and filter
+    user_search_query = request.args.get('q', '')
+    user_filter_type = request.args.get('filter', 'all')
     
-    # Start with base query
+    # Get post search query and filter
+    post_search_query = request.args.get('post_q', '')
+    post_filter_type = request.args.get('post_filter', 'all')
+
+    # Start with base query for users
     users_query = User.query
-    
-    # Apply search filter if provided
-    if search_query:
+
+    # Apply user search filter if provided
+    if user_search_query:
         users_query = users_query.filter(
-            (User.username.ilike(f'%{search_query}%')) | 
-            (User.email.ilike(f'%{search_query}%'))
+            (User.username.ilike(f'%{user_search_query}%')) | 
+            (User.email.ilike(f'%{user_search_query}%'))
         )
-    
-    # Apply additional filters
-    if filter_type == 'admins':
+
+    # Apply user additional filters
+    if user_filter_type == 'admins':
         users_query = users_query.filter(User.is_admin == True)
-    elif filter_type == 'banned':
+    elif user_filter_type == 'banned':
         users_query = users_query.filter(User.is_banned == True)
-    elif filter_type == 'active':
+    elif user_filter_type == 'active':
         users_query = users_query.filter(User.is_banned == False)
-    
+
     # Order and get all users
     users = users_query.order_by(User.date_r.desc()).all()
-    
+
+    # Start with base query for posts
+    posts_query = Post.query.join(User).filter(User.is_banned == False)
+
+    # Apply post search filter if provided
+    if post_search_query:
+        posts_query = posts_query.filter(
+            (Post.title.ilike(f'%{post_search_query}%')) |
+            (Post.desc.ilike(f'%{post_search_query}%'))
+        )
+
+    # Apply post additional filters
+    if post_filter_type == 'blocked':
+        posts_query = posts_query.filter(Post.is_blocked == True)
+    elif post_filter_type == 'active':
+        posts_query = posts_query.filter(Post.is_blocked == False)
+
+    # Order and get all posts
+    posts = posts_query.order_by(Post.date_pub.desc()).all()
+
     # Get other statistics
-    posts = Post.query.all()
     categories = Category.query.all()
     banned_users_count = User.query.filter_by(is_banned=True).count()
     subscriber_count = NewsletterSubscriber.query.filter_by(subscribed=True).count()
     api_keys_count = ApiKey.query.filter_by(is_active=True).count()
-    
+
     # Calculate posts created via API today
     today = datetime.utcnow().date()
     api_posts_today = Post.query.filter(
         Post.author.has(User.api_keys.any()),
         db.func.date(Post.date_pub) == today
     ).count()
-    
+
     # Calculate posts created via API this week
     week_ago = datetime.utcnow() - timedelta(days=7)
     api_posts_week = Post.query.filter(
         Post.author.has(User.api_keys.any()),
         Post.date_pub >= week_ago
     ).count()
-    
+
     # Count active API users
     active_api_users = User.query.filter(
         User.api_keys.any(ApiKey.is_active == True),
         User.posts.any(Post.date_pub >= week_ago)
     ).count()
-    
+
     # Placeholder for API errors
     api_errors = 0
-    
+
     # Get admin's country based on IP with better error handling
     admin_country = "Unknown"
     try:
@@ -126,7 +148,7 @@ def admin_dashboard():
         if hasattr(current_app, 'geoip_reader') and current_app.geoip_reader is not None:
             # Get the client IP address
             client_ip = request.remote_addr
-            
+
             # Handle localhost/private IP addresses
             if client_ip in ['127.0.0.1', 'localhost'] or client_ip.startswith('192.168.') or client_ip.startswith('10.'):
                 admin_country = "Local Network"
@@ -136,7 +158,7 @@ def admin_dashboard():
                 admin_country = response.country.name
         else:
             admin_country = "GeoIP Not Configured"
-                
+
     except AddressNotFoundError:
         admin_country = "IP Not Found in Database"
     except ValueError as e:
