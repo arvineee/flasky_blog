@@ -25,7 +25,7 @@ load_dotenv()
 
 # Configure logging
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,  # Changed from DEBUG to INFO for less verbose output
     format="[%(asctime)s] %(levelname)s in %(module)s: %(message)s"
 )
 logger = logging.getLogger(__name__)
@@ -194,23 +194,34 @@ def create_app():
 
     atexit.register(stop_redis)
 
-    # Request timing and traffic logging
+    # Request timing and traffic logging - FIXED VERSION
     from app.models import TrafficStats, Category
 
     @app.before_request
     def start_timer():
+        """Start timer for request processing - only if not blocked by protection"""
+        # Set start_time for all requests, even if they might get blocked
         g.start_time = datetime.utcnow()
-        logger.debug("Request started: endpoint=%s, ip=%s, method=%s", 
-                    request.endpoint, request.remote_addr, request.method)
+        logger.debug("Request started: endpoint=%s, ip=%s, method=%s, path=%s", 
+                    request.endpoint, request.remote_addr, request.method, request.path)
 
     @app.after_request
     def log_traffic(response):
+        """Log traffic statistics - handle cases where request was blocked"""
         try:
-            if request.endpoint and request.endpoint != 'static':
+            # Only log if start_time exists and it's not a static file or blocked request
+            if (hasattr(g, 'start_time') and 
+                request.endpoint and 
+                request.endpoint != 'static' and
+                response.status_code != 429):  # Don't log requests blocked by protection
+                
                 end_time = datetime.utcnow()
                 duration = (end_time - g.start_time).total_seconds()
                 visitor_ip = request.remote_addr
 
+                # Log the request details for debugging
+                logger.debug(f"Logging traffic: {request.endpoint}, IP: {visitor_ip}, Duration: {duration:.2f}s")
+                
                 traffic_entry = TrafficStats.query.filter_by(
                     endpoint=request.endpoint,
                     visitor_ip=visitor_ip
@@ -231,7 +242,9 @@ def create_app():
                     db.session.add(traffic_entry)
                 db.session.commit()
         except Exception as e:
-            logger.exception("Traffic logging error")
+            # Don't log errors for blocked requests
+            if hasattr(g, 'start_time') and response.status_code != 429:
+                logger.exception("Traffic logging error")
         return response
 
     @app.errorhandler(CSRFError)

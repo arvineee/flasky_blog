@@ -256,6 +256,24 @@ class AdvancedProtection:
         if len(self.security_events) > 1000:
             self.security_events = self.security_events[-1000:]
 
+
+    def apply_load_shedding(self) -> bool:
+        """Apply load shedding based on system load - less aggressive"""
+        system_load = self.get_system_load()
+
+        # Only apply load shedding under extreme conditions
+        if system_load > 0.95:  # Only at 95%+ load
+            # Only block 20% of requests at extreme load
+            return random.random() > 0.2
+        elif system_load > 0.9:  # At 90%+ load
+
+            # Only block 10% of requests
+            return random.random() > 0.1
+        elif system_load > 0.8:  # At 80%+ load
+            # Only block 5% of requests
+            return random.random() > 0.05
+        return True  # Allow all requests under normal load
+
     def init_protection_routes(self):
         """Initialize all protection routes"""
         
@@ -502,12 +520,18 @@ class AdvancedProtection:
         client_ip = request.remote_addr
         self.stats['total_requests'] += 1
 
-        # Load shedding
+        # Ensure start_time is set for traffic logging
+        from flask import g
+        if not hasattr(g, 'start_time'):
+            from datetime import datetime
+            g.start_time = datetime.utcnow()
+
+        # Load shedding - less aggressive
         if not self.apply_load_shedding():
             self.stats['blocked_requests'] += 1
             return self.block_response(client_ip, "Server under heavy load")
 
-        # IP ban check (including SYN flood bans)
+        # IP ban check (including SYN flood bans
         if self.is_ip_banned(client_ip):
             self.stats['blocked_requests'] += 1
             return self.block_response(client_ip, "IP address banned")
