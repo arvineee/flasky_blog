@@ -20,6 +20,7 @@ from flask_login import current_user, login_required
 import diskcache as dc
 import psutil
 import os
+import ipaddress
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -44,10 +45,10 @@ class AdvancedProtection:
         self.thread_pool = ThreadPoolExecutor(max_workers=10)
         self.request_tracker = {}
         
-        # Enhanced configuration
+        # Enhanced configuration - MORE LENIENT
         self.config = {
             'MODE': 'active',
-            'REQUEST_LIMIT': 100,
+            'REQUEST_LIMIT': 500,  # Increased from 100
             'WINDOW_SIZE': 60,
             'BAN_TIME': 300,
             'AUTO_BAN': True,
@@ -58,41 +59,41 @@ class AdvancedProtection:
             'CAPTCHA_ENABLED': True,
             'API_RATE_LIMITING_ENABLED': True,
             'MAX_REQUEST_RATE': 1000,
-            'SYN_FLOOD_THRESHOLD': 100,
+            'SYN_FLOOD_THRESHOLD': 500,  # Increased from 100
             'SYN_FLOOD_WINDOW': 1,
             'SYN_BAN_DURATION': 300,
             'BASE_RATE_LIMITS': {
-                '/login': {'requests': 5, 'window': 60},
-                '/api/search': {'requests': 10, 'window': 30},
-                '/contact': {'requests': 3, 'window': 300},
-                '/register': {'requests': 2, 'window': 3600},
-                'global': {'requests': 100, 'window': 60}
+                '/login': {'requests': 20, 'window': 60},  # Increased from 5
+                '/api/search': {'requests': 30, 'window': 30},  # Increased from 10
+                '/contact': {'requests': 10, 'window': 300},  # Increased from 3
+                '/register': {'requests': 5, 'window': 3600},  # Increased from 2
+                'global': {'requests': 500, 'window': 60}  # Increased from 100
             }
         }
         
-        # Enhanced environment configuration
+        # Enhanced environment configuration - MORE LENIENT
         self.environment_config = {
             'development': {
-                'REQUEST_LIMIT': 1000,
+                'REQUEST_LIMIT': 2000,  # Increased
                 'WINDOW_SIZE': 60,
                 'AUTO_BAN': False,
                 'JS_CHALLENGE_ENABLED': False,
-                'SYN_FLOOD_THRESHOLD': 500
+                'SYN_FLOOD_THRESHOLD': 1000  # Increased
             },
             'production': {
-                'REQUEST_LIMIT': 100,
+                'REQUEST_LIMIT': 500,  # Increased
                 'WINDOW_SIZE': 60,
                 'AUTO_BAN': True,
                 'JS_CHALLENGE_ENABLED': True,
-                'SYN_FLOOD_THRESHOLD': 100
+                'SYN_FLOOD_THRESHOLD': 500  # Increased
             },
             'under_attack': {
-                'REQUEST_LIMIT': 10,
+                'REQUEST_LIMIT': 100,  # Increased from 10
                 'WINDOW_SIZE': 60,
                 'AUTO_BAN': True,
                 'JS_CHALLENGE_ENABLED': True,
                 'CAPTCHA_ENABLED': True,
-                'SYN_FLOOD_THRESHOLD': 50
+                'SYN_FLOOD_THRESHOLD': 200  # Increased from 50
             }
         }
         
@@ -127,6 +128,15 @@ class AdvancedProtection:
         # Enhanced rate limiting
         self.endpoint_limits = self.config['BASE_RATE_LIMITS'].copy()
         self.api_rate_limits = {'default': 1000, 'premium': 10000}
+        
+        # Whitelisted IP ranges (localhost, private networks)
+        self.whitelisted_ranges = [
+            ipaddress.ip_network('127.0.0.0/8'),
+            ipaddress.ip_network('10.0.0.0/8'),
+            ipaddress.ip_network('172.16.0.0/12'),
+            ipaddress.ip_network('192.168.0.0/16'),
+            ipaddress.ip_network('::1/128')
+        ]
         
         # External services
         self.abuseipdb_key = None
@@ -256,22 +266,31 @@ class AdvancedProtection:
         if len(self.security_events) > 1000:
             self.security_events = self.security_events[-1000:]
 
+    def is_whitelisted_ip(self, ip_address: str) -> bool:
+        """Check if IP should be whitelisted"""
+        try:
+            ip_obj = ipaddress.ip_address(ip_address)
+            for network in self.whitelisted_ranges:
+                if ip_obj in network:
+                    return True
+        except ValueError:
+            pass
+        return False
 
     def apply_load_shedding(self) -> bool:
-        """Apply load shedding based on system load - less aggressive"""
+        """Apply load shedding based on system load - MUCH LESS AGGRESSIVE"""
         system_load = self.get_system_load()
 
         # Only apply load shedding under extreme conditions
-        if system_load > 0.95:  # Only at 95%+ load
-            # Only block 20% of requests at extreme load
-            return random.random() > 0.2
-        elif system_load > 0.9:  # At 90%+ load
-
-            # Only block 10% of requests
+        if system_load > 0.98:  # Only at 98%+ load
+            # Only block 10% of requests at extreme load
             return random.random() > 0.1
-        elif system_load > 0.8:  # At 80%+ load
+        elif system_load > 0.95:  # At 95%+ load
             # Only block 5% of requests
             return random.random() > 0.05
+        elif system_load > 0.9:  # At 90%+ load
+            # Only block 2% of requests
+            return random.random() > 0.02
         return True  # Allow all requests under normal load
 
     def init_protection_routes(self):
@@ -513,12 +532,16 @@ class AdvancedProtection:
         return decorated_function
 
     def process_request(self):
-        """Enhanced request processing pipeline"""
+        """Enhanced request processing pipeline - LESS AGGRESSIVE"""
         if self.should_skip_protection():
             return None
 
         client_ip = request.remote_addr
         self.stats['total_requests'] += 1
+
+        # Whitelist local/private IPs
+        if self.is_whitelisted_ip(client_ip):
+            return None
 
         # Ensure start_time is set for traffic logging
         from flask import g
@@ -526,22 +549,36 @@ class AdvancedProtection:
             from datetime import datetime
             g.start_time = datetime.utcnow()
 
-        # Load shedding - less aggressive
+        # Load shedding - MUCH LESS AGGRESSIVE
         if not self.apply_load_shedding():
             self.stats['blocked_requests'] += 1
             return self.block_response(client_ip, "Server under heavy load")
 
-        # IP ban check (including SYN flood bans
+        # IP ban check (including SYN flood bans) - Add grace period
         if self.is_ip_banned(client_ip):
-            self.stats['blocked_requests'] += 1
-            return self.block_response(client_ip, "IP address banned")
+            # Allow a few requests even if banned (for challenge completion)
+            ban_key = f"grace:{client_ip}"
+            grace_count = 0
+            
+            if self.redis_client:
+                grace_count = self.redis_client.incr(ban_key)
+                self.redis_client.expire(ban_key, 30)  # 30 second grace period
+            else:
+                if not hasattr(self, 'grace_periods'):
+                    self.grace_periods = {}
+                grace_count = self.grace_periods.get(client_ip, 0) + 1
+                self.grace_periods[client_ip] = grace_count
+            
+            if grace_count > 3:  # Allow up to 3 requests during ban period
+                self.stats['blocked_requests'] += 1
+                return self.block_response(client_ip, "IP address banned")
 
-        # SYN flood protection
+        # SYN flood protection - LESS SENSITIVE
         if not self.syn_flood_protection(client_ip):
             self.stats['blocked_requests'] += 1
             return self.block_response(client_ip, "SYN flood protection activated")
 
-        # Enhanced security checks
+        # Enhanced security checks - WITH BACKOFF
         security_result = self.perform_security_checks(client_ip)
         if security_result:
             return security_result
@@ -549,17 +586,35 @@ class AdvancedProtection:
         return None
 
     def should_skip_protection(self):
-        """Check if request should skip protection"""
-        skip_paths = ['/static/', '/advanced-protection/', '/health']
-        skip_endpoints = ['static', 'advanced_protection.verify_challenge',
-                         'advanced_protection.security_challenge',
-                         'advanced_protection.captcha_verification',
-                         'advanced_protection.verify_captcha']
+        """Check if request should skip protection - EXPANDED"""
+        skip_paths = [
+            '/static/', '/advanced-protection/', '/health',
+            '/login', '/register', '/logout', 
+            '/reset_password', '/contact',
+            '/api/auth/', '/admin/login'
+        ]
+        
+        skip_endpoints = [
+            'static', 'advanced_protection.verify_challenge',
+            'advanced_protection.security_challenge',
+            'advanced_protection.captcha_verification',
+            'advanced_protection.verify_captcha',
+            'main.login', 'main.register', 'main.logout',
+            'main.reset_password_request', 'main.reset_password'
+        ]
 
         if any(request.path.startswith(path) for path in skip_paths):
             return True
 
         if request.endpoint in skip_endpoints:
+            return True
+
+        # Skip for authenticated admin users on admin routes
+        if (hasattr(request, 'endpoint') and request.endpoint and 
+            'admin' in request.endpoint and 
+            hasattr(current_user, 'is_authenticated') and 
+            current_user.is_authenticated and 
+            getattr(current_user, 'is_admin', False)):
             return True
 
         return False
@@ -1317,12 +1372,6 @@ class AdvancedProtection:
         return (self.config['AUTO_BAN'] and 
                 self.get_ip_reputation(client_ip) > 70 and
                 self.config['MODE'] != 'development')
-
-    def apply_load_shedding(self) -> bool:
-        """Apply load shedding based on system load"""
-        if self.get_system_load() > 0.9:
-            return random.random() > 0.5
-        return True
 
     # IP Reputation System
     def update_ip_reputation(self, ip_address: str, score: int):

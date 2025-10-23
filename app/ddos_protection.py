@@ -19,9 +19,9 @@ class DDoSProtection:
         self.use_redis = kwargs.get('use_redis', False)
         self.redis_url = kwargs.get('redis_url', 'redis://localhost:6379/0')
         
-        # Configuration with default values
+        # Configuration with MORE LENIENT default values
         self.config = {
-            'REQUEST_LIMIT': kwargs.get('request_limit', 100),  # requests per window
+            'REQUEST_LIMIT': kwargs.get('request_limit', 500),  # Increased from 100
             'WINDOW_SIZE': kwargs.get('window_size', 60),  # seconds
             'BAN_TIME': kwargs.get('ban_time', 300),  # seconds to ban an IP
             'AUTO_BAN': kwargs.get('auto_ban', True),  # automatically ban suspicious IPs
@@ -38,6 +38,15 @@ class DDoSProtection:
         self.whitelist_ips = self._parse_ip_list(self.config['WHITELIST'])
         self.blacklist_ips = self._parse_ip_list(self.config['BLACKLIST'])
         self.trusted_proxies_ips = self._parse_ip_list(self.config['TRUSTED_PROXIES'])
+        
+        # Add whitelisting for local/private IPs
+        self.whitelist_ips.extend([
+            ipaddress.ip_network('127.0.0.0/8'),
+            ipaddress.ip_network('10.0.0.0/8'),
+            ipaddress.ip_network('172.16.0.0/12'),
+            ipaddress.ip_network('192.168.0.0/16'),
+            ipaddress.ip_network('::1/128')
+        ])
         
         # Tracking for statistics
         self.requests_blocked = 0
@@ -202,6 +211,11 @@ class DDoSProtection:
         """Check if the request has suspicious patterns"""
         path = request.path.lower()
         user_agent = request.headers.get('User-Agent', '').lower()
+        
+        # Skip protection for critical paths
+        skip_paths = ['/login', '/register', '/static/', '/admin/login']
+        if any(request.path.startswith(path) for path in skip_paths):
+            return False
         
         # Check path for suspicious patterns
         for pattern in self.suspicious_patterns:

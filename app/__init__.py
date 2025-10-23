@@ -200,6 +200,16 @@ def create_app():
     @app.before_request
     def start_timer():
         """Start timer for request processing - only if not blocked by protection"""
+        # Skip protection for critical authentication and static routes
+        skip_paths = [
+            '/login', '/register', '/static/', '/advanced-protection/',
+            '/logout', '/reset_password', '/contact', '/admin/login'
+        ]
+        
+        if any(request.path.startswith(path) for path in skip_paths):
+            g.start_time = datetime.utcnow()
+            return  # Skip protection for these routes
+        
         # Set start_time for all requests, even if they might get blocked
         g.start_time = datetime.utcnow()
         logger.debug("Request started: endpoint=%s, ip=%s, method=%s, path=%s", 
