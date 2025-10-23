@@ -5,14 +5,40 @@
     <!-- Search Header -->
     <div class="row mb-4">
         <div class="col-12">
-            <h2 class="mb-3">Search Results for "<span class="text-primary">{{ query }}</span>"</h2>
-            <p class="text-muted">{{ pagination.total }} result{% if pagination.total != 1 %}s{% endif %} found</p>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="mb-0">Search Results</h2>
+                <a href="{{ url_for('main.index') }}" class="btn btn-outline-primary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Home
+                </a>
+            </div>
+            <p class="text-muted">{{ pagination.total }} result{% if pagination.total != 1 %}s{% endif %} found for "<span class="text-primary fw-bold">{{ query }}</span>"</p>
+        </div>
+    </div>
+
+    <!-- Search Filters -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <form method="GET" action="{{ url_for('admin.search') }}" class="d-flex">
+                <div class="input-group">
+                    <input type="text" name="q" class="form-control form-control-lg" value="{{ query }}" placeholder="Search posts..." aria-label="Search">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+        <div class="col-md-4">
+            <select class="form-select form-select-lg" id="sortResults">
+                <option value="recent">Most Recent</option>
+                <option value="popular">Most Popular</option>
+                <option value="relevant">Most Relevant</option>
+            </select>
         </div>
     </div>
 
     {% if posts %}
         <!-- Search Results Grid -->
-        <div class="row">
+        <div class="row" id="searchResults">
             {% for post in posts %}
             <div class="col-lg-6 mb-4">
                 <div class="card search-result-card h-100 border-0 shadow-sm overflow-hidden">
@@ -22,17 +48,17 @@
                             {% if post.image_url %}
                             <img src="{{ url_for('static', filename='images/' + post.image_url) }}" 
                                  class="img-fluid h-100 w-100" alt="{{ post.title }}"
-                                 style="object-fit: cover; min-height: 200px;">
+                                 style="object-fit: cover; min-height: 200px;" loading="lazy">
                             {% else %}
                             <div class="bg-light d-flex align-items-center justify-content-center h-100">
-                                <i class="bi bi-image text-muted" style="font-size: 3rem;"></i>
+                                <i class="fas fa-image text-muted fa-2x"></i>
                             </div>
                             {% endif %}
                         </div>
                         
                         <!-- Post Content -->
                         <div class="col-md-7">
-                            <div class="card-body d-flex flex-column h-100">
+                            <div class="card-body d-flex flex-column h-100 p-3">
                                 <!-- Category Badge -->
                                 {% if post.category_obj %}
                                 <div class="mb-2">
@@ -41,10 +67,14 @@
                                 {% endif %}
                                 
                                 <!-- Title -->
-                                <h5 class="card-title fw-bold">{{ post.title }}</h5>
+                                <h5 class="card-title fw-bold mb-2">
+                                    <a href="{{ url_for('admin.see_more', post_id=post.id) }}" class="text-decoration-none text-dark">
+                                        {{ post.title }}
+                                    </a>
+                                </h5>
                                 
                                 <!-- Excerpt -->
-                                <p class="card-text text-muted flex-grow-1">
+                                <p class="card-text text-muted flex-grow-1 small">
                                     {{ post.desc|striptags|truncate(120) }}
                                 </p>
                                 
@@ -52,25 +82,25 @@
                                 <div class="mt-auto">
                                     <div class="d-flex justify-content-between align-items-center mb-2">
                                         <small class="text-muted">
-                                            <i class="bi bi-person-circle me-1"></i>{{ post.author.username }}
+                                            <i class="fas fa-user me-1"></i>{{ post.author.username }}
                                         </small>
                                         <small class="text-muted">
-                                            <i class="bi bi-calendar me-1"></i>{{ post.date_pub }}
+                                            <i class="fas fa-calendar me-1"></i>{{ post.date_pub.strftime('%b %d, %Y') }}
                                         </small>
                                     </div>
                                     
                                     <div class="d-flex justify-content-between align-items-center">
                                         <div>
                                             <small class="text-muted me-3">
-                                                <i class="bi bi-eye me-1"></i>{{ post.views }} views
+                                                <i class="fas fa-eye me-1"></i>{{ post.views }}
                                             </small>
                                             <small class="text-muted">
-                                                <i class="bi bi-heart me-1"></i>{{ post.like_count }} likes
+                                                <i class="fas fa-heart me-1"></i>{{ post.like_count }}
                                             </small>
                                         </div>
                                         <a href="{{ url_for('admin.see_more', post_id=post.id) }}" 
-                                           class="btn btn-sm btn-outline-primary">
-                                            Read More <i class="bi bi-arrow-right ms-1"></i>
+                                           class="btn btn-sm btn-outline-primary rounded-pill">
+                                            Read More <i class="fas fa-arrow-right ms-1"></i>
                                         </a>
                                     </div>
                                 </div>
@@ -89,12 +119,12 @@
                 {% if pagination.has_prev %}
                 <li class="page-item">
                     <a class="page-link" href="{{ url_for('admin.search', q=query, page=pagination.prev_num) }}">
-                        <i class="bi bi-chevron-left"></i> Previous
+                        <i class="fas fa-chevron-left me-1"></i> Previous
                     </a>
                 </li>
                 {% else %}
                 <li class="page-item disabled">
-                    <span class="page-link"><i class="bi bi-chevron-left"></i> Previous</span>
+                    <span class="page-link"><i class="fas fa-chevron-left me-1"></i> Previous</span>
                 </li>
                 {% endif %}
 
@@ -119,26 +149,35 @@
                 {% if pagination.has_next %}
                 <li class="page-item">
                     <a class="page-link" href="{{ url_for('admin.search', q=query, page=pagination.next_num) }}">
-                        Next <i class="bi bi-chevron-right"></i>
+                        Next <i class="fas fa-chevron-right ms-1"></i>
                     </a>
                 </li>
                 {% else %}
                 <li class="page-item disabled">
-                    <span class="page-link">Next <i class="bi bi-chevron-right"></i></span>
+                    <span class="page-link">Next <i class="fas fa-chevron-right ms-1"></i></span>
                 </li>
                 {% endif %}
             </ul>
+            <p class="text-center text-muted small mt-2">Page {{ pagination.page }} of {{ pagination.pages }}</p>
         </nav>
         {% endif %}
     {% else %}
         <!-- No Results Found -->
         <div class="text-center py-5">
             <div class="py-5">
-                <i class="bi bi-search display-1 text-muted"></i>
-                <h3 class="mt-3">No results found</h3>
-                <p class="text-muted mb-4">Try different or more general keywords</p>
-                <a href="{{ url_for('main.index') }}" class="btn btn-primary">
-                    <i class="bi bi-house me-2"></i>Back to Home
+                <i class="fas fa-search display-1 text-muted mb-4"></i>
+                <h3 class="mt-3 text-dark">No results found</h3>
+                <p class="text-muted mb-4">We couldn't find any posts matching "<strong>{{ query }}</strong>"</p>
+                <div class="suggestions">
+                    <p class="text-muted mb-3">Suggestions:</p>
+                    <ul class="list-unstyled">
+                        <li class="mb-2">• Try different keywords</li>
+                        <li class="mb-2">• Check your spelling</li>
+                        <li class="mb-2">• Use more general terms</li>
+                    </ul>
+                </div>
+                <a href="{{ url_for('main.index') }}" class="btn btn-primary mt-3">
+                    <i class="fas fa-home me-2"></i>Back to Home
                 </a>
             </div>
         </div>
@@ -173,6 +212,13 @@
 
 .page-link {
     color: #4f46e5;
+    border: 1px solid #dee2e6;
+}
+
+.page-link:hover {
+    color: #4f46e5;
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
 }
 
 .btn-outline-primary {
@@ -183,6 +229,12 @@
 .btn-outline-primary:hover {
     background-color: #4f46e5;
     border-color: #4f46e5;
+    color: white;
+}
+
+.suggestions {
+    max-width: 300px;
+    margin: 0 auto;
 }
 
 @media (max-width: 768px) {
@@ -194,6 +246,63 @@
     .search-result-card .col-md-5 {
         height: 200px;
     }
+    
+    #sortResults {
+        margin-top: 1rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .search-result-card .card-body {
+        padding: 1rem !important;
+    }
 }
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const sortSelect = document.getElementById('sortResults');
+    
+    if (sortSelect) {
+        sortSelect.addEventListener('change', function() {
+            // Add loading state
+            const resultsContainer = document.getElementById('searchResults');
+            if (resultsContainer) {
+                resultsContainer.innerHTML = `
+                    <div class="col-12 text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2 text-muted">Sorting results...</p>
+                    </div>
+                `;
+            }
+            
+            // In a real implementation, you would make an AJAX request here
+            // For now, we'll just reload the page with sort parameter
+            const url = new URL(window.location.href);
+            url.searchParams.set('sort', this.value);
+            window.location.href = url.toString();
+        });
+    }
+    
+    // Highlight search terms in results
+    const searchTerms = "{{ query }}".toLowerCase().split(' ');
+    const titles = document.querySelectorAll('.card-title');
+    
+    titles.forEach(title => {
+        const originalText = title.textContent;
+        let highlightedText = originalText;
+        
+        searchTerms.forEach(term => {
+            if (term.length > 2) { // Only highlight terms longer than 2 characters
+                const regex = new RegExp(`(${term})`, 'gi');
+                highlightedText = highlightedText.replace(regex, '<mark class="bg-warning">$1</mark>');
+            }
+        });
+        
+        title.innerHTML = highlightedText;
+    });
+});
+</script>
 {% endblock %}

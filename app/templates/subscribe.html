@@ -3,26 +3,266 @@
 {% block content %}
 <div class="container my-5">
     <div class="row justify-content-center">
-        <div class="col-md-6">
-            <div class="card shadow">
-                <div class="card-header bg-primary text-white text-center">
-                    <h3>Subscribe to Our Newsletter</h3>
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow border-0 rounded-3 overflow-hidden">
+                <div class="card-header bg-primary text-white text-center py-4">
+                    <div class="icon-container mb-3">
+                        <i class="fas fa-envelope-open-text fa-3x"></i>
+                    </div>
+                    <h3 class="mb-2">Stay Updated</h3>
+                    <p class="mb-0 opacity-75">Join our newsletter community</p>
                 </div>
-                <div class="card-body">
-                    <form method="POST" action="{{ url_for('newsletter.subscribe') }}">
-                        {{ form.hidden_tag() }}
-                        <div class="mb-3">
-                            <label for="email" class="form-label">Email Address</label>
-                            <input type="email" name="email" class="form-control" id="email" placeholder="Enter your email address" required>
+                <div class="card-body p-4 p-md-5">
+                    <div class="benefits mb-4">
+                        <h5 class="text-center mb-3">What you'll get:</h5>
+                        <div class="row text-center">
+                            <div class="col-4">
+                                <i class="fas fa-newspaper text-primary fa-2x mb-2"></i>
+                                <p class="small mb-0">Latest Posts</p>
+                            </div>
+                            <div class="col-4">
+                                <i class="fas fa-bullhorn text-success fa-2x mb-2"></i>
+                                <p class="small mb-0">Announcements</p>
+                            </div>
+                            <div class="col-4">
+                                <i class="fas fa-gift text-warning fa-2x mb-2"></i>
+                                <p class="small mb-0">Exclusive Content</p>
+                            </div>
                         </div>
-                        <button type="submit" class="btn btn-primary w-100">Subscribe</button>
+                    </div>
+                    
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                                <i class="fas fa-{% if category == 'success' %}check-circle{% else %}exclamation-triangle{% endif %} me-2"></i>
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+                    
+                    <form method="POST" action="{{ url_for('newsletter.subscribe') }}" id="subscribe-form">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-4">
+                            <label for="email" class="form-label fw-semibold">Email Address</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0">
+                                    <i class="fas fa-envelope text-muted"></i>
+                                </span>
+                                <input type="email" 
+                                       name="email" 
+                                       class="form-control border-start-0" 
+                                       id="email" 
+                                       placeholder="Enter your email address" 
+                                       required
+                                       value="{{ form.email.data if form.email.data }}">
+                            </div>
+                            {% if form.email.errors %}
+                            <div class="text-danger small mt-2">
+                                {% for error in form.email.errors %}
+                                <i class="fas fa-exclamation-circle me-1"></i>{{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-check mb-4">
+                            <input class="form-check-input" type="checkbox" id="privacy-policy" required>
+                            <label class="form-check-label small" for="privacy-policy">
+                                I agree to receive email updates and acknowledge the 
+                                <a href="{{ url_for('main.privacy_policy') }}" class="text-decoration-none">Privacy Policy</a>
+                            </label>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary w-100 py-3 fw-semibold" id="subscribe-btn">
+                            <i class="fas fa-paper-plane me-2"></i>Subscribe Now
+                        </button>
                     </form>
                 </div>
-                <div class="card-footer text-center">
-                    <small class="text-muted">Stay updated with our latest posts and announcements.</small>
+                <div class="card-footer text-center py-3 bg-light">
+                    <small class="text-muted">
+                        <i class="fas fa-shield-alt me-1"></i>
+                        We respect your privacy. Unsubscribe at any time.
+                    </small>
+                </div>
+            </div>
+            
+            <!-- Additional Info -->
+            <div class="text-center mt-4">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <div class="d-flex align-items-center justify-content-center">
+                            <i class="fas fa-bell text-primary me-2"></i>
+                            <small>Weekly Updates</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="d-flex align-items-center justify-content-center">
+                            <i class="fas fa-ban text-success me-2"></i>
+                            <small>No Spam</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="d-flex align-items-center justify-content-center">
+                            <i class="fas fa-clock text-warning me-2"></i>
+                            <small>Instant Updates</small>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<style>
+.card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(0,0,0,0.1) !important;
+}
+
+.card-header {
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%) !important;
+}
+
+.icon-container {
+    animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+}
+
+.benefits .col-4 {
+    transition: transform 0.3s ease;
+}
+
+.benefits .col-4:hover {
+    transform: translateY(-5px);
+}
+
+.form-control:focus {
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 0.2rem rgba(79, 70, 229, 0.25);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    border: none;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(79, 70, 229, 0.3);
+}
+
+.alert {
+    border: none;
+    border-radius: 8px;
+}
+
+.alert-success {
+    background-color: #d1fae5;
+    color: #065f46;
+    border-left: 4px solid #10b981;
+}
+
+.alert-danger {
+    background-color: #fee2e2;
+    color: #991b1b;
+    border-left: 4px solid #ef4444;
+}
+
+.form-check-input:checked {
+    background-color: #4f46e5;
+    border-color: #4f46e5;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const subscribeForm = document.getElementById('subscribe-form');
+    const subscribeBtn = document.getElementById('subscribe-btn');
+    const emailInput = document.getElementById('email');
+    const privacyCheckbox = document.getElementById('privacy-policy');
+    
+    // Real-time email validation
+    if (emailInput) {
+        emailInput.addEventListener('blur', function() {
+            const email = this.value;
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            
+            if (email && !emailRegex.test(email)) {
+                this.classList.add('is-invalid');
+                this.nextElementSibling.innerHTML = '<i class="fas fa-exclamation-circle me-1"></i>Please enter a valid email address';
+            } else {
+                this.classList.remove('is-invalid');
+            }
+        });
+    }
+    
+    // Form submission
+    if (subscribeForm && subscribeBtn) {
+        subscribeForm.addEventListener('submit', function(e) {
+            if (!privacyCheckbox.checked) {
+                e.preventDefault();
+                privacyCheckbox.focus();
+                return;
+            }
+            
+            // Add loading state
+            const originalText = subscribeBtn.innerHTML;
+            subscribeBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Subscribing...';
+            subscribeBtn.disabled = true;
+            
+            // Re-enable after 5 seconds in case of error
+            setTimeout(() => {
+                subscribeBtn.innerHTML = originalText;
+                subscribeBtn.disabled = false;
+            }, 5000);
+        });
+    }
+    
+    // Animate benefits on scroll
+    const benefits = document.querySelectorAll('.benefits .col-4');
+    
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.animation = 'fadeInUp 0.6s ease forwards';
+                entry.target.style.opacity = '0';
+            }
+        });
+    }, { threshold: 0.1 });
+    
+    benefits.forEach((benefit, index) => {
+        benefit.style.animationDelay = `${index * 0.2}s`;
+        observer.observe(benefit);
+    });
+});
+
+// Add CSS for animations
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+`;
+document.head.appendChild(style);
+</script>
 {% endblock %}

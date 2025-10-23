@@ -6,17 +6,44 @@
             <!-- Post Preview Card -->
             <div class="post-preview-card">
                 <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <a href="{{ url_for('main.index') }}" class="btn btn-outline-secondary btn-sm rounded-pill">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Home
+                        </a>
+                        <span class="badge bg-primary">{{ post.category_obj.name if post.category_obj else "General" }}</span>
+                    </div>
                     <h2 class="post-title">{{ post.title }}</h2>
                     <div class="post-meta">
-                        <span class="post-date">{{ post.date_pub.strftime('%b %d, %Y') }}</span>
-                        <span class="post-author">by {{ post.author.username }}</span>
+                        <div class="author-info">
+                            <div class="author-avatar">
+                                <img src="https://ui-avatars.com/api/?name={{ post.author.username }}&background=random&color=fff" 
+                                     alt="{{ post.author.username }}" class="rounded-circle">
+                            </div>
+                            <div class="author-details">
+                                <span class="post-author">by {{ post.author.username }}</span>
+                                <span class="post-date">{{ post.date_pub.strftime('%B %d, %Y') }}</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="card-body">
-                    <div class="post-excerpt">
-                        {{ post.desc[:200] | safe }}...
+                    {% if post.image_url %}
+                    <div class="post-image mb-4">
+                        <img src="{{ url_for('static', filename='images/' + post.image_url) }}" 
+                             alt="{{ post.title }}" class="w-100 rounded-3" loading="lazy">
                     </div>
-                    <div class="post-actions">
+                    {% endif %}
+                    <div class="post-excerpt">
+                        {{ post.desc|striptags|truncate(200) }}
+                    </div>
+                    <div class="post-stats mt-3">
+                        <div class="d-flex gap-4 text-muted small">
+                            <span><i class="fas fa-eye me-1"></i> {{ post.views }} views</span>
+                            <span><i class="fas fa-heart me-1"></i> {{ post.like_count }} likes</span>
+                            <span><i class="fas fa-comment me-1"></i> {{ post.comment_count }} comments</span>
+                        </div>
+                    </div>
+                    <div class="post-actions mt-4">
                         <a href="{{ url_for('admin.see_more', post_id=post.id) }}" class="btn-read-more">
                             <span>Read Full Article</span>
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -29,40 +56,107 @@
 
             <!-- Share Section -->
             <div class="share-section">
-                <h3 class="share-title">Share This Post</h3>
-                <p class="share-subtitle">Spread the knowledge with your network</p>
+                <div class="share-header text-center mb-4">
+                    <div class="share-icon mb-3">
+                        <i class="fas fa-share-alt"></i>
+                    </div>
+                    <h3 class="share-title">Share This Post</h3>
+                    <p class="share-subtitle">Spread the knowledge with your network</p>
+                </div>
                 
                 <div class="share-buttons-grid">
                     <!-- Facebook -->
-                    <a href="https://www.facebook.com/sharer/sharer.php?u={{ request.url | urlencode }}" target="_blank" class="share-btn facebook">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                        </svg>
-                        <span>Facebook</span>
+                    <a href="https://www.facebook.com/sharer/sharer.php?u={{ request.url | urlencode }}&quote={{ post.title | urlencode }}" 
+                       target="_blank" 
+                       rel="noopener noreferrer"
+                       class="share-btn facebook"
+                       aria-label="Share on Facebook"
+                       data-platform="facebook">
+                        <div class="share-btn-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                            </svg>
+                        </div>
+                        <span class="share-btn-text">Facebook</span>
+                        <span class="share-btn-count">2.9B</span>
                     </a>
                     
                     <!-- Twitter -->
-                    <a href="https://twitter.com/intent/tweet?text=Check%20out%20this%20post%20on%20Arval-Blog:%20{{ request.url | urlencode }}" target="_blank" class="share-btn twitter">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
-                        </svg>
-                        <span>Twitter</span>
+                    <a href="https://twitter.com/intent/tweet?text={{ post.title | urlencode }}&url={{ request.url | urlencode }}&via=yourblog" 
+                       target="_blank" 
+                       rel="noopener noreferrer"
+                       class="share-btn twitter"
+                       aria-label="Share on Twitter"
+                       data-platform="twitter">
+                        <div class="share-btn-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
+                            </svg>
+                        </div>
+                        <span class="share-btn-text">Twitter</span>
+                        <span class="share-btn-count">450M</span>
                     </a>
                     
                     <!-- LinkedIn -->
-                    <a href="https://www.linkedin.com/sharing/share-offsite/?url={{ request.url | urlencode }}" target="_blank" class="share-btn linkedin">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
-                        </svg>
-                        <span>LinkedIn</span>
+                    <a href="https://www.linkedin.com/sharing/share-offsite/?url={{ request.url | urlencode }}" 
+                       target="_blank" 
+                       rel="noopener noreferrer"
+                       class="share-btn linkedin"
+                       aria-label="Share on LinkedIn"
+                       data-platform="linkedin">
+                        <div class="share-btn-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                            </svg>
+                        </div>
+                        <span class="share-btn-text">LinkedIn</span>
+                        <span class="share-btn-count">930M</span>
+                    </a>
+                    
+                    <!-- WhatsApp -->
+                    <a href="https://wa.me/?text={{ post.title | urlencode }}%20{{ request.url | urlencode }}" 
+                       target="_blank" 
+                       rel="noopener noreferrer"
+                       class="share-btn whatsapp"
+                       aria-label="Share on WhatsApp"
+                       data-platform="whatsapp">
+                        <div class="share-btn-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893 0-3.176-1.24-6.165-3.495-8.411z"/>
+                            </svg>
+                        </div>
+                        <span class="share-btn-text">WhatsApp</span>
+                        <span class="share-btn-count">2B</span>
                     </a>
                     
                     <!-- Email -->
-                    <a href="mailto:?subject=Check%20out%20this%20post%20on%20Arval-Blog&body=Check%20out%20this%20post:%20{{ request.url | urlencode }}" class="share-btn email">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-21.818C.732 21 0 20.268 0 19.364V5.457c0-2.023 2.309-3.178 3.927-1.964L5.455 4.91l8.182 6.857c.782.654 1.88.654 2.662 0l8.182-6.857 1.528-1.417C21.691 2.279 24 3.434 24 5.457zM12 12.268L3.636 5.272C2.705 4.591 1 5.213 1 6.376V19.364c0 .135.109.245.245.245h21.509c.136 0 .245-.11.245-.245V6.376c0-1.163-1.705-1.785-2.636-1.104L12 12.268z"/>
-                        </svg>
-                        <span>Email</span>
+                    <a href="mailto:?subject={{ post.title | urlencode }}&body=Check out this post: {{ request.url | urlencode }}" 
+                       class="share-btn email"
+                       aria-label="Share via Email"
+                       data-platform="email">
+                        <div class="share-btn-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-21.818C.732 21 0 20.268 0 19.364V5.457c0-2.023 2.309-3.178 3.927-1.964L5.455 4.91l8.182 6.857c.782.654 1.88.654 2.662 0l8.182-6.857 1.528-1.417C21.691 2.279 24 3.434 24 5.457zM12 12.268L3.636 5.272C2.705 4.591 1 5.213 1 6.376V19.364c0 .135.109.245.245.245h21.509c.136 0 .245-.11.245-.245V6.376c0-1.163-1.705-1.785-2.636-1.104L12 12.268z"/>
+                            </svg>
+                        </div>
+                        <span class="share-btn-text">Email</span>
+                        <span class="share-btn-count">4B</span>
+                    </a>
+
+                    <!-- Reddit -->
+                    <a href="https://reddit.com/submit?url={{ request.url | urlencode }}&title={{ post.title | urlencode }}" 
+                       target="_blank" 
+                       rel="noopener noreferrer"
+                       class="share-btn reddit"
+                       aria-label="Share on Reddit"
+                       data-platform="reddit">
+                        <div class="share-btn-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.01 1.614a3.111 3.111 0 0 1 .042.52c0 2.694-3.13 4.87-7.004 4.87-3.874 0-7.004-2.176-7.004-4.87 0-.183.015-.366.043-.534A1.748 1.748 0 0 1 4.028 12c0-.968.786-1.754 1.754-1.754.463 0 .898.196 1.207.49 1.207-.883 2.878-1.43 4.744-1.487l.885-4.182a.342.342 0 0 1 .14-.197.35.35 0 0 1 .238-.042l2.906.617a1.214 1.214 0 0 1 1.108-.701zM9.25 12C8.561 12 8 12.562 8 13.25c0 .687.561 1.248 1.25 1.248.687 0 1.248-.561 1.248-1.249 0-.688-.561-1.249-1.249-1.249zm5.5 0c-.687 0-1.248.561-1.248 1.25 0 .687.561 1.248 1.249 1.248.688 0 1.249-.561 1.249-1.249 0-.687-.562-1.249-1.25-1.249zm-5.466 3.99a.327.327 0 0 0-.231.094.33.33 0 0 0 0 .463c.842.842 2.484.913 2.961.913.477 0 2.105-.056 2.961-.913a.361.361 0 0 0 .029-.463.33.33 0 0 0-.464 0c-.547.533-1.684.73-2.512.73-.828 0-1.979-.196-2.512-.73a.326.326 0 0 0-.232-.095z"/>
+                            </svg>
+                        </div>
+                        <span class="share-btn-text">Reddit</span>
+                        <span class="share-btn-count">430M</span>
                     </a>
                 </div>
             </div>
@@ -70,9 +164,11 @@
             <!-- Copy Link Section -->
             <div class="copy-link-section">
                 <h4 class="copy-title">Or copy direct link</h4>
+                <p class="copy-subtitle text-muted">Share this URL anywhere you like</p>
+                
                 <div class="copy-input-group">
-                    <input id="post-url" type="text" class="copy-input" value="{{ request.url }}" readonly>
-                    <button class="copy-btn" type="button" id="copy-button">
+                    <input id="post-url" type="text" class="copy-input" value="{{ request.url }}" readonly aria-label="Post URL">
+                    <button class="copy-btn" type="button" id="copy-button" aria-label="Copy to clipboard">
                         <span class="copy-text">Copy</span>
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="copy-icon">
                             <path d="M16 1H4C2.9 1 2 1.9 2 3V17H4V3H16V1ZM19 5H8C6.9 5 6 5.9 6 7V21C6 22.1 6.9 23 8 23H19C20.1 23 21 22.1 21 21V7C21 5.9 20.1 5 19 5ZM19 21H8V7H19V21Z" fill="currentColor"/>
@@ -86,22 +182,56 @@
                     <span>URL copied to clipboard!</span>
                 </div>
             </div>
+
+            <!-- Share Statistics -->
+            <div class="share-stats mt-5">
+                <div class="row text-center">
+                    <div class="col-md-4 mb-3">
+                        <div class="stat-card">
+                            <div class="stat-number">{{ post.views }}</div>
+                            <div class="stat-label">Total Views</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="stat-card">
+                            <div class="stat-number">{{ post.like_count }}</div>
+                            <div class="stat-label">Likes</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="stat-card">
+                            <div class="stat-number">{{ post.comment_count }}</div>
+                            <div class="stat-label">Comments</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
+    </div>
+</div>
+
+<!-- Toast Notification -->
+<div class="toast align-items-center text-white bg-success border-0 position-fixed bottom-0 end-0 m-3" id="shareToast" role="alert" aria-live="assertive" aria-atomic="true">
+    <div class="d-flex">
+        <div class="toast-body" id="toast-message"></div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
     </div>
 </div>
 
 <style>
     /* Modern color scheme */
     :root {
-        --primary: #2563eb;
-        --primary-dark: #1d4ed8;
+        --primary: #4f46e5;
+        --primary-dark: #4338ca;
         --secondary: #64748b;
         --dark: #1e293b;
         --light: #f8fafc;
         --success: #10b981;
         --card-bg: #ffffff;
         --card-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        --card-shadow-hover: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
         --card-border: 1px solid #e2e8f0;
+        --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     body {
@@ -114,48 +244,89 @@
     /* Post Preview Card */
     .post-preview-card {
         background: var(--card-bg);
-        border-radius: 16px;
+        border-radius: 20px;
         box-shadow: var(--card-shadow);
         border: var(--card-border);
         overflow: hidden;
         margin-bottom: 2rem;
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        transition: var(--transition);
     }
     
     .post-preview-card:hover {
         transform: translateY(-2px);
-        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        box-shadow: var(--card-shadow-hover);
     }
     
     .card-header {
-        padding: 1.5rem 1.5rem 0.5rem;
+        padding: 2rem 2rem 1rem;
         border-bottom: 1px solid #e2e8f0;
     }
     
     .post-title {
-        font-size: 1.5rem;
+        font-size: 1.75rem;
         font-weight: 700;
         color: var(--dark);
-        margin-bottom: 0.5rem;
+        margin-bottom: 1rem;
         line-height: 1.3;
     }
     
     .post-meta {
+        margin-top: 1rem;
+    }
+    
+    .author-info {
         display: flex;
+        align-items: center;
         gap: 1rem;
+    }
+    
+    .author-avatar img {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+    
+    .author-details {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .post-author {
+        font-weight: 600;
+        color: var(--dark);
+    }
+    
+    .post-date {
         font-size: 0.875rem;
         color: var(--secondary);
-        margin-bottom: 1rem;
     }
     
     .card-body {
-        padding: 1.5rem;
+        padding: 1.5rem 2rem 2rem;
+    }
+    
+    .post-image img {
+        border-radius: 12px;
+        height: 200px;
+        object-fit: cover;
+        transition: transform 0.3s ease;
+    }
+    
+    .post-image img:hover {
+        transform: scale(1.02);
     }
     
     .post-excerpt {
         color: var(--secondary);
-        margin-bottom: 1.5rem;
+        margin-bottom: 1rem;
         line-height: 1.6;
+        font-size: 1.05rem;
+    }
+    
+    .post-stats {
+        border-top: 1px solid #e2e8f0;
+        padding-top: 1rem;
     }
     
     .btn-read-more {
@@ -165,41 +336,68 @@
         color: var(--primary);
         font-weight: 600;
         text-decoration: none;
-        transition: color 0.2s ease;
+        padding: 0.75rem 1.5rem;
+        border: 2px solid var(--primary);
+        border-radius: 50px;
+        transition: var(--transition);
     }
     
     .btn-read-more:hover {
-        color: var(--primary-dark);
+        background: var(--primary);
+        color: white;
         gap: 0.7rem;
+        transform: translateY(-1px);
     }
     
     /* Share Section */
     .share-section {
         background: var(--card-bg);
-        border-radius: 16px;
+        border-radius: 20px;
         box-shadow: var(--card-shadow);
         border: var(--card-border);
-        padding: 1.5rem;
+        padding: 2rem;
         margin-bottom: 1.5rem;
     }
     
+    .share-header {
+        margin-bottom: 2rem;
+    }
+    
+    .share-icon {
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1.5rem;
+        color: white;
+        font-size: 2rem;
+        animation: float 3s ease-in-out infinite;
+    }
+    
+    @keyframes float {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+    }
+    
     .share-title {
-        font-size: 1.25rem;
+        font-size: 1.5rem;
         font-weight: 700;
-        margin-bottom: 0.25rem;
+        margin-bottom: 0.5rem;
         color: var(--dark);
     }
     
     .share-subtitle {
         color: var(--secondary);
-        margin-bottom: 1.5rem;
-        font-size: 0.95rem;
+        font-size: 1rem;
     }
     
     .share-buttons-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-        gap: 0.75rem;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 1rem;
     }
     
     .share-btn {
@@ -207,93 +405,134 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 0.5rem;
-        padding: 1rem 0.75rem;
-        border-radius: 12px;
+        gap: 0.75rem;
+        padding: 1.5rem 1rem;
+        border-radius: 16px;
         text-decoration: none;
         font-weight: 600;
-        font-size: 0.875rem;
-        transition: all 0.2s ease;
+        font-size: 0.9rem;
+        transition: var(--transition);
         color: white;
+        position: relative;
+        overflow: hidden;
     }
     
-    .share-btn svg {
-        transition: transform 0.2s ease;
+    .share-btn::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+        transition: left 0.5s;
     }
     
-    .share-btn:hover svg {
-        transform: scale(1.1);
+    .share-btn:hover::before {
+        left: 100%;
     }
     
+    .share-btn-icon {
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.1);
+        transition: var(--transition);
+    }
+    
+    .share-btn:hover .share-btn-icon {
+        transform: scale(1.1) rotate(5deg);
+        background: rgba(255, 255, 255, 0.2);
+    }
+    
+    .share-btn-text {
+        font-weight: 600;
+        font-size: 0.95rem;
+    }
+    
+    .share-btn-count {
+        font-size: 0.75rem;
+        opacity: 0.8;
+        font-weight: 500;
+    }
+    
+    /* Platform-specific colors */
     .share-btn.facebook {
-        background: #1877F2;
-    }
-    
-    .share-btn.facebook:hover {
-        background: #166FE5;
+        background: linear-gradient(135deg, #1877F2, #166FE5);
     }
     
     .share-btn.twitter {
-        background: #1DA1F2;
-    }
-    
-    .share-btn.twitter:hover {
-        background: #1A95E0;
+        background: linear-gradient(135deg, #1DA1F2, #1A95E0);
     }
     
     .share-btn.linkedin {
-        background: #0A66C2;
+        background: linear-gradient(135deg, #0A66C2, #0959AC);
     }
     
-    .share-btn.linkedin:hover {
-        background: #0959AC;
+    .share-btn.whatsapp {
+        background: linear-gradient(135deg, #25D366, #128C7E);
     }
     
     .share-btn.email {
-        background: #EA4335;
+        background: linear-gradient(135deg, #EA4335, #D83A2E);
     }
     
-    .share-btn.email:hover {
-        background: #D83A2E;
+    .share-btn.reddit {
+        background: linear-gradient(135deg, #FF4500, #E03A00);
+    }
+    
+    .share-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.15);
     }
     
     /* Copy Link Section */
     .copy-link-section {
         background: var(--card-bg);
-        border-radius: 16px;
+        border-radius: 20px;
         box-shadow: var(--card-shadow);
         border: var(--card-border);
-        padding: 1.5rem;
+        padding: 2rem;
         position: relative;
     }
     
     .copy-title {
-        font-size: 1.1rem;
-        font-weight: 600;
-        margin-bottom: 1rem;
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin-bottom: 0.25rem;
         color: var(--dark);
+    }
+    
+    .copy-subtitle {
+        font-size: 0.95rem;
+        margin-bottom: 1.5rem;
     }
     
     .copy-input-group {
         display: flex;
         border-radius: 12px;
         overflow: hidden;
-        border: 1px solid #e2e8f0;
-        transition: border-color 0.2s ease;
+        border: 2px solid #e2e8f0;
+        transition: var(--transition);
+        background: #f8fafc;
     }
     
     .copy-input-group:focus-within {
         border-color: var(--primary);
-        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
     }
     
     .copy-input {
         flex: 1;
-        padding: 0.875rem 1rem;
+        padding: 1rem 1.25rem;
         border: none;
-        background: #f8fafc;
-        font-size: 0.9rem;
+        background: transparent;
+        font-size: 0.95rem;
         color: var(--dark);
+        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
     }
     
     .copy-input:focus {
@@ -304,30 +543,31 @@
         display: flex;
         align-items: center;
         gap: 0.5rem;
-        padding: 0.875rem 1.25rem;
+        padding: 1rem 1.5rem;
         background: var(--primary);
         color: white;
         border: none;
         cursor: pointer;
         font-weight: 600;
-        font-size: 0.9rem;
-        transition: background 0.2s ease;
+        font-size: 0.95rem;
+        transition: var(--transition);
     }
     
     .copy-btn:hover {
         background: var(--primary-dark);
+        gap: 0.7rem;
     }
     
     .copy-success {
         display: flex;
         align-items: center;
         gap: 0.5rem;
-        margin-top: 0.75rem;
-        font-size: 0.875rem;
+        margin-top: 1rem;
+        font-size: 0.9rem;
         color: var(--success);
         opacity: 0;
         transform: translateY(-5px);
-        transition: all 0.3s ease;
+        transition: var(--transition);
     }
     
     .copy-success.show {
@@ -335,10 +575,58 @@
         transform: translateY(0);
     }
 
+    /* Share Statistics */
+    .share-stats {
+        background: var(--card-bg);
+        border-radius: 20px;
+        box-shadow: var(--card-shadow);
+        border: var(--card-border);
+        padding: 2rem;
+    }
+    
+    .stat-card {
+        padding: 1.5rem;
+        border-radius: 12px;
+        background: #f8fafc;
+        transition: var(--transition);
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-2px);
+        background: #f1f5f9;
+    }
+    
+    .stat-number {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--primary);
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-label {
+        font-size: 0.9rem;
+        color: var(--secondary);
+        font-weight: 600;
+    }
+
+    /* Toast */
+    .toast {
+        border-radius: 12px;
+        box-shadow: var(--card-shadow);
+    }
+
     /* Responsive adjustments */
-    @media (max-width: 576px) {
+    @media (max-width: 768px) {
         .share-buttons-grid {
             grid-template-columns: 1fr 1fr;
+        }
+        
+        .card-header, .card-body {
+            padding: 1.5rem;
+        }
+        
+        .post-title {
+            font-size: 1.5rem;
         }
         
         .copy-input-group {
@@ -347,31 +635,162 @@
         
         .copy-btn {
             justify-content: center;
+            padding: 0.875rem 1rem;
+        }
+        
+        .author-info {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .share-buttons-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .container {
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+        
+        .share-section, .copy-link-section, .share-stats {
+            padding: 1.5rem;
+        }
+        
+        .share-icon {
+            width: 60px;
+            height: 60px;
+            font-size: 1.5rem;
         }
     }
 </style>
 
 <script>
-    document.getElementById('copy-button').addEventListener('click', function() {
-        const copyText = document.getElementById("post-url");
-        copyText.select();
-        copyText.setSelectionRange(0, 99999);
-        navigator.clipboard.writeText(copyText.value);
-        
-        // Show success message
-        const successMessage = document.getElementById('copy-success');
-        successMessage.classList.add('show');
-        
-        // Change button text temporarily
-        const buttonText = this.querySelector('.copy-text');
-        const originalText = buttonText.textContent;
-        buttonText.textContent = 'Copied!';
-        
-        // Reset after 2 seconds
-        setTimeout(() => {
-            successMessage.classList.remove('show');
-            buttonText.textContent = originalText;
-        }, 2000);
+document.addEventListener('DOMContentLoaded', function() {
+    const copyButton = document.getElementById('copy-button');
+    const postUrl = document.getElementById('post-url');
+    const copySuccess = document.getElementById('copy-success');
+    const shareButtons = document.querySelectorAll('.share-btn');
+    const toast = new bootstrap.Toast(document.getElementById('shareToast'));
+    const toastMessage = document.getElementById('toast-message');
+
+    // Copy URL functionality
+    if (copyButton) {
+        copyButton.addEventListener('click', function() {
+            postUrl.select();
+            postUrl.setSelectionRange(0, 99999);
+            
+            navigator.clipboard.writeText(postUrl.value).then(() => {
+                // Show success message
+                copySuccess.classList.add('show');
+                
+                // Change button text temporarily
+                const buttonText = this.querySelector('.copy-text');
+                const originalText = buttonText.textContent;
+                buttonText.textContent = 'Copied!';
+                
+                // Show toast
+                toastMessage.textContent = 'URL copied to clipboard!';
+                toast.show();
+                
+                // Reset after 2 seconds
+                setTimeout(() => {
+                    copySuccess.classList.remove('show');
+                    buttonText.textContent = originalText;
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+                toastMessage.textContent = 'Failed to copy URL. Please try again.';
+                toast.show();
+            });
+        });
+    }
+
+    // Share button analytics (optional)
+    shareButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            const platform = this.getAttribute('data-platform');
+            
+            // You can send this data to your analytics service
+            console.log();
+            
+            // Optional: Track shares in your database
+            fetch('/track_share', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({
+                    post_id: {{ post.id }},
+                    platform: platform
+                })
+            }).catch(err => {
+                console.error('Failed to track share:', err);
+            });
+            
+            // Show toast for external links
+            if (platform !== 'email') {
+                setTimeout(() => {
+                    toastMessage.textContent = ;
+                    toast.show();
+                }, 100);
+            }
+        });
     });
+
+    // Select all text when clicking on URL input
+    if (postUrl) {
+        postUrl.addEventListener('click', function() {
+            this.select();
+        });
+    }
+
+    // Add animation to share buttons on hover
+    shareButtons.forEach(button => {
+        button.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-3px) scale(1.02)';
+        });
+        
+        button.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0) scale(1)';
+        });
+    });
+
+    // Keyboard navigation
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            // Close any open modals or focus management
+            if (document.activeElement === postUrl) {
+                postUrl.blur();
+            }
+        }
+        
+        // Copy with Ctrl+C when URL input is focused
+        if (e.ctrlKey && e.key === 'c' && document.activeElement === postUrl) {
+            e.preventDefault();
+            copyButton.click();
+        }
+    });
+
+    // Add loading state to share buttons for external links
+    shareButtons.forEach(button => {
+        if (button.getAttribute('target') === '_blank') {
+            button.addEventListener('click', function(e) {
+                // Add small delay to show loading state
+                const originalHTML = this.innerHTML;
+                this.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+                this.style.pointerEvents = 'none';
+                
+                setTimeout(() => {
+                    this.innerHTML = originalHTML;
+                    this.style.pointerEvents = 'auto';
+                }, 1000);
+            });
+        }
+    });
+});
 </script>
 {% endblock %}

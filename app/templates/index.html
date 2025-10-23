@@ -1,306 +1,341 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="container-xxl mt-4">
-    <div class="row">
-        <!-- Sidebar for Announcements and Newsletter -->
-        <div class="col-lg-4 col-md-5 mb-4">
-            <div class="sticky-top" style="top: 100px;">
-                <!-- Announcements Card -->
-                <div class="card announcement-card mb-4">
-                    <div class="card-header bg-gradient-primary text-white">
-                        <h4 class="card-title mb-0 d-flex align-items-center">
-                            <i class="bg-gradient-primary fas fa-bullhorn me-2"></i>Latest Announcements
-                        </h4>
+<div class="container-fluid px-0">
+    <!-- Breaking News Bar -->
+    <div class="breaking-news-bar bg-dark text-white py-2">
+        <div class="container-xxl">
+            <div class="row align-items-center">
+                <div class="col-auto">
+                    <span class="badge bg-danger me-2">LATEST</span>
+                </div>
+                <div class="col">
+                    <div class="breaking-text">
+                        {% for announcement in announcements[:3] %}
+                        {{ announcement.title }} • 
+                        {% endfor %}
                     </div>
-                    <div class="card-body">
-                        {% for announcement in announcements %}
-                            <div class="announcement-item mb-3 pb-3 border-bottom">
-                                <h5 class="fw-semibold">{{ announcement.title }}</h5>
-                                <small class="text-muted d-block mb-2">
-                                    <i class="fas fa-user me-1"></i>Posted by {{ announcement.author.username }} 
-                                    <i class="fas fa-calendar ms-2 me-1"></i>{{ announcement.date_created.strftime('%b %d, %Y') }}
-                                </small>
-                                <p class="card-text text-truncate">{{ announcement.content | truncate(100) }}</p>
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <a href="{{ url_for('main.announcement_detail', announcement_id=announcement.id) }}" 
-                                       class="btn btn-sm btn-outline-primary rounded-pill">
-                                        Read More <i class="fas fa-arrow-right ms-1"></i>
-                                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
 
-                                    {% if current_user.is_authenticated and current_user.is_admin %}
-                                    <form action="{{ url_for('admin.delete_announcement', announcement_id=announcement.id) }}" 
-                                          method="POST" class="d-inline">
-                                        <button type="submit" class="btn btn-sm btn-danger rounded-pill"
-                                                onclick="return confirm('Are you sure you want to delete this announcement?')">
-                                            <i class="fas fa-trash-alt me-1"></i>Delete
-                                        </button>
-                                    </form>
-                                    {% endif %}
+    <!-- Main Header -->
+    <div class="main-header bg-white border-bottom py-3">
+        <div class="container-xxl">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="site-title mb-0">
+                        <span class="text-primary">News</span>Portal
+                    </h1>
+                    <p class="text-muted mb-0 d-none d-md-block">Latest updates and breaking news</p>
+                </div>
+                <div class="col-md-4 text-md-end">
+                    <div class="header-date text-muted">
+                        <i class="fas fa-calendar me-2"></i><span id="currentDate"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container-xxl py-4">
+        <div class="row">
+            <!-- Main Content -->
+            <div class="col-lg-8">
+                <!-- Featured Hero Post -->
+                {% if posts %}
+                <div class="hero-featured mb-5">
+                    <div class="row g-4">
+                        <div class="col-lg-8">
+                            <div class="hero-main position-relative">
+                                {% if posts[0].image_url %}
+                                <img src="{{ url_for('static', filename='images/' + posts[0].image_url) }}" 
+                                     class="hero-image w-100" alt="{{ posts[0].title }}">
+                                {% else %}
+                                <div class="hero-placeholder bg-secondary w-100 d-flex align-items-center justify-content-center" style="height: 400px;">
+                                    <i class="fas fa-image fa-3x text-light"></i>
+                                </div>
+                                {% endif %}
+                                <div class="hero-overlay position-absolute bottom-0 start-0 end-0 p-4">
+                                    <span class="badge bg-danger mb-2">TOP STORY</span>
+                                    <h2 class="hero-title text-white mb-2">
+                                        <a href="{{ url_for('admin.see_more', post_id=posts[0].id) }}" class="text-white text-decoration-none">
+                                            {{ posts[0].title }}
+                                        </a>
+                                    </h2>
+                                    <p class="hero-excerpt text-white-50 mb-2 d-none d-md-block">
+                                        {{ posts[0].desc|striptags|truncate(150) }}
+                                    </p>
+                                    <div class="hero-meta text-white-50">
+                                        <small>
+                                            <i class="fas fa-user me-1"></i>{{ posts[0].author.username }} • 
+                                            <i class="fas fa-clock me-1"></i>{{ posts[0].date_pub.strftime('%b %d, %Y') }} • 
+                                            <i class="fas fa-eye me-1"></i>{{ posts[0].views }} views
+                                        </small>
+                                    </div>
                                 </div>
                             </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="hero-side-stories">
+                                {% for post in posts[1:3] %}
+                                <div class="side-story mb-3 pb-3 border-bottom">
+                                    {% if post.image_url %}
+                                    <img src="{{ url_for('static', filename='images/' + post.image_url) }}" 
+                                         class="side-story-img w-100 mb-2" alt="{{ post.title }}" style="height: 100px; object-fit: cover;">
+                                    {% endif %}
+                                    <h6 class="side-story-title">
+                                        <a href="{{ url_for('admin.see_more', post_id=post.id) }}" class="text-dark text-decoration-none">
+                                            {{ post.title }}
+                                        </a>
+                                    </h6>
+                                    <div class="side-story-meta text-muted small">
+                                        <i class="fas fa-clock me-1"></i>{{ post.date_pub.strftime('%H:%M') }}
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- News Tabs -->
+                <div class="news-tabs mb-4">
+                    <ul class="nav nav-tabs border-0" id="newsTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="latest-tab" data-bs-toggle="tab" data-bs-target="#latest" 
+                                    type="button" role="tab" aria-controls="latest" aria-selected="true">
+                                <i class="fas fa-bolt me-2"></i>Latest News
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="trending-tab" data-bs-toggle="tab" data-bs-target="#trending" 
+                                    type="button" role="tab" aria-controls="trending" aria-selected="false">
+                                <i class="fas fa-chart-line me-2"></i>Trending
+                            </button>
+                        </li>
+                        {% if current_user.is_authenticated %}
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="following-tab" data-bs-toggle="tab" data-bs-target="#following" 
+                                    type="button" role="tab" aria-controls="following" aria-selected="false">
+                                <i class="fas fa-user-friends me-2"></i>Following
+                            </button>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </div>
+
+                <!-- News Content -->
+                <div class="tab-content" id="newsTabsContent">
+                    <!-- Latest News -->
+                    <div class="tab-pane fade show active" id="latest" role="tabpanel" aria-labelledby="latest-tab">
+                        <div class="news-grid">
+                            {% for post in posts %}
+                            <div class="news-card border-bottom pb-4 mb-4">
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        {% if post.image_url %}
+                                        <img src="{{ url_for('static', filename='images/' + post.image_url) }}" 
+                                             class="news-image w-100" alt="{{ post.title }}" style="height: 140px; object-fit: cover;">
+                                        {% else %}
+                                        <div class="news-placeholder bg-light w-100 d-flex align-items-center justify-content-center" style="height: 140px;">
+                                            <i class="fas fa-image text-muted"></i>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-8">
+                                        <div class="news-content">
+                                            <span class="badge bg-primary mb-2">{{ post.category_obj.name if post.category_obj else "General" }}</span>
+                                            <h5 class="news-title mb-2">
+                                                <a href="{{ url_for('admin.see_more', post_id=post.id) }}" class="text-dark text-decoration-none">
+                                                    {{ post.title }}
+                                                </a>
+                                            </h5>
+                                            <p class="news-excerpt text-muted mb-2">
+                                                {{ post.desc|striptags|truncate(120) }}
+                                            </p>
+                                            <div class="news-meta d-flex align-items-center text-muted small">
+                                                <div class="author-avatar me-2">
+                                                    <img src="https://ui-avatars.com/api/?name={{ post.author.username }}&background=random" 
+                                                         class="rounded-circle" width="20" height="20" alt="Author">
+                                                </div>
+                                                <span class="me-3">{{ post.author.username }}</span>
+                                                <span class="me-3"><i class="fas fa-clock me-1"></i>{{ post.date_pub.strftime('%b %d') }}</span>
+                                                <span class="me-3"><i class="fas fa-eye me-1"></i>{{ post.views }}</span>
+                                                <span><i class="fas fa-comment me-1"></i>{{ post.comment_count }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Trending News -->
+                    <div class="tab-pane fade" id="trending" role="tabpanel" aria-labelledby="trending-tab">
+                        <div class="empty-state text-center py-5">
+                            <i class="fas fa-chart-line fa-3x text-primary mb-3"></i>
+                            <h4>Trending Stories</h4>
+                            <p class="text-muted">Most popular content based on engagement metrics</p>
+                        </div>
+                    </div>
+
+                    <!-- Following News -->
+                    {% if current_user.is_authenticated %}
+                    <div class="tab-pane fade" id="following" role="tabpanel" aria-labelledby="following-tab">
+                        <div class="empty-state text-center py-5">
+                            <i class="fas fa-user-friends fa-3x text-primary mb-3"></i>
+                            <h4>Followed Authors</h4>
+                            <p class="text-muted">Content from authors you follow will appear here</p>
+                            <a href="#" class="btn btn-primary">Discover Authors</a>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Pagination -->
+                {% if pagination.pages > 1 %}
+                <nav aria-label="Page navigation" class="mt-5">
+                    <ul class="pagination justify-content-center">
+                        {% if pagination.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('main.index', page=pagination.prev_num) }}">
+                                    <i class="fas fa-chevron-left me-1"></i> Previous
+                                </a>
+                            </li>
                         {% else %}
-                            <p class="text-center text-muted py-3">
-                                <i class="fas fa-inbox fs-2 d-block mb-2"></i>
-                                No announcements available.
-                            </p>
+                            <li class="page-item disabled">
+                                <span class="page-link">Previous</span>
+                            </li>
+                        {% endif %}
+
+                        {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                            {% if page_num %}
+                                {% if page_num == pagination.page %}
+                                    <li class="page-item active" aria-current="page">
+                                        <span class="page-link">{{ page_num }}</span>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('main.index', page=page_num) }}">{{ page_num }}</a>
+                                    </li>
+                                {% endif %}
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">...</span>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if pagination.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('main.index', page=pagination.next_num) }}">
+                                    Next <i class="fas fa-chevron-right ms-1"></i>
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">Next</span>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            </div>
+
+            <!-- Sidebar -->
+            <div class="col-lg-4">
+                <!-- Announcements Widget -->
+                <div class="sidebar-widget mb-4">
+                    <div class="widget-header bg-primary text-white p-3">
+                        <h6 class="mb-0">
+                            <i class="fas fa-bullhorn me-2"></i>Announcements
+                        </h6>
+                    </div>
+                    <div class="widget-content bg-light">
+                        {% for announcement in announcements %}
+                        <div class="announcement-item p-3 border-bottom">
+                            <h6 class="mb-1">{{ announcement.title }}</h6>
+                            <p class="text-muted small mb-2">{{ announcement.content|truncate(80) }}</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">
+                                    <i class="fas fa-clock me-1"></i>{{ announcement.date_created.strftime('%m/%d') }}
+                                </small>
+                                <a href="{{ url_for('main.announcement_detail', announcement_id=announcement.id) }}" 
+                                   class="btn btn-sm btn-outline-primary">View</a>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="p-3 text-center text-muted">
+                            <i class="fas fa-inbox mb-2"></i>
+                            <p class="mb-0">No announcements</p>
+                        </div>
                         {% endfor %}
                     </div>
                 </div>
 
-                <!-- Newsletter Signup Card -->
-                <div class="card newsletter-card">
-                    <div class="card-body text-center p-4">
-                        <div class="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
-                             style="width: 60px; height: 60px;">
-                            <i class="fas fa-envelope-open-text text-primary fs-4"></i>
-                        </div>
-                        <h5>Stay Updated</h5>
-                        <p class="text-muted">Subscribe to our newsletter for the latest updates and exclusive content.</p>
-                        <button type="button" class="btn btn-primary rounded-pill px-4 w-100" data-bs-toggle="modal" data-bs-target="#newsletterModal">
-                            <i class="fas fa-envelope me-2"></i>Subscribe Now
+                <!-- Newsletter Widget -->
+                <div class="sidebar-widget mb-4">
+                    <div class="widget-content bg-dark text-white p-4 text-center">
+                        <i class="fas fa-envelope fa-2x mb-3"></i>
+                        <h6 class="mb-2">Stay Informed</h6>
+                        <p class="small mb-3">Get the latest news delivered to your inbox</p>
+                        <button class="btn btn-outline-light w-100" data-bs-toggle="modal" data-bs-target="#newsletterModal">
+                            Subscribe to Newsletter
                         </button>
                     </div>
                 </div>
 
-                <!-- Trending Topics Card -->
-                <div class="card mt-4">
-                    <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-fire me-2 text-danger"></i>Trending Topics</h5>
+                <!-- Trending Categories -->
+                <div class="sidebar-widget mb-4">
+                    <div class="widget-header bg-secondary text-white p-3">
+                        <h6 class="mb-0">
+                            <i class="fas fa-tags me-2"></i>Trending Topics
+                        </h6>
                     </div>
-                    <div class="card-body">
-                        {% for category in category_structure[:5] %}
-                        <a href="{{ url_for('main.category_posts', category_id=category.category.id) }}" 
-                           class="badge bg-light text-dark me-1 mb-2 text-decoration-none">
-                            {{ category.category.name }} <span class="text-muted">({{ category.category.posts.count() }})</span>
-                        </a>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Main Content (Posts Section) -->
-        <div class="col-lg-8 col-md-7">
-            <!-- Welcome Header -->
-            <div class="welcome-header mb-4 p-4 rounded-4 bg-gradient-primary text-white">
-                <h1 class="display-6 fw-bold">Welcome to Our Blog</h1>
-                <p class="mb-0">Discover the latest stories, insights, and announcements from our community</p>
-            </div>
-            
-            <!-- Posts Filter Tabs -->
-            <ul class="nav nav-tabs mb-4" id="postsFilterTabs" role="tablist">
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link active" id="recent-tab" data-bs-toggle="tab" data-bs-target="#recent" 
-                            type="button" role="tab" aria-controls="recent" aria-selected="true">
-                        <i class="fas fa-clock me-1"></i>Recent
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="popular-tab" data-bs-toggle="tab" data-bs-target="#popular" 
-                            type="button" role="tab" aria-controls="popular" aria-selected="false">
-                        <i class="fas fa-chart-line me-1"></i>Popular
-                    </button>
-                </li>
-                {% if current_user.is_authenticated %}
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="following-tab" data-bs-toggle="tab" data-bs-target="#following" 
-                            type="button" role="tab" aria-controls="following" aria-selected="false">
-                        <i class="fas fa-user-friends me-1"></i>Following
-                    </button>
-                </li>
-                {% endif %}
-            </ul>
-
-            <!-- Posts Content -->
-            <div class="tab-content" id="postsFilterTabsContent">
-                <!-- Recent Posts -->
-                <div class="tab-pane fade show active" id="recent" role="tabpanel" aria-labelledby="recent-tab">
-                    <div class="row" id="postsContainer">
-                        {% for post in posts %}
-                        <div class="col-sm-6 col-lg-6 mb-4">
-                            <div class="card post-card h-100">
-                                {% if post.image_url %}
-                                <div class="post-image-container">
-                                    <img src="{{ url_for('static', filename='images/' + post.image_url) }}" 
-                                         alt="Post Image" class="post-image">
-                                    <div class="post-overlay"></div>
-                                    <div class="category-badge">
-                                        <span class="badge bg-primary">{{ post.category_obj.name if post.category_obj else "Uncategorized" }}</span>
-                                    </div>
-                                </div>
-                                {% endif %}
-                                
-                                <div class="card-body">
-                                    <h3 class="post-title">{{ post.title }}</h3>
-                                    <p class="post-description">{{ post.desc | striptags | truncate(120) }}</p>
-                                    
-                                    <!-- Metadata Section -->
-                                    <div class="post-meta mb-3">
-                                        <div class="d-flex align-items-center">
-                                            <img src="https://ui-avatars.com/api/?name={{ post.author.username }}&background=random" 
-                                                 class="rounded-circle me-2" width="24" height="24" alt="Author">
-                                            <span class="meta-item">
-                                                <strong>{{ post.author.username }}</strong>
-                                            </span>
-                                            <span class="meta-item mx-2">•</span>
-                                            <span class="meta-item">
-                                                {{ post.date_pub.strftime('%b %d, %Y') }}
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    <!-- Engagement Stats -->
-                                    <div class="d-flex justify-content-between align-items-center mt-auto">
-                                        <div class="engagement-stats">
-                                            <span class="me-3"><i class="fas fa-eye me-1"></i> {{ post.views }}</span>
-                                            <span class="me-3"><i class="fas fa-heart me-1"></i> {{ post.like_count }}</span>
-                                         <span><i class="fas fa-comment me-1"></i> {{ post.comment_count }}</span>
-                                        </div>
-                                        <a href="{{ url_for('admin.see_more', post_id=post.id) }}" 
-                                           class="btn btn-sm btn-outline-primary rounded-pill">
-                                            Read <i class="fas fa-arrow-right ms-1"></i>
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
+                    <div class="widget-content bg-white p-3">
+                        <div class="trending-topics">
+                            {% for category in category_structure[:8] %}
+                            <a href="{{ url_for('main.category_posts', category_id=category.category.id) }}" 
+                               class="topic-tag d-block py-2 px-3 mb-2 bg-light text-dark text-decoration-none rounded">
+                                {{ category.category.name }}
+                                <span class="badge bg-primary float-end">{{ category.category.posts.count() }}</span>
+                            </a>
+                            {% endfor %}
                         </div>
-                        {% endfor %}
                     </div>
                 </div>
 
-                <!-- Popular Posts (placeholder) -->
-                <div class="tab-pane fade" id="popular" role="tabpanel" aria-labelledby="popular-tab">
-                    <div class="text-center py-5">
-                        <i class="fas fa-chart-line fa-3x text-primary mb-3"></i>
-                        <h4>Most Popular Posts</h4>
-                        <p class="text-muted">Posts with the highest engagement will appear here.</p>
+                <!-- Quick Stats -->
+                <div class="sidebar-widget">
+                    <div class="widget-header bg-info text-white p-3">
+                        <h6 class="mb-0">
+                            <i class="fas fa-chart-bar me-2"></i>Quick Stats
+                        </h6>
                     </div>
-                </div>
-
-                <!-- Following Posts (placeholder) -->
-                {% if current_user.is_authenticated %}
-                <div class="tab-pane fade" id="following" role="tabpanel" aria-labelledby="following-tab">
-                    <div class="text-center py-5">
-                        <i class="fas fa-user-friends fa-3x text-primary mb-3"></i>
-                        <h4>Posts from Authors You Follow</h4>
-                        <p class="text-muted">When you follow authors, their posts will appear here.</p>
-                        <a href="#" class="btn btn-primary rounded-pill">Discover Authors</a>
-                    </div>
-                </div>
-                {% endif %}
-            </div>
-            
-            <!-- Pagination Controls -->
-            {% if pagination.pages > 1 %}
-            <nav aria-label="Page navigation" class="mt-5">
-                <ul class="pagination justify-content-center">
-                    {% if pagination.has_prev %}
-                        <li class="page-item">
-                            <a class="page-link" href="{{ url_for('main.index', page=pagination.prev_num) }}">
-                                <i class="fas fa-chevron-left me-1"></i> Previous
-                            </a>
-                        </li>
-                    {% else %}
-                        <li class="page-item disabled">
-                            <span class="page-link">Previous</span>
-                        </li>
-                    {% endif %}
-
-                    {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
-                        {% if page_num %}
-                            {% if page_num == pagination.page %}
-                                <li class="page-item active" aria-current="page">
-                                    <span class="page-link">{{ page_num }}</span>
-                                </li>
-                            {% else %}
-                                <li class="page-item">
-                                    <a class="page-link" href="{{ url_for('main.index', page=page_num) }}">{{ page_num }}</a>
-                                </li>
-                            {% endif %}
-                        {% else %}
-                            <li class="page-item disabled">
-                                <span class="page-link">...</span>
-                            </li>
-                        {% endif %}
-                    {% endfor %}
-
-                    {% if pagination.has_next %}
-                        <li class="page-item">
-                            <a class="page-link" href="{{ url_for('main.index', page=pagination.next_num) }}">
-                                Next <i class="fas fa-chevron-right ms-1"></i>
-                            </a>
-                        </li>
-                    {% else %}
-                        <li class="page-item disabled">
-                            <span class="page-link">Next</span>
-                        </li>
-                    {% endif %}
-                </ul>
-                <p class="text-center text-muted small mt-2">Page {{ pagination.page }} of {{ pagination.pages }}</p>
-            </nav>
-            {% endif %}
-        </div>
-    </div>
-
-    <!-- Featured Post Carousel - Moved to bottom -->
-    {% if posts|length > 0 %}
-    <div class="row mt-5">
-        <div class="col-12">
-            <h2 class="section-title mb-4"><i class="fas fa-star me-2 text-warning"></i>Featured Stories</h2>
-            <div id="featuredCarousel" class="carousel slide" data-bs-ride="carousel">
-                <div class="carousel-indicators">
-                    {% for i in range([posts|length, 3]|min) %}
-                    <button type="button" data-bs-target="#featuredCarousel" data-bs-slide-to="{{ i }}" 
-                            class="{% if loop.first %}active{% endif %}" aria-current="true" aria-label="Slide {{ i+1 }}"></button>
-                    {% endfor %}
-                </div>
-                <div class="carousel-inner rounded-4">
-                    {% for post in posts[:3] %}
-                    <div class="carousel-item {% if loop.first %}active{% endif %}">
-                        <div class="row g-0 featured-post">
-                            <div class="col-md-6">
-                                {% if post.image_url %}
-                                <img src="{{ url_for('static', filename='images/' + post.image_url) }}" 
-                                     class="img-fluid rounded-start h-100 object-fit-cover" alt="{{ post.title }}">
-                                {% else %}
-                                <div class="bg-secondary h-100 d-flex align-items-center justify-content-center">
-                                    <i class="fas fa-image fa-3x text-light"></i>
-                                </div>
-                                {% endif %}
+                    <div class="widget-content bg-white p-3">
+                        <div class="stats-grid">
+                            <div class="stat-item text-center p-2">
+                                <div class="stat-number text-primary fw-bold">{{ posts|length }}</div>
+                                <div class="stat-label small text-muted">Total Posts</div>
                             </div>
-                            <div class="col-md-6">
-                                <div class="card-body h-100 d-flex flex-column justify-content-center p-4">
-                                    <span class="badge bg-primary mb-2">{{ post.category_obj.name if post.category_obj else "Uncategorized" }}</span>
-                                    <h2 class="featured-title">{{ post.title }}</h2>
-                                    <p class="featured-excerpt">{{ post.desc|striptags|truncate(200) }}</p>
-                                    <div class="d-flex align-items-center mt-3">
-                                        <img src="https://ui-avatars.com/api/?name={{ post.author.username }}&background=random" 
-                                             class="rounded-circle me-2" width="32" height="32" alt="Author">
-                                        <span class="text-muted">{{ post.author.username }}</span>
-                                        <span class="text-muted mx-2">•</span>
-                                        <span class="text-muted">{{ post.date_pub.strftime('%b %d, %Y') }}</span>
-                                    </div>
-                                    <a href="{{ url_for('admin.see_more', post_id=post.id) }}" 
-                                       class="btn btn-primary mt-3 rounded-pill">Read Story</a>
-                                </div>
+                            <div class="stat-item text-center p-2">
+                                <div class="stat-number text-success fw-bold">{{ category_structure|length }}</div>
+                                <div class="stat-label small text-muted">Categories</div>
+                            </div>
+                            <div class="stat-item text-center p-2">
+                                <div class="stat-number text-warning fw-bold">{{ announcements|length }}</div>
+                                <div class="stat-label small text-muted">Announcements</div>
                             </div>
                         </div>
                     </div>
-                    {% endfor %}
                 </div>
-                <button class="carousel-control-prev" type="button" data-bs-target="#featuredCarousel" data-bs-slide="prev">
-                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                    <span class="visually-hidden">Previous</span>
-                </button>
-                <button class="carousel-control-next" type="button" data-bs-target="#featuredCarousel" data-bs-slide="next">
-                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                    <span class="visually-hidden">Next</span>
-                </button>
             </div>
         </div>
     </div>
-    {% endif %}
 </div>
 
 <!-- Newsletter Modal -->
@@ -308,358 +343,303 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Subscribe to our Newsletter</h5>
+                <h5 class="modal-title">Newsletter Subscription</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <p>Stay updated with the latest content. No spam, just great articles.</p>
+                <p>Stay updated with our latest news and articles.</p>
                 <form action="{{ url_for('newsletter.subscribe') }}" method="POST">
-			{{ form.hidden_tag() }}
+                    {{ form.hidden_tag() }}
                     <div class="mb-3">
-                        <input type="email" class="form-control" name="email" placeholder="Your email address" required>
+                        <label class="form-label">Email Address</label>
+                        <input type="email" class="form-control" name="email" placeholder="your@email.com" required>
                     </div>
                     <button type="submit" class="btn btn-primary w-100">Subscribe</button>
                 </form>
-                <div class="form-check mt-3">
-                    <input type="checkbox" class="form-check-input" id="dontShowAgain">
-                    <label class="form-check-label small text-muted" for="dontShowAgain">
-                        Don't show this again
-                    </label>
-                </div>
             </div>
         </div>
     </div>
 </div>
 
 <style>
-    :root {
-        --primary-color: #4361ee;
-        --secondary-color: #3a0ca3;
-        --accent-color: #f72585;
-        --light-bg: #f8f9fa;
-        --dark-text: #212529;
-        --light-text: #6c757d;
-        --card-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
-        --card-hover-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
-        --transition: all 0.3s ease;
+    /* Breaking News Bar */
+    .breaking-news-bar {
+        font-size: 0.875rem;
+        border-bottom: 2px solid #dc3545;
     }
-    
-    /* Welcome Header */
-    .welcome-header {
-        background: linear-gradient(135deg, #4361ee 0%, #3a0ca3 100%);
-        box-shadow: 0 5px 15px rgba(67, 97, 238, 0.2);
+
+    .breaking-text {
+        font-weight: 500;
+        white-space: nowrap;
+        overflow: hidden;
     }
-    
-    /* Section Title */
-    .section-title {
-        font-family: 'Playfair Display', serif;
+
+    /* Main Header */
+    .site-title {
+        font-family: 'Georgia', serif;
         font-weight: 700;
-        color: var(--dark-text);
-        position: relative;
-        padding-bottom: 0.5rem;
+        font-size: 2rem;
     }
-    
-    .section-title:after {
-        content: '';
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        width: 60px;
-        height: 3px;
-        background: var(--primary-color);
-        border-radius: 2px;
+
+    .header-date {
+        font-size: 0.9rem;
     }
-    
-    /* Featured Post Carousel - Smaller size */
-    .featured-post {
-        height: 320px;
-        background-color: var(--light-bg);
-        border-radius: 12px;
+
+    /* Hero Featured */
+    .hero-featured {
+        border-bottom: 3px solid #dee2e6;
+        padding-bottom: 2rem;
+    }
+
+    .hero-main {
+        height: 400px;
         overflow: hidden;
-        box-shadow: var(--card-shadow);
+        border-radius: 8px;
     }
-    
-    .featured-title {
-        font-family: 'Playfair Display', serif;
-        font-weight: 700;
-        font-size: 1.8rem;
-        line-height: 1.2;
-        margin-bottom: 0.8rem;
-    }
-    
-    .featured-excerpt {
-        font-size: 1rem;
-        color: var(--light-text);
-        margin-bottom: 1.2rem;
-    }
-    
-    .carousel-control-prev, .carousel-control-next {
-        width: 40px;
-        height: 40px;
-        background-color: rgba(0,0,0,0.3);
-        border-radius: 50%;
-        top: 50%;
-        transform: translateY(-50%);
-        opacity: 0;
-        transition: var(--transition);
-    }
-    
-    #featuredCarousel:hover .carousel-control-prev,
-    #featuredCarousel:hover .carousel-control-next {
-        opacity: 1;
-    }
-    
-    /* Post Cards - Improved aesthetics */
-    .post-card {
-        border: none;
-        border-radius: 12px;
-        box-shadow: var(--card-shadow);
-        transition: var(--transition);
-        overflow: hidden;
-        height: 100%;
-    }
-    
-    .post-card:hover {
-        box-shadow: var(--card-hover-shadow);
-        transform: translateY(-5px);
-    }
-    
-    .post-image-container {
-        position: relative;
-        overflow: hidden;
-        height: 200px;
-    }
-    
-    .post-image {
-        width: 100%;
+
+    .hero-image {
         height: 100%;
         object-fit: cover;
-        transition: transform 0.5s ease;
+        border-radius: 8px;
     }
-    
-    .post-overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: linear-gradient(to bottom, transparent 60%, rgba(0,0,0,0.7));
-        opacity: 0.7;
+
+    .hero-overlay {
+        background: linear-gradient(transparent, rgba(0,0,0,0.8));
+        border-radius: 0 0 8px 8px;
     }
-    
-    .category-badge {
-        position: absolute;
-        top: 15px;
-        left: 15px;
-    }
-    
-    .post-card:hover .post-image {
-        transform: scale(1.05);
-    }
-    
-    .post-title {
-        font-family: 'Montserrat', sans-serif;
+
+    .hero-title {
+        font-family: 'Georgia', serif;
+        font-size: 1.8rem;
         font-weight: 700;
-        font-size: 1.3rem;
-        margin-bottom: 0.8rem;
-        color: var(--dark-text);
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
+        line-height: 1.2;
     }
-    
-    .post-description {
+
+    .hero-title a:hover {
+        text-decoration: underline !important;
+    }
+
+    .side-story-title {
+        font-weight: 600;
+        line-height: 1.3;
         font-size: 0.95rem;
-        color: var(--light-text);
-        margin-bottom: 1.5rem;
-        display: -webkit-box;
-        -webkit-line-clamp: 3;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
     }
-    
-    .post-meta .meta-item {
-        display: flex;
-        align-items: center;
-        font-size: 0.85rem;
-        color: var(--light-text);
+
+    .side-story-title a:hover {
+        color: #007bff !important;
     }
-    
-    .engagement-stats {
-        font-size: 0.9rem;
-        color: var(--light-text);
+
+    /* News Tabs */
+    .news-tabs .nav-tabs {
+        border-bottom: 2px solid #dee2e6;
     }
-    
-    /* Newsletter Card - Improved */
-    .newsletter-card {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
+
+    .news-tabs .nav-link {
         border: none;
-        border-radius: 12px;
-        transition: var(--transition);
-    }
-    
-    .newsletter-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
-    }
-    
-    .newsletter-card .text-muted {
-        color: rgba(255, 255, 255, 0.8) !important;
-    }
-    
-    /* Nav Tabs - Improved */
-    .nav-tabs {
-        border-bottom: 1px solid rgba(0,0,0,0.1);
-    }
-    
-    .nav-tabs .nav-link {
-        border: none;
-        color: var(--light-text);
+        border-bottom: 3px solid transparent;
+        color: #6c757d;
         font-weight: 500;
-        padding: 0.75rem 1.25rem;
-        border-radius: 8px 8px 0 0;
-        transition: var(--transition);
+        padding: 0.75rem 1.5rem;
+        margin-bottom: -2px;
     }
-    
-    .nav-tabs .nav-link:hover {
-        color: var(--primary-color);
-        background-color: rgba(67, 97, 238, 0.05);
+
+    .news-tabs .nav-link:hover {
+        border-bottom-color: #dee2e6;
+        color: #495057;
     }
-    
-    .nav-tabs .nav-link.active {
-        color: var(--primary-color);
-        background-color: transparent;
-        border-bottom: 3px solid var(--primary-color);
+
+    .news-tabs .nav-link.active {
+        border-bottom-color: #007bff;
+        color: #007bff;
+        background: transparent;
     }
-    
-    /* Modal Improvements */
-    .modal-content {
-        border-radius: 12px;
-        border: none;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+
+    /* News Cards */
+    .news-card:last-child {
+        border-bottom: none !important;
+        margin-bottom: 0 !important;
+        padding-bottom: 0 !important;
     }
-    
-    .modal-header {
-        border-bottom: 1px solid rgba(0,0,0,0.1);
-        padding: 1.2rem 1.5rem;
+
+    .news-image {
+        border-radius: 6px;
     }
-    
-    .modal-body {
-        padding: 1.5rem;
+
+    .news-placeholder {
+        border-radius: 6px;
     }
-    
-    /* Responsive adjustments */
-    @media (max-width: 992px) {
-        .featured-post {
-            height: auto;
-            flex-direction: column !important;
-        }
-        
-        .featured-title {
-            font-size: 1.6rem;
-        }
-        
-        .sticky-top {
-            position: relative !important;
-            top: 0 !important;
-        }
+
+    .news-title {
+        font-family: 'Georgia', serif;
+        font-weight: 600;
+        line-height: 1.3;
+        font-size: 1.1rem;
     }
-    
+
+    .news-title a:hover {
+        color: #007bff !important;
+    }
+
+    .news-excerpt {
+        font-size: 0.9rem;
+        line-height: 1.5;
+    }
+
+    .news-meta {
+        font-size: 0.8rem;
+    }
+
+    /* Sidebar Widgets */
+    .sidebar-widget {
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .widget-header {
+        font-weight: 600;
+    }
+
+    .widget-content {
+        border: 1px solid #dee2e6;
+        border-top: none;
+    }
+
+    .announcement-item {
+        transition: background-color 0.2s;
+    }
+
+    .announcement-item:hover {
+        background-color: #f8f9fa;
+    }
+
+    /* Trending Topics */
+    .topic-tag {
+        transition: all 0.2s;
+        border-left: 3px solid transparent;
+    }
+
+    .topic-tag:hover {
+        background-color: #007bff !important;
+        color: white !important;
+        transform: translateX(5px);
+        border-left-color: #0056b3;
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+    }
+
+    .stat-number {
+        font-size: 1.5rem;
+    }
+
+    /* Pagination */
+    .pagination .page-link {
+        border-radius: 4px;
+        margin: 0 2px;
+        font-weight: 500;
+    }
+
+    /* Empty States */
+    .empty-state {
+        background: #f8f9fa;
+        border-radius: 8px;
+        border: 2px dashed #dee2e6;
+    }
+
+    /* Responsive */
     @media (max-width: 768px) {
-        .post-title {
-            font-size: 1.2rem;
+        .hero-main {
+            height: 300px;
         }
         
-        .post-image-container {
-            height: 180px;
-        }
-        
-        .featured-title {
+        .hero-title {
             font-size: 1.4rem;
         }
         
-        .featured-excerpt {
+        .site-title {
+            font-size: 1.5rem;
+        }
+        
+        .stats-grid {
+            grid-template-columns: repeat(3, 1fr);
+        }
+        
+        .news-tabs .nav-link {
+            padding: 0.5rem 1rem;
             font-size: 0.9rem;
         }
         
-        .welcome-header h1 {
-            font-size: 1.8rem;
+        .breaking-text {
+            font-size: 0.8rem;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .hero-main {
+            height: 250px;
+        }
+        
+        .hero-title {
+            font-size: 1.2rem;
+        }
+        
+        .news-image, .news-placeholder {
+            height: 120px;
+        }
+        
+        .side-story-img {
+            height: 80px;
         }
     }
 </style>
 
 <script>
-// Initialize featured posts carousel
-var featuredCarousel = document.getElementById('featuredCarousel');
-if (featuredCarousel) {
-    var carousel = new bootstrap.Carousel(featuredCarousel, {
-        interval: 5000,
-        wrap: true
-    });
-}
-
-// Filter tabs functionality
-document.addEventListener('DOMContentLoaded', function() {
-    const filterTabs = document.querySelectorAll('[data-bs-toggle="tab"]');
-    
-    filterTabs.forEach(tab => {
-        tab.addEventListener('shown.bs.tab', function(event) {
-            const target = event.target.getAttribute('data-bs-target');
-            // Here you would typically load content for the selected tab
-            console.log('Tab shown:', target);
+    // Set current date
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set current date
+        const now = new Date();
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        document.getElementById('currentDate').textContent = now.toLocaleDateString('en-US', options);
+        
+        // Simple scrolling effect for breaking news
+        const breakingText = document.querySelector('.breaking-text');
+        if (breakingText) {
+            let scrollPos = 0;
+            function scrollText() {
+                scrollPos -= 1;
+                breakingText.style.transform = ;
+                
+                if (scrollPos < -breakingText.scrollWidth) {
+                    scrollPos = breakingText.offsetWidth;
+                }
+                requestAnimationFrame(scrollText);
+            }
+            scrollText();
+        }
+        
+        // Tab functionality
+        const tabs = document.querySelectorAll('[data-bs-toggle="tab"]');
+        tabs.forEach(tab => {
+            tab.addEventListener('shown.bs.tab', function(event) {
+                // Could load content via AJAX here
+                console.log('Tab activated:', event.target.getAttribute('id'));
+            });
         });
-    });
-    
-    // Newsletter modal handling
-    const dontShowAgain = document.getElementById('dontShowAgain');
-    const newsletterModal = document.getElementById('newsletterModal');
-    
-    // Check if user has previously opted out
-    if (localStorage.getItem('dontShowNewsletterModal') !== 'true') {
-        // Show modal after 60 seconds instead of 30
-        setTimeout(function() {
-            if (!newsletterModal.classList.contains('show')) {
+        
+        // Newsletter modal - show after 5 seconds
+        const newsletterModal = document.getElementById('newsletterModal');
+        if (localStorage.getItem('newsletterShown') !== 'true') {
+            setTimeout(() => {
                 const modal = new bootstrap.Modal(newsletterModal);
                 modal.show();
-            }
-        }, 60000);
-    }
-    
-    // Handle "Don't show again" checkbox
-    if (dontShowAgain) {
-        dontShowAgain.addEventListener('change', function() {
-            if (this.checked) {
-                localStorage.setItem('dontShowNewsletterModal', 'true');
-            } else {
-                localStorage.removeItem('dontShowNewsletterModal');
-            }
-        });
-    }
-});
-
-// Handle newsletter form submission
-function handleNewsletterSubmit(event) {
-    event.preventDefault();
-    const formData = new FormData(event.target);
-    const email = formData.get('email');
-    
-    // Simple email validation
-    if (!email || !email.includes('@')) {
-        alert('Please enter a valid email address.');
-        return false;
-    }
-    
-    // Submit the form (you would typically use AJAX here)
-    event.target.submit();
-    
-    // Close the modal
-    const modal = bootstrap.Modal.getInstance(document.getElementById('newsletterModal'));
-    modal.hide();
-    
-    return false;
-}
+                localStorage.setItem('newsletterShown', 'true');
+            }, 5000);
+        }
+    });
 </script>
-
 {% endblock %}
