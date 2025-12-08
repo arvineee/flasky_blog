@@ -1,244 +1,391 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" prefix="og: https://ogp.me/ns#">
 <head>
+    <!-- Primary Meta Tags -->
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-
-    <!-- SEO Meta Tags -->
-    <meta name="description" content="Stay updated with the latest political news, analysis, and opinions on Arval Blog. Discover insights on policies, elections, and global trends.">
-    <meta name="keywords" content="political blog, politics news, political analysis, government policies, elections, global politics,health,global health,health fitness,tech, tecnology, ai,artificial inteligence,">
-
-    <!-- Open Graph/Twitter Cards -->
-    <meta property="og:title" content="Arval Blog - Political Insights">
-    <meta property="og:image" content="{{ url_for('static', filename='images/og-image.jpg') }}">
+    
+    <!-- SEO Title & Description -->
+    <title>{% block title %}Arval Blog - Political Analysis, Tech Insights & Health Trends{% endblock %}</title>
+    <meta name="description" content="{% block meta_description %}Expert analysis on politics, technology, AI, health trends, and global affairs. In-depth articles, research, and commentary from industry specialists.{% endblock %}">
+    
+    <!-- Keywords Optimization -->
+    <meta name="keywords" content="political analysis, technology blog, artificial intelligence, global politics, health trends, policy insights, AI technology, political commentary, tech news, healthcare policy">
+    
+    <!-- Canonical URL (Dynamically Set) -->
+    <link rel="canonical" href="{{ request.url if request.url else url_for('main.index', _external=True) }}">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ request.url if request.url else url_for('main.index', _external=True) }}">
+    <meta property="og:title" content="{% block og_title %}Arval Blog - Expert Political & Tech Analysis{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}Professional insights on politics, technology, and global trends from industry experts.{% endblock %}">
+    <meta property="og:image" content="{{ url_for('static', filename='images/og-image.jpg', _external=True) }}">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:site_name" content="Arval Blog">
+    <meta property="og:locale" content="en_US">
+    
+    <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
-
-    <!-- Favicon -->
+    <meta name="twitter:site" content="@Arvinefelix">
+    <meta name="twitter:creator" content="@Arvinefelix">
+    <meta name="twitter:title" content="{% block twitter_title %}Arval Blog - Political & Tech Insights{% endblock %}">
+    <meta name="twitter:description" content="Expert analysis on global politics, technology, and health trends.">
+    <meta name="twitter:image" content="{{ url_for('static', filename='images/twitter-card.jpg', _external=True) }}">
+    
+    <!-- Additional SEO Meta Tags -->
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+    <meta name="author" content="Arval Blog Editorial Team">
+    <meta name="publisher" content="Arval Blog">
+    <meta name="theme-color" content="#4f46e5">
+    
+    <!-- Structured Data / Schema.org -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "Arval Blog",
+        "url": "{{ url_for('main.index', _external=True) }}",
+        "description": "Expert analysis on politics, technology, AI, health trends, and global affairs.",
+        "publisher": {
+            "@type": "Organization",
+            "name": "Arval Blog",
+            "logo": {
+                "@type": "ImageObject",
+                "url": "{{ url_for('static', filename='logo.png', _external=True) }}"
+            }
+        },
+        "inLanguage": "en-US",
+        "potentialAction": {
+            "@type": "SearchAction",
+            "target": "{{ url_for('admin.search', _external=True) }}?q={search_term_string}",
+            "query-input": "required name=search_term_string"
+        }
+    }
+    </script>
+    
+    <!-- Favicon & App Icons -->
     <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
-
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='apple-touch-icon.png') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicon-32x32.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicon-16x16.png') }}">
+    <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest') }}">
+    
+    <!-- Preload Critical Assets -->
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <link rel="preload" href="{{ url_for('static', filename='css/styles.css') }}" as="style">
+    
     <!-- Stylesheets -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/recommend.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/announcement.css') }}">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
     
-    <!-- Bootstrap Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet">
-
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" crossorigin="anonymous">
+    
+    <!-- Google Fonts (with fallback) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet" crossorigin="anonymous">
+    
+    <!-- Breadcrumb Schema (Dynamic per page) -->
+    {% block breadcrumb_schema %}{% endblock %}
+    
+    <!-- Article Schema (for blog posts) -->
+    {% block article_schema %}{% endblock %}
+    
     <style>
-	:root {
-    --primary-color: #4f46e5;
-    --secondary-color: #64748b;
-    --success-color: #10b981;
-    --danger-color: #ef4444;
-    --warning-color: #f59e0b;
-    --dark-color: #1e293b;
-    --light-color: #f8fafc;
-    --card-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
-    --transition: all 0.3s ease;
-}
+    :root {
+        --primary-color: #4f46e5;
+        --secondary-color: #64748b;
+        --success-color: #10b981;
+        --danger-color: #ef4444;
+        --warning-color: #f59e0b;
+        --dark-color: #1e293b;
+        --light-color: #f8fafc;
+        --card-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        --transition: all 0.3s ease;
+    }
+    
+    body {
+        font-family: 'Inter', sans-serif;
+        background-color: var(--light-color);
+        color: #1f2937;
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+        line-height: 1.6;
+    }
+    
+    .brand-container {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    
+    .brand-logo {
+        height: 50px;
+        width: auto;
+        transition: var(--transition);
+    }
+    
+    .brand-text {
+        font-family: 'Playfair Display', serif;
+        font-weight: 700;
+        font-size: 1.8rem;
+        color: var(--primary-color);
+        margin: 0;
+    }
+    
+    .navbar {
+        background: white;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        padding: 0.8rem 0;
+    }
+    
+    .navbar-nav .nav-link {
+        font-weight: 500;
+        color: #374151;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        transition: var(--transition);
+        position: relative;
+    }
+    
+    .navbar-nav .nav-link:hover,
+    .navbar-nav .nav-link.active {
+        color: var(--primary-color);
+        background-color: rgba(79, 70, 229, 0.05);
+    }
+    
+    .navbar-nav .nav-link.active::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 15%;
+        width: 70%;
+        height: 2px;
+        background-color: var(--primary-color);
+    }
+    
+    .dropdown-menu {
+        border: none;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        border-radius: 8px;
+        padding: 0.5rem;
+    }
+    
+    .dropdown-item {
+        border-radius: 6px;
+        padding: 0.5rem 1rem;
+        transition: var(--transition);
+    }
+    
+    .dropdown-item:hover,
+    .dropdown-item:focus {
+        background-color: rgba(79, 70, 229, 0.1);
+        color: var(--primary-color);
+    }
+    
+    .search-form {
+        position: relative;
+    }
+    
+    .search-form .form-control {
+        border-radius: 50px;
+        padding-left: 20px;
+        padding-right: 45px;
+        border: 1px solid #d1d5db;
+        transition: var(--transition);
+    }
+    
+    .search-form .form-control:focus {
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+        border-color: var(--primary-color);
+    }
+    
+    .search-form .btn {
+        position: absolute;
+        right: 5px;
+        top: 5px;
+        border-radius: 50%;
+        width: 34px;
+        height: 34px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--primary-color);
+        color: white;
+        border: none;
+    }
+    
+    .alert {
+        border: none;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+    
+    .alert-danger {
+        background: linear-gradient(135deg, #fed7d7 0%, #feb2b2 100%);
+        color: #742a2a;
+    }
+    
+    .footer {
+        background: var(--primary-color);
+        color: white;
+        margin-top: auto;
+        padding: 40px 0 20px;
+    }
+    
+    .footer a {
+        color: #e2e8f0;
+        text-decoration: none;
+        transition: var(--transition);
+    }
+    
+    .footer a:hover {
+        color: white;
+        text-decoration: underline;
+    }
+    
+    .footer-divider {
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        margin: 20px 0;
+    }
+    
+    .toast-message {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: #333;
+        color: #fff;
+        padding: 12px 20px;
+        border-radius: 8px;
+        opacity: 0;
+        transform: translateY(20px);
+        transition: opacity 0.3s ease, transform 0.3s ease;
+        z-index: 1050;
+    }
+    
+    .toast-message.show {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    
+    .navbar-toggler {
+        border: none;
+        padding: 0.25rem 0.5rem;
+    }
+    
+    .navbar-toggler:focus {
+        box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.25);
+    }
+    
+    /* SEO-friendly content styles */
+    .article-content {
+        line-height: 1.8;
+        font-size: 1.1rem;
+    }
+    
+    .article-content h2 {
+        font-size: 1.8rem;
+        margin-top: 2rem;
+        margin-bottom: 1rem;
+        color: var(--dark-color);
+    }
+    
+    .article-content h3 {
+        font-size: 1.5rem;
+        margin-top: 1.5rem;
+        margin-bottom: 0.75rem;
+    }
+    
+    /* Schema.org rich snippets visual cues */
+    .rating-stars {
+        color: #fbbf24;
+    }
+    
+    .author-bio {
+        border-left: 4px solid var(--primary-color);
+        padding-left: 1rem;
+        margin: 1.5rem 0;
+    }
+    
+    /* Microdata helper classes */
+    [itemprop] {
+        display: inline;
+    }
+    
+    /* Print styles for better article printing */
+    @media print {
+        .navbar, .footer, .modal, .toast-container {
+            display: none !important;
+        }
         
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--light-bg);
-            color: var(--text-color);
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-            line-height: 1.6;
+            font-size: 12pt;
+            line-height: 1.5;
         }
         
-        .brand-container {
-            display: flex;
-            align-items: center;
-            gap: 12px;
+        a {
+            text-decoration: underline;
+            color: #000;
         }
         
-        .brand-logo {
-            height: 50px;
-            width: auto;
-            transition: var(--transition);
+        a[href]:after {
+            content: " (" attr(href) ")";
+            font-size: 0.9em;
+            font-weight: normal;
         }
-        
-        .brand-text {
-            font-family: 'Playfair Display', serif;
-            font-weight: 700;
-            font-size: 1.8rem;
-            color: var(--primary-color);
-            margin: 0;
-        }
-        
-        .navbar {
-            background: white;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-            padding: 0.8rem 0;
+    }
+    
+    @media (max-width: 992px) {
+        .navbar-collapse {
+            padding: 1rem 0;
         }
         
         .navbar-nav .nav-link {
-            font-weight: 500;
-            color: var(--text-color);
-            padding: 0.5rem 1rem;
-            border-radius: 6px;
-            transition: var(--transition);
-            position: relative;
-        }
-        
-        .navbar-nav .nav-link:hover,
-        .navbar-nav .nav-link.active {
-            color: var(--accent-color);
-            background-color: rgba(79, 70, 229, 0.05);
-        }
-        
-        .navbar-nav .nav-link.active::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 15%;
-            width: 70%;
-            height: 2px;
-            background-color: var(--accent-color);
-        }
-        
-        .dropdown-menu {
-            border: none;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            border-radius: 8px;
-            padding: 0.5rem;
-        }
-        
-        .dropdown-item {
-            border-radius: 6px;
-            padding: 0.5rem 1rem;
-            transition: var(--transition);
-        }
-        
-        .dropdown-item:hover,
-        .dropdown-item:focus {
-            background-color: rgba(79, 70, 229, 0.1);
-            color: var(--accent-color);
+            padding: 0.75rem 1rem;
         }
         
         .search-form {
-            position: relative;
+            margin-top: 1rem;
+        }
+    }
+    
+    /* Mobile-first responsive improvements */
+    @media (max-width: 768px) {
+        h1 { font-size: 2rem; }
+        h2 { font-size: 1.75rem; }
+        h3 { font-size: 1.5rem; }
+        
+        .article-content {
+            font-size: 1rem;
+            line-height: 1.6;
         }
         
-        .search-form .form-control {
-            border-radius: 50px;
-            padding-left: 20px;
-            padding-right: 45px;
-            border: 1px solid var(--border-color);
-            transition: var(--transition);
+        .brand-text {
+            font-size: 1.4rem;
         }
         
-        .search-form .form-control:focus {
-            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
-            border-color: var(--accent-color);
+        .brand-logo {
+            height: 40px;
         }
-        
-        .search-form .btn {
-            position: absolute;
-            right: 5px;
-            top: 5px;
-            border-radius: 50%;
-            width: 34px;
-            height: 34px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: var(--accent-color);
-            color: white;
-            border: none;
-        }
-        
-        .alert {
-            border: none;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-        }
-        
-        .alert-danger {
-            background: linear-gradient(135deg, #fed7d7 0%, #feb2b2 100%);
-            color: #742a2a;
-        }
-        
-        .footer {
-            background: var(--primary-color);
-            color: white;
-            margin-top: auto;
-            padding: 40px 0 20px;
-        }
-        
-        .footer a {
-            color: #e2e8f0;
-            text-decoration: none;
-            transition: var(--transition);
-        }
-        
-        .footer a:hover {
-            color: white;
-            text-decoration: underline;
-        }
-        
-        .footer-divider {
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            margin: 20px 0;
-        }
-        
-        .toast-message {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: #333;
-            color: #fff;
-            padding: 12px 20px;
-            border-radius: 8px;
-            opacity: 0;
-            transform: translateY(20px);
-            transition: opacity 0.3s ease, transform 0.3s ease;
-            z-index: 1050;
-        }
-        
-        .toast-message.show {
-            opacity: 1;
-            transform: translateY(0);
-        }
-        
-        .navbar-toggler {
-            border: none;
-            padding: 0.25rem 0.5rem;
-        }
-        
-        .navbar-toggler:focus {
-            box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.25);
-        }
-        
-        @media (max-width: 992px) {
-            .navbar-collapse {
-                padding: 1rem 0;
-            }
-            
-            .navbar-nav .nav-link {
-                padding: 0.75rem 1rem;
-            }
-            
-            .search-form {
-                margin-top: 1rem;
-            }
-        }
+    }
     </style>
 </head>
-<body class="d-flex flex-column min-vh-100">
+<body class="d-flex flex-column min-vh-100" itemscope itemtype="https://schema.org/WebPage">
+
+    <!-- Skip to main content for accessibility -->
+    <a href="#main-content" class="visually-hidden-focusable">Skip to main content</a>
 
     <!-- Flash Messages -->
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
             {% for category, message in messages %}
-                <div class="alert alert-{{ category }} alert-dismissible fade show m-2" role="alert">
+                <div class="alert alert-{{ category }} alert-dismissible fade show m-2" role="alert" aria-live="polite">
                     {{ message }}
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
@@ -248,18 +395,22 @@
 
     <!-- Banned User Alert -->
     {% if current_user.is_authenticated and current_user.is_banned %}
-        <div class="alert alert-danger text-center">
-            <i class="bi bi-exclamation-triangle-fill me-2"></i>Your account is currently banned. <a href="{{ url_for('main.contact') }}">Contact</a>  admin for assistance.
+        <div class="alert alert-danger text-center" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>Your account is currently banned. <a href="{{ url_for('main.contact') }}">Contact</a> admin for assistance.
         </div>
     {% endif %}
 
     <!-- Header / Navbar -->
-    <header>
-        <nav class="navbar navbar-expand-lg navbar-light sticky-top">
+    <header role="banner">
+        <nav class="navbar navbar-expand-lg navbar-light sticky-top" aria-label="Main navigation">
             <div class="container">
-                <div class="brand-container">
-                    <img src="{{ url_for('static', filename='logo.png') }}" alt="Arval Blog Logo" class="brand-logo">
-                    <h1 class="brand-text">Arval Blog</h1>
+                <!-- Logo with Schema.org markup -->
+                <div class="brand-container" itemprop="publisher" itemscope itemtype="https://schema.org/Organization">
+                    <meta itemprop="name" content="Arval Blog">
+                    <a href="{{ url_for('main.index') }}" itemprop="url" aria-label="Arval Blog Home">
+                        <img src="{{ url_for('static', filename='logo.png') }}" alt="Arval Blog Logo - Political and Tech Analysis" class="brand-logo" itemprop="logo">
+                    </a>
+                    <h1 class="brand-text" itemprop="name">Arval Blog</h1>
                 </div>
                 
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
@@ -270,13 +421,13 @@
                     <ul class="navbar-nav me-auto">
                         <li class="nav-item">
                             <a class="nav-link {% if request.endpoint == 'main.index' %}active{% endif %}" 
-                               href="{{ url_for('main.index') }}">Home</a>
+                               href="{{ url_for('main.index') }}" aria-current="{% if request.endpoint == 'main.index' %}page{% endif %}">Home</a>
                         </li>
                         
                         <!-- Categories Dropdown -->
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle {% if request.endpoint == 'main.category_posts' %}active{% endif %}"
-                               href="#" id="categoriesDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                               href="#" id="categoriesDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">
                                 Categories
                             </a>
                             <ul class="dropdown-menu" aria-labelledby="categoriesDropdown">
@@ -288,7 +439,8 @@
                                             <h6 class="dropdown-header">{{ cat.name }}</h6>
                                             {% for sub in subcats %}
                                                 <a class="dropdown-item {% if request.view_args.get('category_id') == sub.id %}active{% endif %}"
-                                                   href="{{ url_for('main.category_posts', category_id=sub.id) }}">
+                                                   href="{{ url_for('main.category_posts', category_id=sub.id) }}"
+                                                   aria-current="{% if request.view_args.get('category_id') == sub.id %}page{% endif %}">
                                                     {{ sub.name }}
                                                 </a>
                                             {% endfor %}
@@ -297,7 +449,8 @@
                                     {% else %}
                                         <li>
                                             <a class="dropdown-item {% if request.view_args.get('category_id') == cat.id %}active{% endif %}"
-                                               href="{{ url_for('main.category_posts', category_id=cat.id) }}">
+                                               href="{{ url_for('main.category_posts', category_id=cat.id) }}"
+                                               aria-current="{% if request.view_args.get('category_id') == cat.id %}page{% endif %}">
                                                 {{ cat.name }}
                                             </a>
                                         </li>
@@ -310,7 +463,8 @@
                             {% if current_user.is_admin %}
                                 <li class="nav-item">
                                     <a class="nav-link {% if request.endpoint.startswith('admin') %}active{% endif %}" 
-                                       href="{{ url_for('admin.admin_dashboard') }}">Admin</a>
+                                       href="{{ url_for('admin.admin_dashboard') }}"
+                                       aria-current="{% if request.endpoint.startswith('admin') %}page{% endif %}">Admin</a>
                                 </li>
                                 <li class="nav-item">
                                     <a class="nav-link" href="{{ url_for('admin.new_post') }}">New Post</a>
@@ -325,9 +479,9 @@
                     </ul>
 
                     {% if current_user.is_authenticated %}
-                        <form class="d-flex search-form" action="{{ url_for('admin.search') }}" method="GET">
-                            <input class="form-control me-2" type="search" name="q" placeholder="Search posts..." required>
-                            <button class="btn" type="submit"><i class="bi bi-search"></i></button>
+                        <form class="d-flex search-form" action="{{ url_for('admin.search') }}" method="GET" role="search" aria-label="Search blog posts">
+                            <input class="form-control me-2" type="search" name="q" placeholder="Search posts..." required aria-label="Search">
+                            <button class="btn" type="submit" aria-label="Submit search"><i class="bi bi-search"></i></button>
                         </form>
                     {% endif %}
                 </div>
@@ -336,7 +490,7 @@
     </header>
 
     <!-- Main Content -->
-    <main class="flex-grow-1">
+    <main class="flex-grow-1" id="main-content" role="main">
         <div class="container mt-4">
             {% block content %}{% endblock %}
         </div>
@@ -377,7 +531,7 @@
     </div>
 
     <!-- Footer -->
-    <footer class="footer">
+    <footer class="footer" role="contentinfo">
         <div class="container">
             <div class="row">
                 <div class="col-md-4 mb-4 mb-md-0">
@@ -399,10 +553,10 @@
                 <div class="col-md-4">
                     <h5>Connect With Us</h5>
                     <div class="d-flex gap-3 mt-3">
-                        <a href="https://www.facebook.com/share/14TarnqQKFa/" class="text-light"><i class="bi bi-facebook fs-4"></i></a>
-                        <a href="https://x.com/Arvinefelix?t=LF6qObCQh7ceegBrSX6Img&s=09" class="text-light"><i class="bi bi-twitter fs-4"></i></a>
-                        <a href="https://www.instagram.com/arvine1?igsh=MXB1ZGtpcHV1ZHF0dw==" class="text-light"><i class="bi bi-instagram fs-4"></i></a>
-                        <a href="https://www.linkedin.com/in/felix-kiprono-1552b5380?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app" class="text-light"><i class="bi bi-linkedin fs-4"></i></a>
+                        <a href="https://www.facebook.com/share/14TarnqQKFa/" class="text-light" aria-label="Facebook" rel="noopener noreferrer"><i class="bi bi-facebook fs-4"></i></a>
+                        <a href="https://x.com/Arvinefelix?t=LF6qObCQh7ceegBrSX6Img&s=09" class="text-light" aria-label="Twitter" rel="noopener noreferrer"><i class="bi bi-twitter fs-4"></i></a>
+                        <a href="https://www.instagram.com/arvine1?igsh=MXB1ZGtpcHV1ZHF0dw==" class="text-light" aria-label="Instagram" rel="noopener noreferrer"><i class="bi bi-instagram fs-4"></i></a>
+                        <a href="https://www.linkedin.com/in/felix-kiprono-1552b5380?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app" class="text-light" aria-label="LinkedIn" rel="noopener noreferrer"><i class="bi bi-linkedin fs-4"></i></a>
                     </div>
                 </div>
             </div>
@@ -414,16 +568,20 @@
                     <a href="{{ url_for('main.policy') }}">Policy</a> |
                     <a href="{{ url_for('main.contact') }}">Contact</a>
                 </p>
+                <p class="mt-2 small">
+                    <a href="{{ url_for('main.sitemap') }}" style="color: #cbd5e1;">Sitemap</a> |
+                    <a href="{{ url_for('main.terms') }}" style="color: #cbd5e1;">Terms of Service</a>
+                </p>
             </div>
         </div>
     </footer>
 
     <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
     <script src="{{ url_for('static', filename='js/recommend.js') }}"></script>
     <script src="{{ url_for('static', filename='js/cookies.js') }}"></script>
     
-    <!-- Additional script to ensure hamburger menu works -->
+    <!-- SEO Optimization Script -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Initialize Bootstrap components
@@ -438,7 +596,54 @@
                 return new bootstrap.Tooltip(tooltipTriggerEl)
             })
             
-            console.log("Bootstrap JavaScript loaded successfully");
+            // Lazy loading images for better SEO performance
+            const images = document.querySelectorAll('img[data-src]');
+            const imageObserver = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const img = entry.target;
+                        img.src = img.dataset.src;
+                        img.removeAttribute('data-src');
+                        observer.unobserve(img);
+                    }
+                });
+            });
+            
+            images.forEach(img => imageObserver.observe(img));
+            
+            // Track outbound links for SEO analytics
+            document.querySelectorAll('a[href^="http"]').forEach(link => {
+                if (!link.href.includes(window.location.hostname)) {
+                    link.addEventListener('click', function(e) {
+                        // You can add your analytics tracking here
+                        console.log('Outbound link clicked:', this.href);
+                    });
+                }
+            });
+            
+            // Add structured data for current page
+            const pageSchema = {
+                "@context": "https://schema.org",
+                "@type": "WebPage",
+                "name": document.title,
+                "url": window.location.href,
+                "description": document.querySelector('meta[name="description"]')?.content || '',
+                "isPartOf": {
+                    "@type": "WebSite",
+                    "name": "Arval Blog",
+                    "url": "{{ url_for('main.index', _external=True) }}"
+                }
+            };
+            
+            // Add breadcrumb schema if not already present
+            if (!document.querySelector('script[type="application/ld+json"]:last-of-type')) {
+                const script = document.createElement('script');
+                script.type = 'application/ld+json';
+                script.textContent = JSON.stringify(pageSchema);
+                document.head.appendChild(script);
+            }
+            
+            console.log("Arval Blog SEO optimized successfully");
         });
     </script>
 </body>
