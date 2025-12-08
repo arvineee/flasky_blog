@@ -1,0 +1,467 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2 fw-bold text-primary">
+            <i class="fas fa-chart-bar me-2"></i>Advanced Ad Analytics
+        </h1>
+        <div>
+            <a href="{{ url_for('ads.ad_stats') }}" class="btn btn-outline-primary me-2">
+                <i class="fas fa-chart-line me-1"></i>Basic Stats
+            </a>
+            <a href="{{ url_for('admin.manage_ads') }}" class="btn btn-primary">
+                <i class="fas fa-ad me-1"></i>Manage Ads
+            </a>
+        </div>
+    </div>
+
+    <!-- Date Filter -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Start Date</label>
+                    <input type="date" class="form-control" name="start_date" value="{{ start_date }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">End Date</label>
+                    <input type="date" class="form-control" name="end_date" value="{{ end_date }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-filter me-1"></i>Filter
+                    </button>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">&nbsp;</label>
+                    <a href="{{ url_for('ads.ad_analytics') }}" class="btn btn-outline-secondary w-100">
+                        <i class="fas fa-redo me-1"></i>Reset
+                    </a>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="button" class="btn btn-success w-100" onclick="exportData()">
+                        <i class="fas fa-download me-1"></i>Export
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Summary Stats -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card stat-card bg-primary text-white">
+                <div class="card-body">
+                    <h6 class="card-title text-white-50">Total Spent</h6>
+                    <h3 class="fw-bold mb-0">${{ "%.2f"|format(total_spent) }}</h3>
+                    <small class="text-white-75">Advertising budget</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card bg-success text-white">
+                <div class="card-body">
+                    <h6 class="card-title text-white-50">Total Clicks</h6>
+                    <h3 class="fw-bold mb-0">{{ total_clicks|format_number }}</h3>
+                    <small class="text-white-75">{{ total_impressions|format_number }} impressions</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card bg-info text-white">
+                <div class="card-body">
+                    <h6 class="card-title text-white-50">Overall CTR</h6>
+                    <h3 class="fw-bold mb-0">
+                        {% if total_impressions > 0 %}
+                        {{ "%.2f"|format(total_clicks / total_impressions * 100) }}%
+                        {% else %}0%{% endif %}
+                    </h3>
+                    <small class="text-white-75">Click-through rate</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card bg-warning text-dark">
+                <div class="card-body">
+                    <h6 class="card-title text-dark-50">Cost Per Click</h6>
+                    <h3 class="fw-bold mb-0">
+                        {% if total_clicks > 0 %}
+                        ${{ "%.2f"|format(total_spent / total_clicks) }}
+                        {% else %}$0.00{% endif %}
+                    </h3>
+                    <small class="text-dark-75">Average CPC</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Placement Breakdown -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-th-large me-2"></i>Placement Performance Breakdown
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for placement, data in placements.items() %}
+                        <div class="col-md-3 mb-3">
+                            <div class="card h-100">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0">
+                                        <span class="badge bg-{{ 
+                                            'primary' if placement == 'sidebar' 
+                                            else 'success' if placement == 'header' 
+                                            else 'info' if placement == 'inline' 
+                                            else 'warning' 
+                                        }}">
+                                            {{ placement|title }}
+                                        </span>
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row text-center">
+                                        <div class="col-6 mb-2">
+                                            <div class="fw-bold text-primary">{{ data.count }}</div>
+                                            <small class="text-muted">Ads</small>
+                                        </div>
+                                        <div class="col-6 mb-2">
+                                            <div class="fw-bold text-success">{{ data.clicks|format_number }}</div>
+                                            <small class="text-muted">Clicks</small>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="fw-bold text-info">{{ "%.2f"|format(data.ctr) }}%</div>
+                                            <small class="text-muted">CTR</small>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="fw-bold text-warning">${{ "%.2f"|format(data.revenue) }}</div>
+                                            <small class="text-muted">Revenue</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Analytics Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-table me-2"></i>Detailed Ad Performance
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="analyticsTable">
+                            <thead>
+                                <tr>
+                                    <th>Ad Title</th>
+                                    <th>Advertiser</th>
+                                    <th>Placement</th>
+                                    <th>Status</th>
+                                    <th>Budget</th>
+                                    <th>Clicks</th>
+                                    <th>Impressions</th>
+                                    <th>CTR</th>
+                                    <th>CPC</th>
+                                    <th>ROI</th>
+                                    <th>Period</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for ad in all_ads %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ ad.title }}</strong>
+                                        <br>
+                                        <small class="text-muted">{{ ad.created_at.strftime('%Y-%m-%d') }}</small>
+                                    </td>
+                                    <td>{{ ad.advertiser_name }}</td>
+                                    <td>
+                                        <span class="badge bg-info">{{ ad.placement }}</span>
+                                    </td>
+                                    <td>
+                                        {% if ad.is_active %}
+                                        <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Inactive</span>
+                                        {% endif %}
+                                        {% if ad.end_date and ad.end_date < now %}
+                                        <span class="badge bg-warning">Expired</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if ad.price %}
+                                        <span class="fw-bold">${{ "%.2f"|format(ad.price) }}</span>
+                                        {% else %}
+                                        <span class="text-muted">Free</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ ad.clicks|format_number }}</td>
+                                    <td>{{ ad.impressions|format_number }}</td>
+                                    <td>
+                                        {% set ctr = (ad.clicks / ad.impressions * 100) if ad.impressions > 0 else 0 %}
+                                        <span class="badge bg-{{ 'success' if ctr > 3 else 'warning' if ctr > 1 else 'danger' }}">
+                                            {{ "%.2f"|format(ctr) }}%
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if ad.clicks > 0 and ad.price %}
+                                        ${{ "%.4f"|format(ad.price / ad.clicks) }}
+                                        {% else %}
+                                        $0.00
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if ad.price %}
+                                            {% set estimated_value = ad.clicks * 0.5 %}  # Assuming $0.5 value per click
+                                            {% set roi = ((estimated_value - ad.price) / ad.price * 100) if ad.price > 0 else 0 %}
+                                            <span class="badge bg-{{ 'success' if roi > 0 else 'danger' }}">
+                                                {{ "%.1f"|format(roi) }}%
+                                            </span>
+                                        {% else %}
+                                        <span class="badge bg-info">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {{ ad.start_date.strftime('%b %d') }} - 
+                                        {% if ad.end_date %}
+                                        {{ ad.end_date.strftime('%b %d') }}
+                                        {% else %}
+                                        Ongoing
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-pie me-2"></i>Ad Distribution by Placement
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="placementChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>Performance Comparison
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="performanceChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.stat-card {
+    border-radius: 12px;
+    transition: transform 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+}
+
+.table th {
+    background-color: #f8f9fa;
+    border-top: none;
+    font-weight: 600;
+}
+
+.badge {
+    font-size: 0.75em;
+    padding: 0.5em 0.75em;
+}
+
+canvas {
+    width: 100% !important;
+    height: 250px !important;
+}
+
+@media (max-width: 768px) {
+    .stat-card {
+        margin-bottom: 1rem;
+    }
+    
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+}
+</style>
+
+<!-- Include Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+// Format numbers with commas
+function formatNumber(num) {
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
+// Apply formatting to all number elements
+document.querySelectorAll('.format-number').forEach(function(el) {
+    const num = parseInt(el.textContent);
+    if (!isNaN(num)) {
+        el.textContent = formatNumber(num);
+    }
+});
+
+// Export data as CSV
+function exportData() {
+    const table = document.getElementById('analyticsTable');
+    let csv = [];
+    
+    // Get headers
+    const headers = [];
+    table.querySelectorAll('thead th').forEach(th => {
+        headers.push(th.textContent.trim());
+    });
+    csv.push(headers.join(','));
+    
+    // Get rows
+    table.querySelectorAll('tbody tr').forEach(row => {
+        const rowData = [];
+        row.querySelectorAll('td').forEach((cell, index) => {
+            let text = cell.textContent.trim();
+            // Remove badge text and just get the main text
+            text = text.replace(/Active|Inactive|Expired/g, '').trim();
+            text = text.replace(/\s+/g, ' ');
+            rowData.push(`"${text}"`);
+        });
+        csv.push(rowData.join(','));
+    });
+    
+    // Download CSV
+    const csvContent = csv.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ad_analytics_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+// Initialize charts when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Placement Distribution Chart
+    const placementCtx = document.getElementById('placementChart').getContext('2d');
+    const placementData = {
+        labels: [
+            {% for placement, data in placements.items() %}
+            '{{ placement|title }}'{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ],
+        datasets: [{
+            data: [
+                {% for placement, data in placements.items() %}
+                {{ data.count }}{% if not loop.last %},{% endif %}
+                {% endfor %}
+            ],
+            backgroundColor: [
+                '#007bff', '#28a745', '#17a2b8', '#ffc107'
+            ],
+            borderWidth: 1
+        }]
+    };
+    
+    new Chart(placementCtx, {
+        type: 'doughnut',
+        data: placementData,
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+    
+    // Performance Comparison Chart
+    const performanceCtx = document.getElementById('performanceChart').getContext('2d');
+    const performanceData = {
+        labels: [
+            {% for placement, data in placements.items() %}
+            '{{ placement|title }}'{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ],
+        datasets: [{
+            label: 'Clicks',
+            data: [
+                {% for placement, data in placements.items() %}
+                {{ data.clicks }}{% if not loop.last %},{% endif %}
+                {% endfor %}
+            ],
+            backgroundColor: 'rgba(40, 167, 69, 0.5)',
+            borderColor: 'rgba(40, 167, 69, 1)',
+            borderWidth: 1
+        }, {
+            label: 'Impressions',
+            data: [
+                {% for placement, data in placements.items() %}
+                {{ data.impressions }}{% if not loop.last %},{% endif %}
+                {% endfor %}
+            ],
+            backgroundColor: 'rgba(23, 162, 184, 0.5)',
+            borderColor: 'rgba(23, 162, 184, 1)',
+            borderWidth: 1
+        }]
+    };
+    
+    new Chart(performanceCtx, {
+        type: 'bar',
+        data: performanceData,
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            if (value >= 1000) {
+                                return (value / 1000) + 'k';
+                            }
+                            return value;
+                        }
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

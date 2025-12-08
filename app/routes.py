@@ -1,6 +1,6 @@
 from flask import render_template, url_for, redirect, flash, request,send_file,jsonify,Blueprint,current_app,abort,make_response
 from app import  bootstrap,db,login_manager,mail
-from app.models import User, Post, Comment, Like, User,Announcement,Category,AdsTxt,NewsletterSubscriber
+from app.models import User, Post, Comment, Like, User,Announcement,Category,AdsTxt,NewsletterSubscriber,AdContent
 from app.forms import LoginForm, RegisterForm, PostForm,CommentForm,ContactForm, ResetPasswordRequestForm, ResetPasswordForm,SubscribeForm
 from flask_login import login_user, current_user, login_required,logout_user
 from werkzeug.security import generate_password_hash
@@ -15,6 +15,7 @@ from email.mime.multipart import MIMEMultipart
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired
 from datetime import timedelta
 from app.utils import get_recommended_posts
+from datetime import datetime
 
 
 main = Blueprint('main', __name__)
@@ -36,7 +37,7 @@ def admin_required(func):
             return redirect(url_for("login"))
         if not current_user.admin:
             flash("You do not have the required permissions to access this page.", "danger")
-            return redirect(url_for("main.index"))  # Redirect to a default route
+            return redirect(url_for("main.index"))
         return func(*args, **kwargs)
     return wrapper
 
@@ -101,6 +102,18 @@ def index():
     # Get recommended posts
     recommended_posts = get_recommended_posts()
 
+    # Get active sidebar ads
+    ads = AdContent.query.filter(
+        AdContent.is_active == True,
+        AdContent.placement == 'sidebar',
+        (AdContent.end_date == None) | (AdContent.end_date >= datetime.utcnow())
+    ).order_by(AdContent.created_at.desc()).limit(2).all()
+
+    # Update impressions for each ad
+    for ad in ads:
+        ad.impressions += 1
+    db.session.commit()
+
     # Render the index page with posts and announcements
     return render_template('index.html', 
                          posts=posts,  # Now this is a list, not a pagination object
@@ -110,6 +123,7 @@ def index():
                          recommended_posts=recommended_posts,
                          trending_categories=trending_categories,
                          active_tab=tab,
+                         ads=ads,  # Pass ads to template
                            form=form)
 
 
@@ -384,5 +398,20 @@ def unsubscribe_newsletter(email):
 
     return redirect(url_for('main.index'))
 
-
+@main.route('/ad/click/<int:ad_id>')
+def track_ad_click(ad_id):
+    """Track ad clicks"""
+    try:
+        ad = AdContent.query.get_or_404(ad_id)
+        ad.clicks += 1
+        db.session.commit()
+        
+        if ad.advertiser_website:
+            return redirect(ad.advertiser_website)
+        else:
+            return redirect(url_for('main.index'))
+            
+    except Exception as e:
+        flash('Error tracking click', 'danger')
+        return redirect(url_for('main.index'))
 

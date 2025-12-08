@@ -375,6 +375,39 @@
         }
     }
     </style>
+       <!-- Header Ad Space (if any) -->
+    {% if header_ad %}
+    <style>
+        .header-ad-container {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 10px 0;
+            text-align: center;
+            position: relative;
+        }
+        .header-ad-close {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        .header-ad-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 15px;
+        }
+    </style>
+    {% endif %}
 </head>
 <body class="d-flex flex-column min-vh-100" itemscope itemtype="https://schema.org/WebPage">
 
@@ -398,6 +431,17 @@
         <div class="alert alert-danger text-center" role="alert">
             <i class="bi bi-exclamation-triangle-fill me-2"></i>Your account is currently banned. <a href="{{ url_for('main.contact') }}">Contact</a> admin for assistance.
         </div>
+    {% endif %}
+    <!-- Header Ad -->
+    {% if header_ad %}
+    <div class="header-ad-container" id="headerAd">
+        <div class="header-ad-content">
+            {{ header_ad.content|safe }}
+            <button class="header-ad-close" onclick="closeHeaderAd()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    </div>
     {% endif %}
 
     <!-- Header / Navbar -->
@@ -531,7 +575,41 @@
     </div>
 
     <!-- Footer -->
+    {% if footer_ads %}
+    <div class="container-fluid bg-dark text-white py-4 mt-5">
+        <div class="container">
+            <h5 class="text-center mb-3">
+                <i class="fas fa-ad me-2"></i>Sponsored Partners
+            </h5>
+            <div class="row">
+                {% for ad in footer_ads %}
+                <div class="col-md-6 mb-3">
+                    <div class="footer-ad p-3 bg-secondary rounded">
+                        <div class="footer-ad-content">
+                            {{ ad.content|safe }}
+                        </div>
+                        <div class="text-center mt-2">
+                            <a href="{% if current_user.is_authenticated %}{{ url_for('admin.track_ad_click', ad_id=ad.id) }}{% else %}{{ url_for('main.track_ad_click', ad_id=ad.id) }}{% endif %}"
+                               target="_blank"
+                               class="btn btn-sm btn-light">
+                                Visit Website
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="text-center mt-3">
+                <small class="text-muted">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Advertisement - <a href="{{ url_for('main.contact') }}" class="text-light">Advertise with us</a>
+                </small>
+            </div>
+        </div>
+    </div>
+    {% endif %}
     <footer class="footer" role="contentinfo">
+
         <div class="container">
             <div class="row">
                 <div class="col-md-4 mb-4 mb-md-0">
@@ -641,6 +719,21 @@
             }
             
             console.log("Arval Blog SEO optimized successfully");
+        });
+        // Close header ad
+        function closeHeaderAd() {
+            document.getElementById('headerAd').style.display = 'none';
+            localStorage.setItem('headerAdClosed', 'true');
+        }
+
+        // Check if header ad was previously closed
+        document.addEventListener('DOMContentLoaded', function() {
+            if (localStorage.getItem('headerAdClosed') === 'true') {
+                const headerAd = document.getElementById('headerAd');
+                if (headerAd) {
+                    headerAd.style.display = 'none';
+                }
+            }
         });
     </script>
 </body>

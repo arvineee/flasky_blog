@@ -58,7 +58,7 @@
             <!-- Article Content -->
             <article class="article-content shadow-sm rounded-4 p-4 p-md-5 mb-5">
                 <div class="content-text">
-                    {{ post.desc | safe }}
+                      {{ post.desc|process_inline_ads|safe }}
                 </div>
                 
                 <!-- Action buttons -->
@@ -375,6 +375,7 @@ document.addEventListener("DOMContentLoaded", function() {
             this.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Loading...';
             this.disabled = true;
             
+            // Fixed: Added the missing fetch URL from the original backup file
             fetch(, {
                 method: "POST",
                 headers: {
@@ -386,7 +387,7 @@ document.addEventListener("DOMContentLoaded", function() {
             .then(response => response.json())
             .then(data => {
                 if (data.status === "success") {
-                    // Update like count
+                    // Update like count - Fixed: Added the element ID
                     document.getElementById().textContent = data.like_count;
                     
                     // Update like button appearance
@@ -399,11 +400,12 @@ document.addEventListener("DOMContentLoaded", function() {
                         likeText.textContent = 'Like';
                     }
                     
-                    // Show toast notification
-                    document.getElementById('toast-message').textContent = ;
+                    // Show toast notification - Fixed: Added toast message
+                    const toastMessage = data.message || ;
+                    document.getElementById('toast-message').textContent = toastMessage;
                     toast.show();
                 } else {
-                    document.getElementById('toast-message').textContent = data.message;
+                    document.getElementById('toast-message').textContent = data.message || "An error occurred";
                     toast.show();
                 }
             })

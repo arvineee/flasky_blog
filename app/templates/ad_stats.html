@@ -1,0 +1,574 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2 fw-bold text-primary">
+            <i class="fas fa-chart-line me-2"></i>Ad Performance Analytics
+        </h1>
+        <div>
+            <a href="{{ url_for('admin.manage_ads') }}" class="btn btn-outline-primary me-2">
+                <i class="fas fa-ad me-1"></i>Manage Ads
+            </a>
+            <a href="{{ url_for('ads.ad_analytics') }}" class="btn btn-primary">
+                <i class="fas fa-chart-bar me-1"></i>Advanced Analytics
+            </a>
+        </div>
+    </div>
+
+    <!-- Summary Stats -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card stat-card bg-primary text-white">
+                <div class="card-body">
+                    <h6 class="card-title text-white-50">Total Ads</h6>
+                    <h3 class="fw-bold mb-2">{{ stats.total_ads }}</h3>
+                    <small class="text-white-75">{{ stats.active_ads }} active</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card bg-success text-white">
+                <div class="card-body">
+                    <h6 class="card-title text-white-50">Total Revenue</h6>
+                    <h3 class="fw-bold mb-2">${{ "%.2f"|format(stats.total_revenue) }}</h3>
+                    <small class="text-white-75">Total earnings</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card bg-info text-white">
+                <div class="card-body">
+                    <h6 class="card-title text-white-50">Total Clicks</h6>
+                    <h3 class="fw-bold mb-2">{{ stats.total_clicks|format_number }}</h3>
+                    <small class="text-white-75">{{ stats.total_impressions|format_number }} impressions</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card bg-warning text-dark">
+                <div class="card-body">
+                    <h6 class="card-title text-dark-50">Overall CTR</h6>
+                    <h3 class="fw-bold mb-2">{{ "%.2f"|format(stats.overall_ctr) }}%</h3>
+                    <small class="text-dark-75">Click-through rate</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Placement Performance -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-map-pin me-2"></i>Performance by Placement
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Placement</th>
+                                    <th>Active Ads</th>
+                                    <th>Clicks</th>
+                                    <th>Impressions</th>
+                                    <th>CTR</th>
+                                    <th>Revenue</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for placement, data in stats.placement_stats.items() %}
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-{{ 
+                                            'primary' if placement == 'sidebar' 
+                                            else 'success' if placement == 'header' 
+                                            else 'info' if placement == 'inline' 
+                                            else 'warning' 
+                                        }}">
+                                            {{ placement|title }}
+                                        </span>
+                                    </td>
+                                    <td>{{ data.count }}</td>
+                                    <td>{{ data.clicks|format_number }}</td>
+                                    <td>{{ data.impressions|format_number }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if data.ctr > 2 else 'warning' if data.ctr > 0.5 else 'danger' }}">
+                                            {{ "%.2f"|format(data.ctr) }}%
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% set placement_revenue = stats.total_revenue * (data.count / stats.total_ads if stats.total_ads > 0 else 0) %}
+                                        ${{ "%.2f"|format(placement_revenue) }}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Performing Ads -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-trophy me-2"></i>Top Performing Ads
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if top_ads %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Advertiser</th>
+                                    <th>Placement</th>
+                                    <th>Clicks</th>
+                                    <th>CTR</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for ad in top_ads %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ ad.title }}</strong>
+                                        <br>
+                                        <small class="text-muted">{{ ad.created_at.strftime('%Y-%m-%d') }}</small>
+                                    </td>
+                                    <td>{{ ad.advertiser_name }}</td>
+                                    <td>
+                                        <span class="badge bg-info">{{ ad.placement }}</span>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <span class="fw-bold me-2">{{ ad.clicks }}</span>
+                                            <small class="text-muted">/ {{ ad.impressions }} views</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% set ctr = (ad.clicks / ad.impressions * 100) if ad.impressions > 0 else 0 %}
+                                        <span class="badge bg-{{ 'success' if ctr > 3 else 'warning' if ctr > 1 else 'danger' }}">
+                                            {{ "%.2f"|format(ctr) }}%
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if ad.is_active %}
+                                        <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-ad fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No ads found</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Insights -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-lightbulb me-2"></i>Quick Insights
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="insights-list">
+                        <!-- Best Placement by CTR -->
+                        <div class="insight-item mb-3">
+                            <h6 class="text-success">
+                                <i class="fas fa-arrow-up me-2"></i>Best Placement
+                            </h6>
+                            {% if best_placement %}
+                            <p class="mb-0">
+                                <strong>{{ best_placement|title }}</strong> has the highest CTR at 
+                                {{ "%.2f"|format(best_ctr) }}%
+                            </p>
+                            {% else %}
+                            <p class="mb-0 text-muted">No placement data available</p>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Most Views by Impressions -->
+                        <div class="insight-item mb-3">
+                            <h6 class="text-primary">
+                                <i class="fas fa-eye me-2"></i>Most Views
+                            </h6>
+                            {% if most_views %}
+                            <p class="mb-0">
+                                <strong>{{ most_views|title }}</strong> placement gets the most impressions
+                            </p>
+                            {% else %}
+                            <p class="mb-0 text-muted">No impression data available</p>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Revenue Generator -->
+                        <div class="insight-item mb-3">
+                            <h6 class="text-warning">
+                                <i class="fas fa-money-bill-wave me-2"></i>Revenue Generator
+                            </h6>
+                            {% if revenue_gen %}
+                            <p class="mb-0">
+                                <strong>{{ revenue_gen|title }}</strong> generates the most revenue
+                            </p>
+                            {% else %}
+                            <p class="mb-0 text-muted">No revenue data available</p>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Recommendation -->
+                        <div class="insight-item">
+                            <h6 class="text-danger">
+                                <i class="fas fa-exclamation-triangle me-2"></i>Recommendation
+                            </h6>
+                            {% if stats.placement_stats %}
+                                {% set low_ctr_placements = [] %}
+                                {% for placement, data in stats.placement_stats.items() %}
+                                    {% if data.ctr < 1 %}
+                                        {% set _ = low_ctr_placements.append(placement) %}
+                                    {% endif %}
+                                {% endfor %}
+                                <p class="mb-0">
+                                    {% if low_ctr_placements %}
+                                        Focus on improving CTR for 
+                                        {% for placement in low_ctr_placements %}
+                                            {{ placement|title }}{% if not loop.last %}, {% endif %}
+                                        {% endfor %}
+                                        (below 1% CTR)
+                                    {% else %}
+                                        All placements have good CTR (>1%)
+                                    {% endif %}
+                                </p>
+                            {% else %}
+                                <p class="mb-0 text-muted">No placement data for recommendations</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Ads -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-history me-2"></i>Recent Ads
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_ads %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Title</th>
+                                    <th>Advertiser</th>
+                                    <th>Placement</th>
+                                    <th>Price</th>
+                                    <th>Created</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for ad in recent_ads %}
+                                <tr>
+                                    <td>{{ ad.id }}</td>
+                                    <td>
+                                        <strong>{{ ad.title }}</strong>
+                                        {% if ad.end_date and ad.end_date < now %}
+                                        <span class="badge bg-warning ms-2">Expired</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ ad.advertiser_name }}</td>
+                                    <td>
+                                        <span class="badge bg-info">{{ ad.placement }}</span>
+                                    </td>
+                                    <td>
+                                        {% if ad.price %}
+                                        <span class="fw-bold">${{ "%.2f"|format(ad.price) }}</span>
+                                        {% else %}
+                                        <span class="text-muted">Free</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ ad.created_at.strftime('%Y-%m-%d') }}</td>
+                                    <td>
+                                        {% if ad.is_active %}
+                                        <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-ad fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No recent ads found</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.stat-card {
+    border-radius: 12px;
+    transition: transform 0.3s ease;
+    border: none;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.table th {
+    background-color: #f8f9fa;
+    border-top: none;
+    font-weight: 600;
+    color: #495057;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.table td {
+    vertical-align: middle;
+    padding: 0.75rem;
+}
+
+.insights-list .insight-item {
+    padding: 12px;
+    border-left: 4px solid #dee2e6;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.insights-list .insight-item:hover {
+    background-color: #e9ecef;
+    transform: translateX(2px);
+}
+
+.insights-list .insight-item:nth-child(1) {
+    border-left-color: #28a745;
+}
+
+.insights-list .insight-item:nth-child(2) {
+    border-left-color: #007bff;
+}
+
+.insights-list .insight-item:nth-child(3) {
+    border-left-color: #ffc107;
+}
+
+.insights-list .insight-item:nth-child(4) {
+    border-left-color: #dc3545;
+}
+
+.badge {
+    font-size: 0.75em;
+    padding: 0.5em 0.75em;
+    font-weight: 500;
+}
+
+.card {
+    border: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin-bottom: 1rem;
+}
+
+.card-header {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+    font-weight: 600;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.05);
+}
+
+@media (max-width: 768px) {
+    .stat-card {
+        margin-bottom: 1rem;
+    }
+    
+    .table-responsive {
+        font-size: 0.875rem;
+        overflow-x: auto;
+    }
+    
+    .d-flex.justify-content-between.align-items-center.mb-4 {
+        flex-direction: column;
+        align-items: flex-start !important;
+    }
+    
+    .d-flex.justify-content-between.align-items-center.mb-4 > div {
+        margin-top: 1rem;
+        width: 100%;
+    }
+    
+    .btn {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+    
+    .col-md-3, .col-md-4, .col-md-8 {
+        margin-bottom: 1rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .h2 {
+        font-size: 1.5rem;
+    }
+    
+    h3.fw-bold.mb-2 {
+        font-size: 1.25rem;
+    }
+    
+    .badge {
+        font-size: 0.65em;
+        padding: 0.4em 0.6em;
+    }
+}
+
+.text-primary {
+    color: #007bff !important;
+}
+
+.text-success {
+    color: #28a745 !important;
+}
+
+.text-info {
+    color: #17a2b8 !important;
+}
+
+.text-warning {
+    color: #ffc107 !important;
+}
+
+.text-danger {
+    color: #dc3545 !important;
+}
+
+.bg-primary { background-color: #007bff !important; }
+.bg-success { background-color: #28a745 !important; }
+.bg-info { background-color: #17a2b8 !important; }
+.bg-warning { background-color: #ffc107 !important; }
+.bg-dark { background-color: #343a40 !important; }
+.bg-secondary { background-color: #6c757d !important; }
+
+.btn-primary {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+.btn-outline-primary {
+    color: #007bff;
+    border-color: #007bff;
+}
+
+.btn-outline-primary:hover {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+</style>
+
+<script>
+// Auto-refresh stats every 30 seconds
+setTimeout(function() {
+    location.reload();
+}, 30000);
+
+// Format numbers with commas
+function formatNumber(num) {
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
+// Apply formatting to all number elements with class 'format-number'
+document.addEventListener('DOMContentLoaded', function() {
+    // Format numbers in elements with class 'format-number'
+    document.querySelectorAll('.format-number').forEach(function(el) {
+        const num = parseInt(el.textContent);
+        if (!isNaN(num)) {
+            el.textContent = formatNumber(num);
+        }
+    });
+    
+    // Add click tracking for ad links
+    document.querySelectorAll('a[href*="track_ad_click"]').forEach(function(link) {
+        link.addEventListener('click', function(e) {
+            // You can add tracking logic here
+            console.log('Ad clicked:', this.href);
+            // The link will naturally navigate to the URL
+        });
+    });
+    
+    // Add tooltips for badges with CTR information
+    document.querySelectorAll('span.badge').forEach(function(badge) {
+        if (badge.textContent.includes('%')) {
+            badge.setAttribute('title', 'Click-Through Rate');
+            badge.setAttribute('data-bs-toggle', 'tooltip');
+        }
+    });
+    
+    // Initialize Bootstrap tooltips if available
+    if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    }
+});
+
+// Export stats functionality (if needed)
+function exportStats() {
+    const stats = {
+        total_ads: {{ stats.total_ads }},
+        total_revenue: {{ stats.total_revenue }},
+        total_clicks: {{ stats.total_clicks }},
+        total_impressions: {{ stats.total_impressions }},
+        overall_ctr: {{ stats.overall_ctr }},
+        timestamp: new Date().toISOString()
+    };
+    
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(stats, null, 2));
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", "ad_stats_" + new Date().toISOString().split('T')[0] + ".json");
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+}
+</script>
+
+{% endblock %}

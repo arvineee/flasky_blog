@@ -1,0 +1,217 @@
+
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-info text-white py-3">
+                    <h4 class="mb-0">
+                        <i class="fas fa-eye me-2"></i>Ad Preview
+                    </h4>
+                    <p class="mb-0 small">Previewing: {{ ad.title }} ({{ ad.placement|title }})</p>
+                </div>
+                <div class="card-body p-4">
+                    <!-- Preview based on placement -->
+                    {% if ad.placement == 'header' %}
+                    <div class="preview-header mb-4">
+                        <h5 class="text-muted mb-3">Header Ad Preview:</h5>
+                        <div class="header-ad-container bg-primary text-white p-3 rounded">
+                            <div class="header-ad-content">
+                                {{ ad.content|safe }}
+                            </div>
+                        </div>
+                    </div>
+                    {% elif ad.placement == 'sidebar' %}
+                    <div class="preview-sidebar mb-4">
+                        <h5 class="text-muted mb-3">Sidebar Ad Preview:</h5>
+                        <div class="sidebar-widget" style="max-width: 300px;">
+                            <div class="widget-header bg-warning text-dark p-3">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-ad me-2"></i>Sponsored Content
+                                    <span class="badge bg-dark float-end">Ad</span>
+                                </h6>
+                            </div>
+                            <div class="widget-content bg-white p-3 border">
+                                <div class="ad-item">
+                                    {{ ad.content|safe }}
+                                    <div class="text-end mt-2">
+                                        <button class="btn btn-sm btn-outline-primary">Learn More</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% elif ad.placement == 'inline' %}
+                    <div class="preview-inline mb-4">
+                        <h5 class="text-muted mb-3">Inline Ad Preview (within content):</h5>
+                        <div class="sample-content border p-4 rounded">
+                            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
+                            
+                            <div class="inline-ad-container my-4 p-3 border rounded bg-light position-relative">
+                                <span class="badge bg-warning position-absolute top-0 start-0 m-2">Sponsored</span>
+                                <div class="inline-ad-content">
+                                    {{ ad.content|safe }}
+                                </div>
+                                <div class="text-end mt-2">
+                                    <button class="btn btn-sm btn-outline-primary">Learn More</button>
+                                </div>
+                            </div>
+                            
+                            <p>Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
+                        </div>
+                    </div>
+                    {% elif ad.placement == 'footer' %}
+                    <div class="preview-footer mb-4">
+                        <h5 class="text-muted mb-3">Footer Ad Preview:</h5>
+                        <div class="footer-ad-container bg-dark text-white p-4 rounded">
+                            <h6 class="text-center mb-3">Sponsored Partners</h6>
+                            <div class="footer-ad p-3 bg-secondary rounded">
+                                {{ ad.content|safe }}
+                                <div class="text-center mt-2">
+                                    <button class="btn btn-sm btn-light">Visit Website</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Ad Details -->
+                    <div class="card mt-4">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0">Ad Details</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong>Title:</strong> {{ ad.title }}</p>
+                                    <p><strong>Advertiser:</strong> {{ ad.advertiser_name }}</p>
+                                    <p><strong>Email:</strong> {{ ad.advertiser_email }}</p>
+                                    <p><strong>Website:</strong> 
+                                        {% if ad.advertiser_website %}
+                                        <a href="{{ ad.advertiser_website }}" target="_blank">{{ ad.advertiser_website }}</a>
+                                        {% else %}Not provided{% endif %}
+                                    </p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p><strong>Placement:</strong> <span class="badge bg-info">{{ ad.placement }}</span></p>
+                                    <p><strong>Price:</strong> {% if ad.price %}${{"%.2f"|format(ad.price)}}{% else %}Free{% endif %}</p>
+                                    <p><strong>Status:</strong> 
+                                        {% if ad.is_active %}
+                                        <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Inactive</span>
+                                        {% endif %}
+                                    </p>
+                                    <p><strong>Performance:</strong> {{ ad.clicks }} clicks / {{ ad.impressions }} impressions</p>
+                                </div>
+                            </div>
+                            
+                            {% if ad.content|length > 500 %}
+                            <div class="mt-3">
+                                <h6>Ad Content (Raw HTML):</h6>
+                                <pre class="bg-dark text-light p-3 rounded" style="max-height: 200px; overflow-y: auto;">
+                                    <code>{{ ad.content }}</code>
+                                </pre>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Shortcode for inline ads -->
+                    {% if ad.placement == 'inline' %}
+                    <div class="card mt-4">
+                        <div class="card-header bg-warning text-dark">
+                            <h5 class="mb-0">
+                                <i class="fas fa-code me-2"></i>Shortcode for Inline Placement
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <p>Use this shortcode in your post content to display this ad:</p>
+                            <div class="input-group">
+                                <input type="text" class="form-control" value="[ad id={{ ad.id }}]" readonly>
+                                <button class="btn btn-primary" onclick="copyShortcode()">
+                                    <i class="fas fa-copy me-1"></i>Copy
+                                </button>
+                            </div>
+                            <small class="text-muted mt-2 d-block">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Paste this shortcode anywhere in your post content where you want the ad to appear.
+                            </small>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{{ url_for('admin.manage_ads') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-1"></i>Back to Ads
+                        </a>
+                        <div>
+                            <a href="{{ url_for('admin.edit_ad', ad_id=ad.id) }}" class="btn btn-primary me-2">
+                                <i class="fas fa-edit me-1"></i>Edit Ad
+                            </a>
+                            <a href="{% if current_user.is_authenticated %}{{ url_for('admin.track_ad_click', ad_id=ad.id) }}{% else %}{{ url_for('main.track_ad_click', ad_id=ad.id) }}{% endif %}" 
+                               target="_blank" 
+                               class="btn btn-success">
+                                <i class="fas fa-external-link-alt me-1"></i>Test Click
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.preview-header, .preview-sidebar, .preview-inline, .preview-footer {
+    border: 2px dashed #dee2e6;
+    padding: 20px;
+    border-radius: 8px;
+}
+
+.sidebar-widget {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.inline-ad-container {
+    border-left: 3px solid #ffc107 !important;
+}
+
+.footer-ad-container {
+    border-radius: 8px;
+}
+
+pre {
+    border-radius: 8px;
+    font-size: 0.9rem;
+}
+</style>
+
+<script>
+function copyShortcode() {
+    const shortcodeInput = document.querySelector('input[value^="[ad id="]');
+    shortcodeInput.select();
+    shortcodeInput.setSelectionRange(0, 99999);
+    navigator.clipboard.writeText(shortcodeInput.value);
+    
+    // Show notification
+    const originalText = event.target.innerHTML;
+    event.target.innerHTML = '<i class="fas fa-check me-1"></i>Copied!';
+    event.target.classList.remove('btn-primary');
+    event.target.classList.add('btn-success');
+    
+    setTimeout(() => {
+        event.target.innerHTML = originalText;
+        event.target.classList.remove('btn-success');
+        event.target.classList.add('btn-primary');
+    }, 2000);
+}
+</script>
+{% endblock %}

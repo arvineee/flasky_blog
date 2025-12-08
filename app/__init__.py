@@ -19,13 +19,14 @@ import signal
 from .ddos_protection import ddos_protection
 from app.advanced_protection import advanced_protection
 import geoip2.database
+from datetime import datetime
 
 # Load environment variables
 load_dotenv()
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,  # Changed from DEBUG to INFO for less verbose output
+    level=logging.INFO,
     format="[%(asctime)s] %(levelname)s in %(module)s: %(message)s"
 )
 logger = logging.getLogger(__name__)
@@ -88,12 +89,14 @@ def create_app():
     from app.newsletter_route import newsletter_bp
     from app.api_routes import api_bp
     from app.advanced_protection import advanced_protection_bp
+    from app.ads_routes import ads_bp
 
     # Register blueprints
     app.register_blueprint(admin_bp, url_prefix="/admin")
     app.register_blueprint(newsletter_bp)
     app.register_blueprint(main)
     app.register_blueprint(api_bp)
+    app.register_blueprint(ads_bp, url_prefix="/ads")
     csrf.exempt(api_bp)
     logger.debug("Blueprints registered: admin_bp, newsletter_bp, main_bp")
 
@@ -116,14 +119,6 @@ def create_app():
         if os.path.exists(GEOIP_DB_PATH):
             app.geoip_reader = geoip2.database.Reader(GEOIP_DB_PATH)
             logger.info("GeoIP database loaded successfully")
-            
-            # Test the GeoIP reader
-            try:
-                test_ip = "8.8.8.8"
-                response = app.geoip_reader.country(test_ip)
-                logger.info(f"GeoIP test successful: {test_ip} -> {response.country.name}")
-            except Exception as test_e:
-                logger.error(f"GeoIP test failed: {test_e}")
         else:
             logger.warning(f"GeoIP database file not found at {GEOIP_DB_PATH}")
             app.geoip_reader = None
@@ -194,13 +189,12 @@ def create_app():
 
     atexit.register(stop_redis)
 
-    # Request timing and traffic logging - FIXED VERSION
+    # Request timing and traffic logging
     from app.models import TrafficStats, Category
 
     @app.before_request
     def start_timer():
         """Start timer for request processing - only if not blocked by protection"""
-        # Skip protection for critical authentication and static routes
         skip_paths = [
             '/login', '/register', '/static/', '/advanced-protection/',
             '/logout', '/reset_password', '/contact', '/admin/login'
@@ -208,9 +202,8 @@ def create_app():
         
         if any(request.path.startswith(path) for path in skip_paths):
             g.start_time = datetime.utcnow()
-            return  # Skip protection for these routes
+            return
         
-        # Set start_time for all requests, even if they might get blocked
         g.start_time = datetime.utcnow()
         logger.debug("Request started: endpoint=%s, ip=%s, method=%s, path=%s", 
                     request.endpoint, request.remote_addr, request.method, request.path)
@@ -219,17 +212,15 @@ def create_app():
     def log_traffic(response):
         """Log traffic statistics - handle cases where request was blocked"""
         try:
-            # Only log if start_time exists and it's not a static file or blocked request
             if (hasattr(g, 'start_time') and 
                 request.endpoint and 
                 request.endpoint != 'static' and
-                response.status_code != 429):  # Don't log requests blocked by protection
+                response.status_code != 429):
                 
                 end_time = datetime.utcnow()
                 duration = (end_time - g.start_time).total_seconds()
                 visitor_ip = request.remote_addr
 
-                # Log the request details for debugging
                 logger.debug(f"Logging traffic: {request.endpoint}, IP: {visitor_ip}, Duration: {duration:.2f}s")
                 
                 traffic_entry = TrafficStats.query.filter_by(
@@ -252,7 +243,6 @@ def create_app():
                     db.session.add(traffic_entry)
                 db.session.commit()
         except Exception as e:
-            # Don't log errors for blocked requests
             if hasattr(g, 'start_time') and response.status_code != 429:
                 logger.exception("Traffic logging error")
         return response
@@ -263,10 +253,138 @@ def create_app():
                     request.endpoint, request.remote_addr, e.description)
         return render_template('csrf_error.html', reason=e.description), 400
 
+
+    
+    @app.template_filter('format_number')
+    def format_number(value):
+        """Format numbers with commas for thousands"""
+        try:
+            if value is None:
+                return "0"
+            return "{:,}".format(int(value))
+        except (ValueError, TypeError):
+            return str(value)
+
     # Context processors
     @app.context_processor
     def inject_now():
         return {'now': datetime.utcnow()}
+
+    @app.context_processor
+    def inject_sidebar_ads():
+        """Inject sidebar ads into templates"""
+        from app.models import AdContent
+        try:
+            sidebar_ads = AdContent.query.filter(
+            AdContent.is_active == True,
+            AdContent.placement == 'sidebar',
+            (AdContent.end_date == None) | (AdContent.end_date >= datetime.utcnow())
+            ).order_by(AdContent.created_at.desc()).limit(3).all()
+
+            # Update impressions
+            for ad in sidebar_ads:
+                ad.impressions += 1
+            db.session.commit()
+
+            return dict(sidebar_ads=sidebar_ads)
+        except Exception as e:
+            logger.error(f"Error injecting sidebar ads: {str(e)}")
+            return dict(sidebar_ads=[])
+
+    @app.context_processor
+    def inject_header_ads():
+        """Inject header ads into templates"""
+        from app.models import AdContent
+        try:
+            header_ads = AdContent.query.filter(
+            AdContent.is_active == True,
+            AdContent.placement == 'header',
+            (AdContent.end_date == None) | (AdContent.end_date >= datetime.utcnow())
+            ).order_by(AdContent.created_at.desc()).limit(1).first()
+
+            if header_ads:
+                header_ads.impressions += 1
+                db.session.commit()
+
+            return dict(header_ad=header_ads)
+        except Exception as e:
+            logger.error(f"Error injecting header ads: {str(e)}")
+            return dict(header_ad=None)
+
+    @app.context_processor
+    def inject_footer_ads():
+        """Inject footer ads into templates"""
+        from app.models import AdContent
+        try:
+            footer_ads = AdContent.query.filter(
+            AdContent.is_active == True,
+            AdContent.placement == 'footer',
+            (AdContent.end_date == None) | (AdContent.end_date >= datetime.utcnow())
+            ).order_by(AdContent.created_at.desc()).limit(2).all()
+
+            # Update impressions
+            for ad in footer_ads:
+                ad.impressions += 1
+                db.session.commit()
+
+            return dict(footer_ads=footer_ads)
+        except Exception as e:
+            logger.error(f"Error injecting footer ads: {str(e)}")
+            return dict(footer_ads=[])
+
+    # Add a custom filter for inline ads processing
+    import re
+
+    @app.template_filter('process_inline_ads')
+    def process_inline_ads_filter(content):
+        """Process inline ad shortcodes in content"""
+        try:
+            from app.models import AdContent
+
+            def replace_ad_shortcode(match):
+                ad_id = int(match.group(1))
+                try:
+                    ad = AdContent.query.filter(
+                    AdContent.id == ad_id,
+                    AdContent.is_active == True,
+                    AdContent.placement == 'inline',
+                    (AdContent.end_date == None) | (AdContent.end_date >= datetime.utcnow())
+                    ).first()
+
+                    if ad:
+                        # Update impressions
+                        ad.impressions += 1
+                        db.session.commit()
+  
+                        return f'''
+                    <div class="inline-ad-container my-4 p-3 border rounded bg-light position-relative">
+                        <span class="badge bg-warning position-absolute top-0 start-0 m-2">Sponsored</span>
+                        <div class="inline-ad-content">
+                            {ad.content}
+                        </div>
+                        <div class="text-end mt-2">
+                            <a href="{{% if current_user.is_authenticated %}}{{{{ url_for('admin.track_ad_click', ad_id={ad.id}) }}}}{{% else %}}{{{{ url_for('main.track_ad_click', ad_id={ad.id}) }}}}{{% endif %}}"
+                               target="_blank"
+                               class="btn btn-sm btn-outline-primary">
+                                Learn More
+                            </a>
+                        </div>
+                    </div>
+                    '''
+                except Exception as e:
+                    logger.error(f"Error processing inline ad {ad_id}: {str(e)}")
+
+                return ''  # Return empty string if ad not found or error
+
+            # Replace [ad id=X] shortcodes
+            pattern = r'\[ad id=(\d+)\]'
+            content = re.sub(pattern, replace_ad_shortcode, content)
+
+            return content
+
+        except Exception as e:
+            logger.error(f"Error in inline ads filter: {str(e)}")
+            return content
 
     @app.context_processor
     def inject_categories():
@@ -276,6 +394,28 @@ def create_app():
             subcats = Category.query.filter_by(parent_id=cat.id).order_by(Category.name).all()
             category_structure.append({'category': cat, 'subcategories': subcats})
         return dict(category_structure=category_structure)
+
+    @app.context_processor
+    def inject_ads():
+        """Inject active ads into all templates"""
+        from app.models import AdContent
+        try:
+            # Get active sidebar ads that haven't expired
+            ads = AdContent.query.filter(
+                AdContent.is_active == True,
+                AdContent.placement == 'sidebar',
+                (AdContent.end_date == None) | (AdContent.end_date >= datetime.utcnow())
+            ).order_by(AdContent.created_at.desc()).limit(3).all()
+            
+            # Update impressions for each ad
+            for ad in ads:
+                ad.impressions += 1
+            db.session.commit()
+            
+            return dict(ads=ads)
+        except Exception as e:
+            logger.error(f"Error injecting ads: {str(e)}")
+            return dict(ads=[])
 
     # CLI Commands
     @app.cli.command("generate-api-key")
@@ -295,7 +435,6 @@ def create_app():
         if not permissions:
             permissions = "post:create"
             
-        # Generate secure API key
         api_key = secrets.token_urlsafe(32)
         key_record = ApiKey(
             key=api_key,
@@ -354,7 +493,6 @@ def create_app():
             else:
                 break
 
-        # Create admin user
         new_user = User(
             username=username,
             email=email,
@@ -411,8 +549,7 @@ def create_app():
         print("=== Users ===")
         for user in users:
             admin_status = "Yes" if user.is_admin else "No"
-            confirmed_status = "Yes" if user.is_confirmed else "No"
-            print(f"ID: {user.id} | Username: {user.username} | Email: {user.email} | Admin: {admin_status} | Confirmed: {confirmed_status}")
+            print(f"ID: {user.id} | Username: {user.username} | Email: {user.email} | Admin: {admin_status}")
 
     @app.cli.command("start-redis")
     @with_appcontext

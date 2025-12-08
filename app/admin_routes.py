@@ -8,21 +8,21 @@ from werkzeug.utils import secure_filename
 from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, jsonify
 from flask_login import login_required, current_user
 from flask_mail import Message
-from app.utils import get_recommended_posts
+from app.utils import get_recommended_posts, process_uploaded_image, allowed_file
 from app import db, mail, csrf
-from app.models import User, Post, Comment, TrafficStats, Announcement, NewsletterSubscriber, Like, Video, Category, AdsTxt, NewsletterSubscriber, ApiKey
+from app.models import User, Post, Comment, TrafficStats, Announcement, NewsletterSubscriber, Like, Video, Category, AdsTxt, NewsletterSubscriber, ApiKey, AdContent
 from app.forms import (
     AdminActionForm, VideoForm, LoginForm, RegisterForm, PostForm, CommentForm,
-    ContactForm, ResetPasswordRequestForm, ResetPasswordForm, AnnouncementForm, AdsTxtForm, NewsletterForm, CategoryForm
+    ContactForm, ResetPasswordRequestForm, ResetPasswordForm, AnnouncementForm, AdsTxtForm, NewsletterForm, CategoryForm, AdForm
 )
 from .ddos_protection import ddos_protection
-from app.utils import allowed_file
 from datetime import datetime, timedelta
 import secrets
 import json
 
 admin_bp = Blueprint('admin', __name__)
 logger = logging.getLogger(__name__)
+
 
 def is_ajax_request():
     return request.headers.get('X-Requested-With') == 'XMLHttpRequest'
@@ -54,35 +54,23 @@ def check_ban(f):
         return f(*args, **kwargs)
     return decorated_function
 
-def send_warning_email(user_email, message_body):
-    msg = Message("Warning from Admin", recipients=[user_email])
-    msg.body = message_body
-    mail.send(msg)
-
 # ---------------------- Admin Dashboard ----------------------
 @admin_bp.route('/dashboard')
 @login_required
 @admin_required
 def admin_dashboard():
-    # Get user search query and filter
     user_search_query = request.args.get('q', '')
     user_filter_type = request.args.get('filter', 'all')
-    
-    # Get post search query and filter
     post_search_query = request.args.get('post_q', '')
     post_filter_type = request.args.get('post_filter', 'all')
 
-    # Start with base query for users
     users_query = User.query
-
-    # Apply user search filter if provided
     if user_search_query:
         users_query = users_query.filter(
             (User.username.ilike(f'%{user_search_query}%')) | 
             (User.email.ilike(f'%{user_search_query}%'))
         )
 
-    # Apply user additional filters
     if user_filter_type == 'admins':
         users_query = users_query.filter(User.is_admin == True)
     elif user_filter_type == 'banned':
@@ -90,80 +78,59 @@ def admin_dashboard():
     elif user_filter_type == 'active':
         users_query = users_query.filter(User.is_banned == False)
 
-    # Order and get all users
     users = users_query.order_by(User.date_r.desc()).all()
 
-    # Start with base query for posts
     posts_query = Post.query.join(User).filter(User.is_banned == False)
-
-    # Apply post search filter if provided
     if post_search_query:
         posts_query = posts_query.filter(
             (Post.title.ilike(f'%{post_search_query}%')) |
             (Post.desc.ilike(f'%{post_search_query}%'))
         )
 
-    # Apply post additional filters
     if post_filter_type == 'blocked':
         posts_query = posts_query.filter(Post.is_blocked == True)
     elif post_filter_type == 'active':
         posts_query = posts_query.filter(Post.is_blocked == False)
 
-    # Order and get all posts
     posts = posts_query.order_by(Post.date_pub.desc()).all()
 
-    # Get other statistics
     categories = Category.query.all()
     banned_users_count = User.query.filter_by(is_banned=True).count()
     subscriber_count = NewsletterSubscriber.query.filter_by(subscribed=True).count()
     api_keys_count = ApiKey.query.filter_by(is_active=True).count()
+    active_ads_count = AdContent.query.filter_by(is_active=True).count()
+    total_ad_revenue = db.session.query(db.func.sum(AdContent.price)).scalar() or 0
 
-    # Calculate posts created via API today
     today = datetime.utcnow().date()
     api_posts_today = Post.query.filter(
         Post.author.has(User.api_keys.any()),
         db.func.date(Post.date_pub) == today
     ).count()
 
-    # Calculate posts created via API this week
     week_ago = datetime.utcnow() - timedelta(days=7)
     api_posts_week = Post.query.filter(
         Post.author.has(User.api_keys.any()),
         Post.date_pub >= week_ago
     ).count()
 
-    # Count active API users
     active_api_users = User.query.filter(
         User.api_keys.any(ApiKey.is_active == True),
         User.posts.any(Post.date_pub >= week_ago)
     ).count()
 
-    # Placeholder for API errors
     api_errors = 0
 
-    # Get admin's country based on IP with better error handling
     admin_country = "Unknown"
     try:
-        # Use the GeoIP reader from the app
         if hasattr(current_app, 'geoip_reader') and current_app.geoip_reader is not None:
-            # Get the client IP address
             client_ip = request.remote_addr
-
-            # Handle localhost/private IP addresses
             if client_ip in ['127.0.0.1', 'localhost'] or client_ip.startswith('192.168.') or client_ip.startswith('10.'):
                 admin_country = "Local Network"
             else:
-                # Try to get country from GeoIP
                 response = current_app.geoip_reader.country(client_ip)
                 admin_country = response.country.name
         else:
             admin_country = "GeoIP Not Configured"
-
-    except AddressNotFoundError:
-        admin_country = "IP Not Found in Database"
-    except ValueError as e:
-        logger.error(f"Invalid IP address format: {e}")
-        admin_country = "Invalid IP"
     except Exception as e:
         logger.error(f"Error determining country: {str(e)}")
         admin_country = "Error"
@@ -175,11 +142,337 @@ def admin_dashboard():
                          subscriber_count=subscriber_count,
                          banned_users_count=banned_users_count,
                          api_keys_count=api_keys_count,
+                         active_ads_count=active_ads_count,
+                         total_ad_revenue=total_ad_revenue,
                          api_posts_today=api_posts_today,
                          api_posts_week=api_posts_week,
                          active_api_users=active_api_users,
                          api_errors=api_errors,
                          admin_country=admin_country)
+
+# ---------------------- Ad Management ----------------------
+@admin_bp.route('/ads')
+@login_required
+@admin_required
+def manage_ads():
+    """Manage sponsored content/ads"""
+    ads = AdContent.query.order_by(AdContent.created_at.desc()).all()
+    
+    active_ads = AdContent.query.filter_by(is_active=True).count()
+    total_revenue = db.session.query(db.func.sum(AdContent.price)).scalar() or 0
+    
+    return render_template('manage_ads.html', 
+                         ads=ads,
+                         active_ads=active_ads,
+                         total_revenue=total_revenue)
+
+@admin_bp.route('/ads/create', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def create_ad():
+    """Create new sponsored content/ad"""
+    form = AdForm()
+    
+    if form.validate_on_submit():
+        try:
+            # Parse dates
+            start_date = datetime.utcnow()
+            if form.start_date.data:
+                start_date = datetime.strptime(form.start_date.data, '%Y-%m-%d')
+            
+            end_date = None
+            if form.end_date.data:
+                end_date = datetime.strptime(form.end_date.data, '%Y-%m-%d')
+            
+            # Create ad - ADD advertiser_id HERE
+            ad = AdContent(
+                title=form.title.data,
+                content=form.content.data,
+                advertiser_name=form.advertiser_name.data,
+                advertiser_email=form.advertiser_email.data,
+                advertiser_website=form.advertiser_website.data,
+                placement=form.placement.data,
+                price=form.price.data,
+                start_date=start_date,
+                end_date=end_date,
+                is_active=form.is_active.data,
+                advertiser_id=current_user.id  # <-- ADD THIS LINE
+            )
+            
+            db.session.add(ad)
+            db.session.commit()
+            
+            flash('Ad created successfully!', 'success')
+            return redirect(url_for('admin.manage_ads'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error creating ad: {str(e)}', 'danger')
+    
+    return render_template('create_ad.html', form=form)
+
+@admin_bp.route('/ads/<int:ad_id>/edit', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def edit_ad(ad_id):
+    """Edit existing ad"""
+    ad = AdContent.query.get_or_404(ad_id)
+    form = AdForm(obj=ad)
+    
+    if form.validate_on_submit():
+        try:
+            ad.title = form.title.data
+            ad.content = form.content.data
+            ad.advertiser_name = form.advertiser_name.data
+            ad.advertiser_email = form.advertiser_email.data
+            ad.advertiser_website = form.advertiser_website.data
+            ad.placement = form.placement.data
+            ad.price = form.price.data
+            ad.is_active = form.is_active.data
+            # Don't change advertiser_id when editing, keep the original
+            
+            if form.start_date.data:
+                ad.start_date = datetime.strptime(form.start_date.data, '%Y-%m-%d')
+            if form.end_date.data:
+                ad.end_date = datetime.strptime(form.end_date.data, '%Y-%m-%d')
+            
+            db.session.commit()
+            flash('Ad updated successfully!', 'success')
+            return redirect(url_for('admin.manage_ads'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error updating ad: {str(e)}', 'danger')
+    
+    if ad.start_date:
+        form.start_date.data = ad.start_date.strftime('%Y-%m-%d')
+    if ad.end_date:
+        form.end_date.data = ad.end_date.strftime('%Y-%m-%d')
+    
+    return render_template('edit_ad.html', form=form, ad=ad)
+
+@admin_bp.route('/ads/<int:ad_id>/delete', methods=['POST'])
+@login_required
+@admin_required
+def delete_ad(ad_id):
+    """Delete ad"""
+    try:
+        ad = AdContent.query.get_or_404(ad_id)
+        db.session.delete(ad)
+        db.session.commit()
+        
+        flash('Ad deleted successfully!', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error deleting ad: {str(e)}', 'danger')
+    
+    return redirect(url_for('admin.manage_ads'))
+
+@admin_bp.route('/ads/<int:ad_id>/toggle', methods=['POST'])
+@login_required
+@admin_required
+def toggle_ad(ad_id):
+    """Toggle ad active status"""
+    try:
+        ad = AdContent.query.get_or_404(ad_id)
+        ad.is_active = not ad.is_active
+        db.session.commit()
+        
+        status = "activated" if ad.is_active else "deactivated"
+        flash(f'Ad {status} successfully!', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error toggling ad: {str(e)}', 'danger')
+    
+    return redirect(url_for('admin.manage_ads'))
+
+@admin_bp.route('/ads/<int:ad_id>/click')
+def track_ad_click(ad_id):
+    """Track ad clicks"""
+    try:
+        ad = AdContent.query.get_or_404(ad_id)
+        ad.clicks += 1
+        db.session.commit()
+        
+        if ad.advertiser_website:
+            return redirect(ad.advertiser_website)
+        else:
+            return redirect(url_for('main.index'))
+            
+    except Exception as e:
+        flash('Error tracking click', 'danger')
+        return redirect(url_for('main.index'))
+
+# ---------------------- Post Management with Watermarking ----------------------
+@admin_bp.route("/new_post", methods=["GET", "POST"])
+@login_required
+@admin_required
+@check_ban
+def new_post():
+    if current_user.is_banned:
+        if is_ajax_request():
+            return jsonify({'success': False, 'message': 'You are banned and cannot create posts.'}), 403
+        flash("You are banned and cannot create posts.", "danger")
+        return redirect(url_for("main.index"))
+
+    form = PostForm()
+
+    try:
+        categories = Category.query.order_by(Category.name).all()
+        form.category.choices = [(c.id, c.name) for c in categories]
+    except Exception as e:
+        logger.error(f"Error loading categories: {str(e)}")
+        form.category.choices = []
+        flash("Error loading categories from database", "warning")
+    
+    form.category.choices = [(c.id, c.name) for c in categories]
+
+    if form.validate_on_submit():
+        try:
+            title = form.title.data.strip()
+            desc = form.desc.data.strip()
+            
+            allowed_tags = [
+                'p', 'strong', 'em', 'a', 'ul', 'ol', 'li', 'br', 'u', 'i', 'b',
+                'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'code', 'pre',
+                'img', 'hr', 'table', 'tr', 'th', 'td'
+            ]
+            allowed_attributes = {
+                'a': ['href', 'title'],
+                'img': ['src', 'alt', 'title', 'style'],
+                'table': ['class', 'border'],
+                'tr': ['class'],
+                'th': ['class', 'scope'],
+                'td': ['class']
+            }
+            sanitized_desc = bleach.clean(desc, tags=allowed_tags, attributes=allowed_attributes, strip=True)
+
+            # Handle file upload WITH WATERMARKING
+            file = form.image.data
+            filename = None
+            if file and allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                # Use the watermarking function
+                file_path = process_uploaded_image(
+                    file, 
+                    current_app.config['UPLOAD_FOLDER'], 
+                    filename
+                )
+            else:
+                if is_ajax_request():
+                    return jsonify({'success': False, 'message': 'Invalid image format or no image selected.'}), 400
+                flash("Invalid image format or no image selected.", "warning")
+                return redirect(request.url)
+
+            selected_category = Category.query.get(form.category.data)
+
+            post = Post(
+                title=title,
+                desc=sanitized_desc,
+                category_obj=selected_category,
+                image_url=filename,
+                author=current_user
+            )
+            db.session.add(post)
+            db.session.commit()
+
+            if is_ajax_request():
+                return jsonify({'success': True, 'message': 'Post created successfully!'})
+            
+            flash("Post created successfully with watermark!", "success")
+            return redirect(url_for("admin.admin_dashboard"))
+
+        except Exception as e:
+            db.session.rollback()
+            error_msg = f"Error creating post: {str(e)}"
+            if is_ajax_request():
+                return jsonify({'success': False, 'message': error_msg}), 500
+            flash(error_msg, "danger")
+            current_app.logger.error(f"Post creation error: {str(e)}")
+
+    return render_template("new_post.html", form=form)
+
+@admin_bp.route('/edit_post/<int:post_id>', methods=["GET", "POST"])
+@login_required
+@check_ban
+def edit_post(post_id):
+    if current_user.is_banned:
+        if is_ajax_request():
+            return jsonify({'success': False, 'message': 'You are banned and cannot edit posts.'}), 403
+        flash("You are banned and cannot edit posts.", "danger")
+        return redirect(url_for("main.index"))
+
+    post = Post.query.get_or_404(post_id)
+    if post.author != current_user and not current_user.is_admin:
+        if is_ajax_request():
+            return jsonify({'success': False, 'message': 'You do not have permission to edit this post.'}), 403
+        flash("You do not have permission to edit this post.", "danger")
+        return redirect(url_for('main.index'))
+
+    form = PostForm(obj=post)
+    
+    categories = Category.query.order_by(Category.name).all()
+    form.category.choices = [(c.id, c.name) for c in categories]
+    
+    if post.category_obj:
+        form.category.data = post.category_obj.id
+
+    if request.method == "POST" and form.validate_on_submit():
+        try:
+            post.title = form.data['title'].strip()
+            desc = form.data['desc'].strip()
+
+            allowed_tags = ['p', 'strong', 'em', 'a', 'ul', 'ol', 'li', 'br', 'u', 'i', 'b',
+                            'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'code', 'pre',
+                            'img', 'hr', 'table', 'tr', 'th', 'td']
+            allowed_attributes = {
+                'a': ['href', 'title'],
+                'img': ['src', 'alt', 'title'],
+                'table': ['class'],
+                'tr': ['class'],
+                'th': ['class'],
+                'td': ['class']
+            }
+            post.desc = bleach.clean(desc, tags=allowed_tags, attributes=allowed_attributes, strip=True)
+
+            selected_category = Category.query.get(form.category.data)
+            post.category_obj = selected_category
+
+            file = request.files.get('image')
+            if file and file.filename != "":
+                if allowed_file(file.filename):
+                    filename = secure_filename(file.filename)
+                    # Use watermarking function for edited images too
+                    file_path = process_uploaded_image(
+                        file, 
+                        current_app.config['UPLOAD_FOLDER'], 
+                        filename
+                    )
+                    post.image_url = filename
+                else:
+                    if is_ajax_request():
+                        return jsonify({'success': False, 'message': 'File type not allowed.'}), 400
+                    flash('File type not allowed.', 'warning')
+                    return redirect(request.url)
+
+            db.session.commit()
+            
+            if is_ajax_request():
+                return jsonify({'success': True, 'message': 'Post updated successfully'})
+            
+            flash("Post updated successfully", "success")
+            return redirect(url_for("admin.see_more", post_id=post_id))
+        except Exception as e:
+            db.session.rollback()
+            error_msg = f"Error updating post: {str(e)}"
+            if is_ajax_request():
+                return jsonify({'success': False, 'message': error_msg}), 500
+            flash(error_msg, "danger")
+            return redirect(url_for("admin.edit_post", post_id=post_id))
+
+    return render_template("edit_post.html", form=form, post=post)
 
 # ---------------------- User Management ----------------------
 @admin_bp.route('/user/<int:user_id>/action', methods=['GET', 'POST'])
@@ -286,7 +579,6 @@ def admin_promote_user(user_id):
 def admin_demote_user(user_id):
     try:
         user = User.query.get_or_404(user_id)
-        # Prevent demoting yourself
         if user.id == current_user.id:
             message = "You cannot demote yourself!"
             if is_ajax_request():
@@ -316,97 +608,6 @@ def admin_demote_user(user_id):
             return jsonify({'success': False, 'message': f'Error demoting user: {str(e)}'}), 500
         flash(f'Error demoting user: {str(e)}', 'danger')
         return redirect(url_for('admin.admin_dashboard'))
-
-# ---------------------- Post Management ----------------------
-@admin_bp.route("/new_post", methods=["GET", "POST"])
-@login_required
-@admin_required
-@check_ban
-def new_post():
-    if current_user.is_banned:
-        if is_ajax_request():
-            return jsonify({'success': False, 'message': 'You are banned and cannot create posts.'}), 403
-        flash("You are banned and cannot create posts.", "danger")
-        return redirect(url_for("main.index"))
-
-    form = PostForm()
-
-    try:
-        categories = Category.query.order_by(Category.name).all()
-        form.category.choices = [(c.id, c.name) for c in categories]
-    except Exception as e:
-        logger.error(f"Error loading categories: {str(e)}")
-        # Fallback to empty choices
-        form.category.choices = []
-        flash("Error loading categories from database", "warning")
-    
-    # Dynamically populate category choices
-    categories = Category.query.order_by(Category.name).all()
-    form.category.choices = [(c.id, c.name) for c in categories]
-
-    if form.validate_on_submit():
-        try:
-            title = form.title.data.strip()
-            desc = form.desc.data.strip()
-            
-            # Sanitize description with bleach
-            allowed_tags = [
-                'p', 'strong', 'em', 'a', 'ul', 'ol', 'li', 'br', 'u', 'i', 'b',
-                'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'code', 'pre',
-                'img', 'hr', 'table', 'tr', 'th', 'td'
-            ]
-            allowed_attributes = {
-                'a': ['href', 'title'],
-                'img': ['src', 'alt', 'title', 'style'],
-                'table': ['class', 'border'],
-                'tr': ['class'],
-                'th': ['class', 'scope'],
-                'td': ['class']
-            }
-            sanitized_desc = bleach.clean(desc, tags=allowed_tags, attributes=allowed_attributes, strip=True)
-
-            # Handle file upload
-            file = form.image.data
-            filename = None
-            if file and allowed_file(file.filename):
-                filename = secure_filename(file.filename)
-                file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
-                file.save(file_path)
-            else:
-                if is_ajax_request():
-                    return jsonify({'success': False, 'message': 'Invalid image format or no image selected.'}), 400
-                flash("Invalid image format or no image selected.", "warning")
-                return redirect(request.url)
-
-            # Get selected category object
-            selected_category = Category.query.get(form.category.data)
-
-            # Create post
-            post = Post(
-                title=title,
-                desc=sanitized_desc,
-                category_obj=selected_category,
-                image_url=filename,
-                author=current_user
-            )
-            db.session.add(post)
-            db.session.commit()
-
-            if is_ajax_request():
-                return jsonify({'success': True, 'message': 'Post created successfully!'})
-            
-            flash("Post created successfully!", "success")
-            return redirect(url_for("admin.admin_dashboard"))
-
-        except Exception as e:
-            db.session.rollback()
-            error_msg = f"Error creating post: {str(e)}"
-            if is_ajax_request():
-                return jsonify({'success': False, 'message': error_msg}), 500
-            flash(error_msg, "danger")
-            current_app.logger.error(f"Post creation error: {str(e)}")
-
-    return render_template("new_post.html", form=form)
 
 @admin_bp.route('/post/<int:post_id>/delete', methods=['POST'])
 @login_required
@@ -493,83 +694,6 @@ def see_more(post_id):
     db.session.commit()
     comments = Comment.query.filter_by(post_id=post_id).all()
     return render_template('see_more.html', post=post, form=form, comments=comments, Like=Like, recommended_posts=recommended_posts)
-
-@admin_bp.route('/edit_post/<int:post_id>', methods=['GET', 'POST'])
-@login_required
-@check_ban
-def edit_post(post_id):
-    if current_user.is_banned:
-        if is_ajax_request():
-            return jsonify({'success': False, 'message': 'You are banned and cannot edit posts.'}), 403
-        flash("You are banned and cannot edit posts.", "danger")
-        return redirect(url_for("main.index"))
-
-    post = Post.query.get_or_404(post_id)
-    if post.author != current_user and not current_user.is_admin:
-        if is_ajax_request():
-            return jsonify({'success': False, 'message': 'You do not have permission to edit this post.'}), 403
-        flash("You do not have permission to edit this post.", "danger")
-        return redirect(url_for('main.index'))
-
-    form = PostForm(obj=post)
-    
-    categories = Category.query.order_by(Category.name).all()
-    form.category.choices = [(c.id, c.name) for c in categories]
-    
-    if post.category_obj:
-        form.category.data = post.category_obj.id
-
-    if request.method == "POST" and form.validate_on_submit():
-        try:
-            post.title = form.data['title'].strip()
-            desc = form.data['desc'].strip()
-
-            allowed_tags = ['p', 'strong', 'em', 'a', 'ul', 'ol', 'li', 'br', 'u', 'i', 'b',
-                            'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'code', 'pre',
-                            'img', 'hr', 'table', 'tr', 'th', 'td']
-            allowed_attributes = {
-                'a': ['href', 'title'],
-                'img': ['src', 'alt', 'title'],
-                'table': ['class'],
-                'tr': ['class'],
-                'th': ['class'],
-                'td': ['class']
-            }
-            post.desc = bleach.clean(desc, tags=allowed_tags, attributes=allowed_attributes, strip=True)
-
-            # Update category 
-            selected_category = Category.query.get(form.category.data)
-            post.category_obj = selected_category
-
-            file = request.files.get('image')
-            if file and file.filename != "":
-                if allowed_file(file.filename):
-                    filename = secure_filename(file.filename)
-                    file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
-                    file.save(file_path)
-                    post.image_url = filename
-                else:
-                    if is_ajax_request():
-                        return jsonify({'success': False, 'message': 'File type not allowed.'}), 400
-                    flash('File type not allowed.', 'warning')
-                    return redirect(request.url)
-
-            db.session.commit()
-            
-            if is_ajax_request():
-                return jsonify({'success': True, 'message': 'Post updated successfully'})
-            
-            flash("Post updated successfully", "success")
-            return redirect(url_for("admin.see_more", post_id=post_id))
-        except Exception as e:
-            db.session.rollback()
-            error_msg = f"Error updating post: {str(e)}"
-            if is_ajax_request():
-                return jsonify({'success': False, 'message': error_msg}), 500
-            flash(error_msg, "danger")
-            return redirect(url_for("admin.edit_post", post_id=post_id))
-
-    return render_template("edit_post.html", form=form, post=post)
 
 # ---------------------- Announcement Management ----------------------
 @admin_bp.route('/announcement/create', methods=['GET', 'POST'])
@@ -734,41 +858,32 @@ def search():
         flash('Please enter a search term.', 'warning')
         return redirect(request.referrer or url_for('main.index'))
     
-    # Get the current page from request args or default to page 1
     page = request.args.get('page', 1, type=int)
     per_page = 6
     
-    # Split query into individual words
     search_terms = query.split()
     
-    # Start with base query that filters out banned users and blocked posts
     base_query = Post.query.join(User).filter(
         User.is_banned == False, 
         Post.is_blocked == False
     )
     
-    # Create a list of conditions for each search term
     conditions = []
     for term in search_terms:
         term_condition = (Post.title.ilike(f'%{term}%')) | (Post.desc.ilike(f'%{term}%'))
         conditions.append(term_condition)
     
-    # Combine all conditions with OR to find posts matching any term
     if conditions:
         final_condition = conditions[0]
         for condition in conditions[1:]:
             final_condition = final_condition | condition
         
-        # Apply the final condition to the base query
         results = base_query.filter(final_condition)
     else:
-        # If no valid search terms, return all posts (shouldn't happen due to earlier check)
         results = base_query
     
-    # Order by publication date and paginate
     results = results.order_by(Post.date_pub.desc()).paginate(page=page, per_page=per_page, error_out=False)
     
-    # Pass the posts as 'posts' to match the template expectation
     return render_template('search_results.html', 
                          query=query, 
                          posts=results.items, 
@@ -778,9 +893,7 @@ def search():
 @login_required
 @admin_required
 def manage_ads_txt():
-    # Get the latest ads.txt entry or create a new one if none exists
     ads_txt = AdsTxt.query.order_by(AdsTxt.last_updated.desc()).first()
-
     form = AdsTxtForm()
 
     if ads_txt:
@@ -788,7 +901,6 @@ def manage_ads_txt():
 
     if form.validate_on_submit():
         try:
-            # Create new entry (we keep history by creating new entries)
             new_ads_txt = AdsTxt(
                 content=form.content.data.strip(),
                 updated_by=current_user.id
@@ -812,7 +924,7 @@ def manage_ads_txt():
 
     return render_template('admin_ads_txt.html', form=form)
 
-#---------------------manage subscribers-----------------------
+# ---------------------- Newsletter Management ----------------------
 @admin_bp.route('/admin/subscribers')
 @login_required
 @admin_required
@@ -894,8 +1006,6 @@ def resubscribe_subscriber(subscriber_id):
 @admin_required
 def send_newsletter():
     form = NewsletterForm()
-
-    # Calculate subscriber count in the view function
     subscribers_count = NewsletterSubscriber.query.filter_by(subscribed=True).count()
 
     if form.validate_on_submit():
@@ -903,7 +1013,6 @@ def send_newsletter():
             subject = form.subject.data.strip()
             message = form.message.data.strip()
 
-            # Get all active subscribers
             subscribers = NewsletterSubscriber.query.filter_by(subscribed=True).all()
 
             if not subscribers:
@@ -912,7 +1021,6 @@ def send_newsletter():
                 flash("No active subscribers to send newsletter to.", "warning")
                 return redirect(url_for('admin.send_newsletter'))
 
-            # Send email to each subscriber
             for subscriber in subscribers:
                 msg = Message(
                     subject=subject,
@@ -920,7 +1028,6 @@ def send_newsletter():
                     sender=current_app.config['MAIL_DEFAULT_SENDER']
                 )
 
-                # Create email body with unsubscribe link
                 unsubscribe_url = url_for('main.unsubscribe_newsletter', email=subscriber.email, _external=True)
                 email_body = f"""
 {message}
@@ -950,9 +1057,9 @@ To unsubscribe from our newsletter, click here: {unsubscribe_url}
             flash(error_msg, "danger")
             current_app.logger.error(f"Newsletter sending error: {str(e)}")
 
-    # Pass the subscriber count to the template
     return render_template('admin_newsletter.html', form=form, subscribers_count=subscribers_count)
 
+# ---------------------- DDoS Protection ----------------------
 @admin_bp.route('/admin/ddos/stats')
 @ddos_protection.middleware
 def ddos_stats():
@@ -1007,7 +1114,6 @@ def ddos_unban_ip(ip):
 @admin_required
 def ddos_protection_management():
     if request.method == 'POST':
-        # Update DDoS protection configuration
         try:
             ddos_protection.config['MODE'] = request.form.get('protection_mode', 'active')
             ddos_protection.config['REQUEST_LIMIT'] = int(request.form.get('request_limit', 100))
@@ -1025,14 +1131,11 @@ def ddos_protection_management():
                 return jsonify({'success': False, 'message': error_msg}), 500
             flash(error_msg, 'danger')
 
-    # Get current stats and configuration
     stats = ddos_protection.get_stats()
     banned_ips = {}
 
-    # Get banned IPs information
     if ddos_protection.use_redis and ddos_protection.redis_client:
         try:
-            # Get all banned IP keys from Redis
             banned_keys = ddos_protection.redis_client.keys('ban:*')
             for key in banned_keys:
                 ip = key.decode().replace('ban:', '')
@@ -1044,14 +1147,12 @@ def ddos_protection_management():
         except Exception as e:
             logger.error(f"Error getting banned IPs from Redis: {e}")
     else:
-        # Get from in-memory storage
         for ip, ban_until in ddos_protection.banned_ips.items():
             banned_ips[ip] = {
                 'banned_until': ban_until,
                 'reason': 'Rate limit exceeded'
             }
 
-    # Format banned until timestamps
     for ip_info in banned_ips.values():
         if ip_info['banned_until']:
             ip_info['banned_until'] = datetime.fromtimestamp(ip_info['banned_until']).strftime('%Y-%m-%d %H:%M:%S')
@@ -1062,17 +1163,16 @@ def ddos_protection_management():
                          banned_ips=banned_ips,
                          protection_mode=ddos_protection.config['MODE'])
 
+# ---------------------- Category Management ----------------------
 @admin_bp.route('/manage-categories')
 @admin_required
 def manage_categories():
     categories = Category.query.all()
     
-    # Calculate stats
     active_categories_count = Category.query.join(Post).group_by(Category.id).count()
     empty_categories_count = len(categories) - active_categories_count
     parent_categories_count = Category.query.filter_by(parent_id=None).count()
     
-    # Create form instance
     form = CategoryForm()
     
     return render_template('manage_categories.html', 
@@ -1089,7 +1189,6 @@ def add_category():
     
     if form.validate_on_submit():
         try:
-            # Handle parent_id (0 means no parent)
             parent_id = form.parent_id.data if form.parent_id.data != 0 else None
             
             category = Category(
@@ -1111,7 +1210,6 @@ def add_category():
             flash(error_msg, 'danger')
             current_app.logger.error(f"Category addition error: {str(e)}")
     else:
-        # Display form errors
         error_msgs = []
         for field, errors in form.errors.items():
             for error in errors:
@@ -1135,7 +1233,6 @@ def edit_category(category_id):
     
     if form.validate_on_submit():
         try:
-            # Handle parent_id (0 means no parent)
             parent_id = form.parent_id.data if form.parent_id.data != 0 else None
             
             category.name = form.name.data.strip()
@@ -1154,7 +1251,6 @@ def edit_category(category_id):
             flash(error_msg, 'danger')
             current_app.logger.error(f"Category update error: {str(e)}")
     else:
-        # Display form errors
         error_msgs = []
         for field, errors in form.errors.items():
             for error in errors:
@@ -1175,7 +1271,6 @@ def edit_category(category_id):
 def delete_category(category_id):
     category = Category.query.get_or_404(category_id)
     
-    # Check if category has posts or subcategories
     if category.posts.count() > 0 or category.children.count() > 0:
         message = 'Cannot delete category with posts or subcategories.'
         
@@ -1205,13 +1300,13 @@ def delete_category(category_id):
     
     return redirect(url_for('admin.manage_categories'))
 
+# ---------------------- API Management ----------------------
 @admin_bp.route('/api/docs')
 @login_required
 @admin_required
 def api_docs():
     return render_template('api_docs.html')
 
-# API Management Routes
 @admin_bp.route('/api/keys')
 @login_required
 @admin_required
@@ -1220,7 +1315,6 @@ def manage_api_keys():
     users = User.query.all()
     return render_template('admin_api_keys.html', api_keys=api_keys, users=users)
 
-# API Key Management Routes
 @admin_bp.route('/api/key/generate', methods=['POST'])
 @login_required
 @admin_required
@@ -1235,10 +1329,8 @@ def generate_api_key():
         flash('User not found', 'danger')
         return redirect(url_for('admin.manage_api_keys'))
 
-    # Generate a secure API key
     api_key = secrets.token_urlsafe(32)
 
-    # Create the API key record
     key_record = ApiKey(
         key=api_key,
         user_id=user_id,
@@ -1248,7 +1340,6 @@ def generate_api_key():
     db.session.add(key_record)
     db.session.commit()
 
-    # For AJAX requests, return the API key in the response
     if is_ajax_request():
         return jsonify({
             'success': True, 
@@ -1257,13 +1348,7 @@ def generate_api_key():
             'user': user.username
         })
     
-    # For regular form submissions, flash the API key
-    key_data = json.dumps({
-        'api_key': api_key,
-        'user': user.username
-    })
-    flash(key_data, 'api_key')
-    flash(f'API key generated for {user.username}', 'success')
+    flash(f'API key generated for {user.username}: {api_key}', 'success')
     
     return redirect(url_for('admin.manage_api_keys'))
 

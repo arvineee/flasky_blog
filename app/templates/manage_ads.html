@@ -1,0 +1,238 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2 fw-bold text-primary">
+            <i class="fas fa-ad me-2"></i>Sponsored Content Management
+        </h1>
+        <a href="{{ url_for('admin.create_ad') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-1"></i>New Ad
+        </a>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card stat-card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h6 class="card-title text-white-50">Active Ads</h6>
+                            <h3 class="fw-bold mb-0">{{ active_ads }}</h3>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fas fa-bullhorn fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card stat-card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h6 class="card-title text-white-50">Total Revenue</h6>
+                            <h3 class="fw-bold mb-0">${{ "%.2f"|format(total_revenue) }}</h3>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fas fa-dollar-sign fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card stat-card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h6 class="card-title text-white-50">Total Ads</h6>
+                            <h3 class="fw-bold mb-0">{{ ads|length }}</h3>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fas fa-chart-bar fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ads Table -->
+    <div class="card">
+        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="fas fa-list me-2"></i>All Sponsored Content
+                <span class="badge bg-light text-dark ms-2">{{ ads|length }} Ads</span>
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Title</th>
+                            <th>Advertiser</th>
+                            <th>Placement</th>
+                            <th>Price</th>
+                            <th>Status</th>
+                            <th>Clicks/Impressions</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ad in ads %}
+                        <tr>
+                            <td>{{ ad.id }}</td>
+                            <td>
+                                <strong>{{ ad.title }}</strong>
+                                {% if ad.end_date and ad.end_date < now %}
+                                <span class="badge bg-warning ms-2">Expired</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {{ ad.advertiser_name }}
+                                <br><small class="text-muted">{{ ad.advertiser_email }}</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-info">{{ ad.placement }}</span>
+                            </td>
+                            <td>
+                                {% if ad.price %}
+                                <span class="fw-bold">${{ "%.2f"|format(ad.price) }}</span>
+                                {% else %}
+                                <span class="text-muted">Free</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if ad.is_active %}
+                                <span class="badge bg-success">Active</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="d-flex flex-column">
+                                    <span class="fw-bold">{{ ad.clicks }} clicks</span>
+                                    <small class="text-muted">{{ ad.impressions }} impressions</small>
+                                    {% if ad.impressions > 0 %}
+                                    <small class="text-info">CTR: {{ "%.2f"|format(ad.clicks / ad.impressions * 100) }}%</small>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>{{ ad.created_at.strftime('%Y-%m-%d') }}</td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('admin.edit_ad', ad_id=ad.id) }}" 
+                                       class="btn btn-outline-primary" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <form method="POST" action="{{ url_for('admin.toggle_ad', ad_id=ad.id) }}" 
+                                          class="d-inline">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                        <button type="submit" class="btn btn-outline-warning" title="Toggle Status">
+                                            {% if ad.is_active %}
+                                            <i class="fas fa-pause"></i>
+                                            {% else %}
+                                            <i class="fas fa-play"></i>
+                                            {% endif %}
+                                        </button>
+                                    </form>
+                                    <form method="POST" action="{{ url_for('admin.delete_ad', ad_id=ad.id) }}" 
+                                          class="d-inline" 
+                                          onsubmit="return confirm('Are you sure you want to delete this ad?')">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                        <button type="submit" class="btn btn-outline-danger" title="Delete">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="9" class="text-center py-4">
+                                <i class="fas fa-ad fa-3x text-muted mb-3"></i>
+                                <p class="text-muted">No sponsored content found</p>
+                                <a href="{{ url_for('admin.create_ad') }}" class="btn btn-primary">
+                                    <i class="fas fa-plus me-1"></i>Create First Ad
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Instructions Card -->
+    <div class="card mt-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>How to Use</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Ad Placements:</h6>
+                    <ul>
+                        <li><strong>Sidebar:</strong> Appears in the right sidebar of pages</li>
+                        <li><strong>Header/Banner:</strong> Top banner (coming soon)</li>
+                        <li><strong>Inline:</strong> Within post content (use shortcode)</li>
+                        <li><strong>Footer:</strong> Site footer area</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h6>Instructions:</h6>
+                    <ul>
+                        <li>Add HTML/JavaScript for rich ads</li>
+                        <li>Track clicks automatically</li>
+                        <li>Set expiration dates for campaigns</li>
+                        <li>Use shortcode: <code>[ad id={{ ads[0].id if ads else 1 }}]</code></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.stat-card {
+    border-radius: 12px;
+    transition: transform 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+}
+
+.btn-group-sm > .btn {
+    padding: 0.35rem 0.5rem;
+    border-radius: 6px;
+}
+
+.table th {
+    background-color: #f8f9fa;
+    border-top: none;
+}
+
+@media (max-width: 768px) {
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+    
+    .btn-group {
+        flex-direction: column;
+    }
+    
+    .btn-group-sm > .btn {
+        margin-bottom: 0.25rem;
+    }
+}
+</style>
+{% endblock %}

@@ -1,11 +1,8 @@
 from flask_wtf import FlaskForm
 from wtforms import (StringField, SubmitField, PasswordField, FileField, 
-                    TextAreaField, BooleanField, EmailField, SelectField)
+                    TextAreaField, BooleanField, EmailField, SelectField, FloatField)
 from wtforms.validators import DataRequired, Email, EqualTo, Length, Optional
 from flask_ckeditor import CKEditorField
-from wtforms_sqlalchemy.fields import QuerySelectField
-
-
 
 # Predefined choices for categories
 CATEGORIES = [
@@ -40,7 +37,6 @@ class PostForm(FlaskForm):
         DataRequired(),
         Length(max=120, message="Title cannot exceed 120 characters")
     ])
-    # Use SelectField, not QuerySelectField
     category = SelectField('Category', coerce=int, validators=[DataRequired()])
     desc = CKEditorField('Content', validators=[DataRequired()])
     image = FileField('Featured Image', render_kw={"accept": "image/*"})
@@ -83,13 +79,6 @@ class ResetPasswordForm(FlaskForm):
     ])
     submit = SubmitField('Update Password')
 
-import logging
-from flask_wtf import FlaskForm
-from wtforms import StringField, TextAreaField, SubmitField
-from wtforms.validators import DataRequired, Length
-
-logger = logging.getLogger(__name__)
-
 class AnnouncementForm(FlaskForm):
     title = StringField(
         'Title',
@@ -100,16 +89,6 @@ class AnnouncementForm(FlaskForm):
         validators=[DataRequired(), Length(max=500, message="Message cannot exceed 500 characters")]
     )
     submit = SubmitField('Publish Announcement')
-
-    def validate(self, extra_validators=None):
-        logger.debug("Validating AnnouncementForm with data: title=%s, message=%s",
-                     self.title.data, self.message.data)
-        result = super().validate(extra_validators)
-        if not result:
-            logger.error("Form validation failed with errors: %s", self.errors)
-        else:
-            logger.debug("Form validation succeeded")
-        return result
 
 class SubscribeForm(FlaskForm):
     email = EmailField('Email Address', validators=[
@@ -132,7 +111,6 @@ class VideoForm(FlaskForm):
         "help": "MP4 or WebM format (max 50MB)"
     })
     submit = SubmitField("Upload Video")
-
 
 class AdsTxtForm(FlaskForm):
     content = TextAreaField('Ads.txt Content', validators=[DataRequired()])
@@ -160,11 +138,41 @@ class CategoryForm(FlaskForm):
     submit = SubmitField('Submit')
     
     def __init__(self, *args, **kwargs):
-        # Import Category inside the method to avoid circular imports
         from app.models import Category
         super(CategoryForm, self).__init__(*args, **kwargs)
-        
-        # Populate parent category choices
         self.parent_id.choices = [(0, 'None')] + [
             (c.id, c.name) for c in Category.query.filter_by(parent_id=None).all()
         ]
+
+class AdForm(FlaskForm):
+    title = StringField('Ad Title', validators=[
+        DataRequired(),
+        Length(max=100, message="Title cannot exceed 100 characters")
+    ])
+    content = TextAreaField('Ad Content/Code', validators=[
+        DataRequired(),
+        Length(max=2000, message="Content cannot exceed 2000 characters")
+    ])
+    advertiser_name = StringField('Advertiser Name', validators=[
+        DataRequired(),
+        Length(max=100)
+    ])
+    advertiser_email = EmailField('Advertiser Email', validators=[
+        DataRequired(),
+        Email()
+    ])
+    advertiser_website = StringField('Website URL', validators=[
+        Optional(),
+        Length(max=200)
+    ])
+    placement = SelectField('Ad Placement', choices=[
+        ('sidebar', 'Sidebar'),
+        ('header', 'Header/Banner'),
+        ('inline', 'Inline Content'),
+        ('footer', 'Footer')
+    ], default='sidebar')
+    price = FloatField('Price ($)', validators=[Optional()])
+    start_date = StringField('Start Date (YYYY-MM-DD)', validators=[Optional()])
+    end_date = StringField('End Date (YYYY-MM-DD)', validators=[Optional()])
+    is_active = BooleanField('Active', default=True)
+    submit = SubmitField('Save Ad')

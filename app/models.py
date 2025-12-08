@@ -1,3 +1,4 @@
+
 from datetime import date, datetime
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -20,6 +21,8 @@ class User(UserMixin, db.Model):
     likes = db.relationship('Like', backref='user', lazy=True)
     announcements = db.relationship('Announcement', backref='author', lazy=True)
     videos = db.relationship('Video', backref='author', lazy='dynamic')
+    api_keys = db.relationship('ApiKey', backref='user', lazy='dynamic')
+    ad_contents = db.relationship('AdContent', backref='advertiser', lazy='dynamic')
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -27,7 +30,6 @@ class User(UserMixin, db.Model):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
-    # Add this method to the User class
     def get_avatar_url(self, size=32):
         from app.utils import get_avatar_url
         return get_avatar_url(self.email, self.username, size)
@@ -66,7 +68,6 @@ class Post(db.Model):
     comments = db.relationship('Comment', backref='post', lazy='dynamic', cascade='all, delete-orphan')
     likes = db.relationship('Like', backref='post', lazy='dynamic', cascade='all, delete-orphan')
 
-    # Add this property to the Post class
     @property
     def comment_count(self):
         return self.comments.count()
@@ -136,7 +137,6 @@ class Video(db.Model):
         return f'<Video {self.title} by {self.author.username} on {self.upload_time}>'
 
 # ---------------------- User Loader ----------------
-
 @login_manager.user_loader
 def load_user(id):
     return User.query.get(int(id))
@@ -151,7 +151,7 @@ class AdsTxt(db.Model):
 
     updater = db.relationship('User', backref='ads_txt_updates')
 
-# ----------------------Api model-------------------------------
+# ---------------------- Api model ----------------------
 class ApiKey(db.Model):
     __tablename__ = 'api_key'
     id = db.Column(db.Integer, primary_key=True)
@@ -159,6 +159,28 @@ class ApiKey(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     is_active = db.Column(db.Boolean, default=True)
-    permissions = db.Column(db.String(500), default='post:create')  #comma separated permisions
+    permissions = db.Column(db.String(500), default='post:create')
 
-    user = db.relationship('User', backref=db.backref('api_keys', lazy='dynamic'))
+    
+
+# ---------------------- Ad/Sponsored Content Model ----------------------
+class AdContent(db.Model):
+    __tablename__ = 'ad_content'
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(100), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    advertiser_name = db.Column(db.String(100), nullable=False)
+    advertiser_email = db.Column(db.String(150), nullable=False)
+    advertiser_website = db.Column(db.String(200), nullable=True)
+    is_active = db.Column(db.Boolean, default=True)
+    start_date = db.Column(db.DateTime, default=datetime.utcnow)
+    end_date = db.Column(db.DateTime, nullable=True)
+    price = db.Column(db.Float, nullable=True)
+    placement = db.Column(db.String(50), default='sidebar')
+    clicks = db.Column(db.Integer, default=0)
+    impressions = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    advertiser_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+
+    def __repr__(self):
+        return f'<AdContent {self.title} by {self.advertiser_name}>'
