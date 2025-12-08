@@ -5,7 +5,7 @@ load_dotenv()
 
 class Config:
     # Database
-    SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL", "sqlite:///app.db")
+    SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL", "sqlite:///trial.db")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # Security
