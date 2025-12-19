@@ -1,4 +1,4 @@
-from flask import render_template, url_for, redirect, flash, request,send_file,jsonify,Blueprint,current_app,abort,make_response
+from flask import render_template, url_for, redirect, flash, request,send_file,jsonify,Blueprint,current_app,abort,make_response,current_app
 from app import  bootstrap,db,login_manager,mail
 from app.models import User, Post, Comment, Like, User,Announcement,Category,AdsTxt,NewsletterSubscriber,AdContent
 from app.forms import LoginForm, RegisterForm, PostForm,CommentForm,ContactForm, ResetPasswordRequestForm, ResetPasswordForm,SubscribeForm
@@ -19,7 +19,6 @@ from datetime import datetime
 
 
 main = Blueprint('main', __name__)
-
 
 
 ALLOWED_EXTENSIONS = { 'png', 'jpg', 'jpeg', 'gif'}
