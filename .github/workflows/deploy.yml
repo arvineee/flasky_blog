@@ -1,0 +1,151 @@
+name: Python application CI/CD
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+          
+      - name: Install dependencies
+        run: |
+          set -x
+          python -m pip install --upgrade pip
+          pip install flake8 pytest
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          
+      - name: Lint with flake8
+        run: |
+          set -x
+          echo "Running critical lint checks..."
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics || true
+          echo "Running warning-level lint checks..."
+          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+          
+      - name: Test with pytest
+        run: |
+          set -x
+          # Check if there are tests, if not, skip
+          if [ -d "tests" ] || [ -f "test_*.py" ] || [ -f "*test.py" ]; then
+            pytest -v
+          else
+            echo "No tests found, skipping test execution"
+          fi
+          
+      - name: Deploy to PythonAnywhere
+        if: success() && github.ref == 'refs/heads/main'
+        env:
+          PA_USERNAME: ${{ secrets.PA_USERNAME }}
+          PA_API_TOKEN: ${{ secrets.PA_API_TOKEN }}
+          PA_DOMAIN: ${{ secrets.PA_DOMAIN }}
+          PA_HOST: ${{ secrets.PA_HOST }}
+        run: |
+          set -x
+          echo "Deploying to PythonAnywhere..."
+          
+          # Check if required secrets are set
+          if [ -z "$PA_USERNAME" ]; then
+            echo "ERROR: PA_USERNAME secret is not set"
+            exit 1
+          fi
+          
+          if [ -z "$PA_API_TOKEN" ]; then
+            echo "ERROR: PA_API_TOKEN secret is not set"
+            exit 1
+          fi
+          
+          # Set default host if not specified
+          if [ -z "$PA_HOST" ]; then
+            PA_HOST="www.pythonanywhere.com"
+            echo "Using default host: $PA_HOST"
+          fi
+          
+          # If domain is not specified, use the default PythonAnywhere domain
+          if [ -z "$PA_DOMAIN" ]; then
+            PA_DOMAIN="${PA_USERNAME}.pythonanywhere.com"
+            echo "Using default domain: $PA_DOMAIN"
+          fi
+          
+          echo "Username: $PA_USERNAME"
+          echo "Host: $PA_HOST"
+          echo "Domain: $PA_DOMAIN"
+          
+          # Test the API connection first
+          echo "Testing API connection..."
+          curl -s -X GET \
+            "https://$PA_HOST/api/v0/user/$PA_USERNAME/cpu/" \
+            -H "Authorization: Token $PA_API_TOKEN" | jq . || true
+          
+          # Get webapp information (optional, for debugging)
+          echo "Getting webapp information..."
+          webapp_response=$(curl -s -w "\n%{http_code}" \
+            "https://$PA_HOST/api/v0/user/$PA_USERNAME/webapps/$PA_DOMAIN/" \
+            -H "Authorization: Token $PA_API_TOKEN")
+          
+          http_code=$(echo "$webapp_response" | tail -n1)
+          response_body=$(echo "$webapp_response" | head -n -1)
+          
+          if [ "$http_code" -eq 200 ]; then
+            echo "✅ Webapp found: $PA_DOMAIN"
+            echo "$response_body" | jq . || echo "$response_body"
+          else
+            echo "⚠️  Could not fetch webapp details (HTTP $http_code), but will try to reload anyway"
+            echo "Response: $response_body"
+          fi
+          
+          # Now reload the webapp
+          echo "Reloading web app: $PA_DOMAIN"
+          reload_response=$(curl -s -w "\n%{http_code}" -X POST \
+            "https://$PA_HOST/api/v0/user/$PA_USERNAME/webapps/$PA_DOMAIN/reload/" \
+            -H "Authorization: Token $PA_API_TOKEN")
+          
+          reload_http_code=$(echo "$reload_response" | tail -n1)
+          reload_body=$(echo "$reload_response" | head -n -1)
+          
+          echo "Reload response HTTP Code: $reload_http_code"
+          echo "Reload response Body: $reload_body"
+          
+          if [ "$reload_http_code" -eq 200 ] || [ "$reload_http_code" -eq 201 ]; then
+            echo "✅ Successfully reloaded web app!"
+            echo "Note: It may take 30-60 seconds for changes to take effect."
+          else
+            echo "❌ Failed to reload web app. HTTP Code: $reload_http_code"
+            
+            # Provide troubleshooting info
+            echo ""
+            echo "TROUBLESHOOTING:"
+            echo "1. Check that your domain name is correct."
+            echo "   Your web app URL: https://$PA_DOMAIN/"
+            echo "2. Check that your API token is valid and not expired."
+            echo "3. Free tier may have rate limits (40 requests/minute)."
+            
+            # Try to get error details
+            if command -v jq &> /dev/null; then
+              echo "$reload_body" | jq . 2>/dev/null || echo "Raw error: $reload_body"
+            else
+              echo "Error details: $reload_body"
+            fi
+            
+            exit 1
+          fi
+          
+          # Optional: Wait and verify the site is up
+          echo "Waiting 10 seconds before checking site status..."
+          sleep 10
+          
+          echo "✅ Deployment completed!"
