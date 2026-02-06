@@ -7,7 +7,7 @@ BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 class Config:
     # Database
     SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL", "sqlite:///trial.db")
-    #SQLALCHEMY_DATABASE_URI = "mysql+pymysql://FelixKirui:Fel28539257.@FelixKirui.mysql.pythonanywhere-services.com/FelixKirui$Arval_blog"
+    
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # Security
