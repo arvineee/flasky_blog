@@ -23,8 +23,23 @@
                 </div>
                 
                 <div class="card-body p-4">
-                    <form action="{{ url_for('admin.edit_post', post_id=post.id) }}" method="POST" enctype="multipart/form-data">
+                    <!-- Flash Messages -->
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+                    
+                    <form action="{{ url_for('admin.edit_post', post_id=post.id) }}" method="POST" enctype="multipart/form-data" id="editPostForm">
                         {{ form.hidden_tag() }}
+                        
+                        <!-- CSRF Token -->
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         
                         <!-- Title Field -->
                         <div class="mb-4">
@@ -66,7 +81,7 @@
                             {% endfor %}
                         </div>
 
-                        <!-- Image Upload -->
+                        <!-- Image Upload Section -->
                         <div class="mb-4">
                             <label class="form-label fw-semibold text-dark">{{ form.image.label }}</label>
                             <div class="file-upload-area border rounded-3 p-4 text-center bg-light">
@@ -81,26 +96,80 @@
                                 </div>
                                 <p class="small text-muted mb-0">Allowed formats: JPEG, PNG, GIF (Max 5MB)</p>
                                 <div id="fileName" class="small text-dark mt-2"></div>
-                                
-                                {% for error in form.image.errors %}
-                                <div class="invalid-feedback d-block">{{ error }}</div>
-                                {% endfor %}
                             </div>
                             
                             <!-- Show current image if exists -->
                             {% if post.image_url %}
                             <div class="current-image mt-4 p-3 border rounded-3 bg-light">
                                 <p class="fw-semibold mb-2">Current Image:</p>
-                                <div class="d-flex align-items-center">
-                                    <img src="{{ url_for('static', filename='images/' + post.image_url) }}" 
-                                         class="img-thumbnail me-3" 
-                                         alt="Current post image" 
-                                         style="max-height: 120px;">
+                                <div class="d-flex align-items-center flex-wrap">
+                                    <div class="image-preview-container me-3 mb-2">
+                                        <img src="{{ url_for('static', filename='images/' + post.image_url) }}" 
+                                             class="img-thumbnail current-image-preview" 
+                                             alt="Current post image" 
+                                             style="max-height: 120px; max-width: 200px;">
+                                    </div>
                                     <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" role="switch" name="remove_image" id="remove_image">
+                                        <input class="form-check-input" type="checkbox" role="switch" name="remove_image" id="remove_image" value="true">
                                         <label class="form-check-label text-danger fw-semibold" for="remove_image">
-                                            Remove this image
+                                            <i class="fas fa-trash-alt me-1"></i>Remove this image
                                         </label>
+                                        <input type="hidden" name="current_image" value="{{ post.image_url }}">
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Video Upload Section -->
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold text-dark">{{ form.video.label }} (Optional)</label>
+                            <div class="file-upload-area border rounded-3 p-4 text-center bg-light">
+                                <div class="mb-3">
+                                    <i class="fas fa-video fa-3x text-info"></i>
+                                </div>
+                                <div class="mb-3">
+                                    {{ form.video(class="form-control d-none", id="videoUpload", accept="video/mp4,video/webm,video/avi,video/mov,video/mkv") }}
+                                    <label for="videoUpload" class="btn btn-outline-info rounded-pill px-4">
+                                        <i class="fas fa-upload me-2"></i>Choose New Video
+                                    </label>
+                                </div>
+                                <p class="small text-muted mb-0">Allowed formats: MP4, WebM, AVI, MOV, MKV (Max 50MB)</p>
+                                <div id="videoFileName" class="small text-dark mt-2"></div>
+                            </div>
+                            
+                            <!-- Show current video if exists -->
+                            {% if post.video_url %}
+                            <div class="current-video mt-4 p-3 border rounded-3 bg-light">
+                                <p class="fw-semibold mb-2">Current Video:</p>
+                                <div class="d-flex align-items-center flex-wrap">
+                                    <div class="video-preview-container me-3 mb-2">
+                                        <div class="video-wrapper position-relative" style="max-width: 200px;">
+                                            <video class="video-thumbnail" 
+                                                   style="max-height: 120px; width: 100%; background: #000;"
+                                                   preload="metadata"
+                                                   id="currentVideoPreview">
+                                                <source src="{{ url_for('static', filename='videos/' + post.video_url) }}" type="video/mp4">
+                                                Your browser does not support the video tag.
+                                            </video>
+                                            <div class="video-overlay position-absolute top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center" 
+                                                 style="background: rgba(0,0,0,0.3); cursor: pointer;"
+                                                 onclick="toggleVideoPlayback()">
+                                                <div class="play-btn text-white" style="font-size: 2rem;">
+                                                    <i class="fas fa-play-circle" id="videoPlayIcon"></i>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="video-info small mt-2 text-center">
+                                            <i class="fas fa-file-video me-1"></i> {{ post.video_url|truncate(25) }}
+                                        </div>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" role="switch" name="remove_video" id="remove_video" value="true">
+                                        <label class="form-check-label text-danger fw-semibold" for="remove_video">
+                                            <i class="fas fa-trash-alt me-1"></i>Remove this video
+                                        </label>
+                                        <input type="hidden" name="current_video" value="{{ post.video_url }}">
                                     </div>
                                 </div>
                             </div>
@@ -109,14 +178,21 @@
 
                         <!-- Action Buttons -->
                         <div class="d-flex justify-content-between align-items-center mt-5 pt-4 border-top">
-                            <a href="{{ url_for('admin.see_more', post_id=post.id) }}" class="btn btn-outline-secondary rounded-pill px-4">
-                                <i class="fas fa-arrow-left me-2"></i>Back to Post
-                            </a>
                             <div>
-                                <button type="reset" class="btn btn-outline-danger rounded-pill px-4 me-2">
+                                <a href="{{ url_for('admin.see_more', post_id=post.id) }}" class="btn btn-outline-secondary rounded-pill px-4">
+                                    <i class="fas fa-arrow-left me-2"></i>Back to Post
+                                </a>
+                                <a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-outline-dark rounded-pill px-4 ms-2">
+                                    <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                                </a>
+                            </div>
+                            <div>
+                                <button type="button" class="btn btn-outline-danger rounded-pill px-4 me-2" id="resetBtn">
                                     <i class="fas fa-undo me-2"></i>Reset
                                 </button>
-                                {{ form.submit(class="btn btn-primary rounded-pill px-4") }}
+                                <button type="submit" class="btn btn-primary rounded-pill px-4" id="submitBtn">
+                                    <i class="fas fa-save me-2"></i>Update Post
+                                </button>
                             </div>
                         </div>
                     </form>
@@ -133,27 +209,12 @@
                         <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Use a clear and descriptive title</li>
                         <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Choose the most relevant category</li>
                         <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Add images to make your post more engaging</li>
+                        <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Videos can increase engagement by up to 300%</li>
                         <li><i class="fas fa-check-circle text-success me-2"></i>Proofread before publishing</li>
                     </ul>
                 </div>
             </div>
         </div>
-    </div>
-</div>
-
-<div class="card border-0 mt-4 bg-info text-white">
-    <div class="card-body p-4">
-        <h6 class="card-title mb-3">
-            <i class="fas fa-ad me-2"></i>Inline Ad Shortcodes
-        </h6>
-        <p class="mb-2">Insert ads within your content using shortcodes:</p>
-        <div class="mb-3">
-            <code class="bg-dark p-2 rounded d-block mb-2">[ad id=1]</code>
-            <small>Replace "1" with the ad ID from your ad management panel</small>
-        </div>
-        <a href="{{ url_for('admin.manage_ads') }}" class="btn btn-light btn-sm">
-            <i class="fas fa-external-link-alt me-1"></i>Get Ad IDs
-        </a>
     </div>
 </div>
 
@@ -220,12 +281,37 @@ body {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
-.current-image {
+.current-image, .current-video {
     transition: all 0.3s ease;
 }
 
-.current-image:hover {
+.current-image:hover, .current-video:hover {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.form-check-input:checked {
+    background-color: #dc3545;
+    border-color: #dc3545;
+}
+
+.video-thumbnail {
+    border-radius: 8px;
+    background-color: #000;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.video-overlay {
+    transition: all 0.3s ease;
+}
+
+.video-overlay:hover {
+    background: rgba(0,0,0,0.5) !important;
+}
+
+/* Toggle switch styling */
+.form-check-input[type="checkbox"] {
+    width: 3em;
+    height: 1.5em;
 }
 
 .form-check-input:checked {
@@ -251,6 +337,17 @@ body {
     .btn {
         width: 100%;
     }
+    
+    .current-image .d-flex,
+    .current-video .d-flex {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .video-thumbnail {
+        max-width: 100% !important;
+        margin-bottom: 10px;
+    }
 }
 </style>
 
@@ -263,24 +360,299 @@ document.addEventListener('DOMContentLoaded', function() {
     if (imageUpload && fileName) {
         imageUpload.addEventListener('change', function() {
             if (this.files.length > 0) {
-                fileName.textContent = 'Selected file: ' + this.files[0].name;
+                const file = this.files[0];
+                fileName.innerHTML = `<i class="fas fa-image me-1"></i> Selected: <strong>${file.name}</strong> (${formatFileSize(file.size)})`;
+                fileName.classList.add('text-success', 'fw-semibold');
+                
+                // If uploading new image, uncheck remove image checkbox
+                const removeImageCheckbox = document.getElementById('remove_image');
+                if (removeImageCheckbox) {
+                    removeImageCheckbox.checked = false;
+                }
             } else {
                 fileName.textContent = '';
+                fileName.classList.remove('text-success', 'fw-semibold');
             }
         });
     }
     
-    // Add animation to form elements
-    const formElements = document.querySelectorAll('.form-control, .form-select, .form-check-input');
-    formElements.forEach(element => {
-        element.addEventListener('focus', function() {
-            this.parentElement.classList.add('focused');
+    // File name display for video upload
+    const videoUpload = document.getElementById('videoUpload');
+    const videoFileName = document.getElementById('videoFileName');
+    
+    if (videoUpload && videoFileName) {
+        videoUpload.addEventListener('change', function() {
+            if (this.files.length > 0) {
+                const file = this.files[0];
+                videoFileName.innerHTML = `<i class="fas fa-video me-1"></i> Selected: <strong>${file.name}</strong> (${formatFileSize(file.size)})`;
+                videoFileName.classList.add('text-success', 'fw-semibold');
+                
+                // If uploading new video, uncheck remove video checkbox
+                const removeVideoCheckbox = document.getElementById('remove_video');
+                if (removeVideoCheckbox) {
+                    removeVideoCheckbox.checked = false;
+                }
+            } else {
+                videoFileName.textContent = '';
+                videoFileName.classList.remove('text-success', 'fw-semibold');
+            }
+        });
+    }
+    
+    // Toggle remove checkboxes functionality
+    const removeImageCheckbox = document.getElementById('remove_image');
+    const removeVideoCheckbox = document.getElementById('remove_video');
+    
+    if (removeImageCheckbox) {
+        removeImageCheckbox.addEventListener('change', function() {
+            const imageUpload = document.getElementById('imageUpload');
+            if (this.checked && imageUpload) {
+                // Disable new image upload when removing current image
+                imageUpload.disabled = true;
+                showToast('Image will be removed on save', 'warning');
+            } else if (imageUpload) {
+                imageUpload.disabled = false;
+            }
+        });
+    }
+    
+    if (removeVideoCheckbox) {
+        removeVideoCheckbox.addEventListener('change', function() {
+            const videoUpload = document.getElementById('videoUpload');
+            if (this.checked && videoUpload) {
+                // Disable new video upload when removing current video
+                videoUpload.disabled = true;
+                showToast('Video will be removed on save', 'warning');
+            } else if (videoUpload) {
+                videoUpload.disabled = false;
+            }
+        });
+    }
+    
+    // Video playback functionality
+    const videoElement = document.getElementById('currentVideoPreview');
+    const videoPlayIcon = document.getElementById('videoPlayIcon');
+    
+    if (videoElement && videoPlayIcon) {
+        window.toggleVideoPlayback = function() {
+            if (videoElement.paused) {
+                videoElement.play();
+                videoPlayIcon.className = 'fas fa-pause-circle';
+            } else {
+                videoElement.pause();
+                videoPlayIcon.className = 'fas fa-play-circle';
+            }
+        };
+        
+        videoElement.addEventListener('play', function() {
+            videoPlayIcon.className = 'fas fa-pause-circle';
         });
         
-        element.addEventListener('blur', function() {
-            this.parentElement.classList.remove('focused');
+        videoElement.addEventListener('pause', function() {
+            videoPlayIcon.className = 'fas fa-play-circle';
         });
-    });
+        
+        videoElement.addEventListener('ended', function() {
+            videoPlayIcon.className = 'fas fa-play-circle';
+            videoElement.currentTime = 0;
+        });
+    }
+    
+    // Reset button functionality
+    const resetBtn = document.getElementById('resetBtn');
+    if (resetBtn) {
+        resetBtn.addEventListener('click', function(e) {
+            if (!confirm('Are you sure you want to reset all changes?')) {
+                return;
+            }
+            
+            // Uncheck all checkboxes
+            const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+            checkboxes.forEach(cb => {
+                cb.checked = false;
+                if (cb.id === 'remove_image' || cb.id === 'remove_video') {
+                    const correspondingUpload = document.getElementById(cb.id.replace('remove_', '') + 'Upload');
+                    if (correspondingUpload) {
+                        correspondingUpload.disabled = false;
+                    }
+                }
+            });
+            
+            // Clear file inputs
+            if (imageUpload) {
+                imageUpload.value = '';
+                imageUpload.disabled = false;
+            }
+            if (videoUpload) {
+                videoUpload.value = '';
+                videoUpload.disabled = false;
+            }
+            
+            // Clear file name displays
+            if (fileName) {
+                fileName.textContent = '';
+                fileName.classList.remove('text-success', 'fw-semibold');
+            }
+            if (videoFileName) {
+                videoFileName.textContent = '';
+                videoFileName.classList.remove('text-success', 'fw-semibold');
+            }
+            
+            // Reset CKEditor content to original
+            if (CKEDITOR.instances.desc) {
+                // We could save original content, but for simplicity reset to empty
+                CKEDITOR.instances.desc.setData('');
+            }
+            
+            // Reset form
+            document.getElementById('editPostForm').reset();
+        });
+    }
+    
+    // Form submission handling
+    const form = document.getElementById('editPostForm');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            // Ensure CKEditor content is updated before submission
+            if (CKEDITOR.instances.desc) {
+                CKEDITOR.instances.desc.updateElement();
+            }
+            
+            // Validate required fields
+            const title = document.getElementById('title');
+            const category = document.getElementById('category');
+            const desc = document.querySelector('.ckeditor-field');
+            
+            let isValid = true;
+            let errorMessage = '';
+            
+            // Clear previous error states
+            title.classList.remove('is-invalid');
+            category.classList.remove('is-invalid');
+            desc.classList.remove('is-invalid');
+            
+            // Validate title
+            if (!title.value.trim()) {
+                title.classList.add('is-invalid');
+                isValid = false;
+                errorMessage = 'Title is required';
+            }
+            
+            // Validate category
+            if (!category.value) {
+                category.classList.add('is-invalid');
+                isValid = false;
+                errorMessage = 'Please select a category';
+            }
+            
+            // Validate description
+            if (!desc.value.trim()) {
+                desc.classList.add('is-invalid');
+                isValid = false;
+                errorMessage = 'Content is required';
+            }
+            
+            if (!isValid) {
+                e.preventDefault();
+                showToast('Error', errorMessage, 'error');
+                return;
+            }
+            
+            // Show loading state
+            const submitBtn = document.getElementById('submitBtn');
+            if (submitBtn) {
+                const originalHTML = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Saving...';
+                submitBtn.disabled = true;
+                
+                // Re-enable file inputs if they were disabled
+                if (removeImageCheckbox && !removeImageCheckbox.checked && imageUpload) {
+                    imageUpload.disabled = false;
+                }
+                if (removeVideoCheckbox && !removeVideoCheckbox.checked && videoUpload) {
+                    videoUpload.disabled = false;
+                }
+            }
+            
+            // Form will submit normally
+        });
+    }
+    
+    // Helper function to format file size
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+    
+    // Toast notification function
+    function showToast(title, message, type = 'info') {
+        // Remove existing toast
+        const existingToast = document.querySelector('.custom-toast');
+        if (existingToast) existingToast.remove();
+        
+        // Create toast
+        const toast = document.createElement('div');
+        toast.className = `custom-toast alert alert-${type} position-fixed`;
+        toast.style.cssText = `
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            min-width: 250px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            animation: slideIn 0.3s ease;
+        `;
+        toast.innerHTML = `
+            <div class="d-flex align-items-center">
+                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'} me-2"></i>
+                <span><strong>${title}:</strong> ${message}</span>
+            </div>
+        `;
+        
+        document.body.appendChild(toast);
+        
+        // Remove toast after 3 seconds
+        setTimeout(() => {
+            toast.style.animation = 'slideOut 0.3s ease';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+    
+    // Add CSS for toast animations
+    if (!document.querySelector('#toast-animations')) {
+        const style = document.createElement('style');
+        style.id = 'toast-animations';
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+            
+            .custom-toast {
+                border-radius: 8px;
+                padding: 12px 16px;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    
+    // Initialize with flash messages
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                setTimeout(() => {
+                    showToast('{{ category|title }}', '{{ message }}', '{{ category }}');
+                }, 500);
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
 });
 </script>
 {% endblock %}

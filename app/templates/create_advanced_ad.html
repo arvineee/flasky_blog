@@ -1,0 +1,407 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-gradient-primary text-white py-4">
+                    <h3 class="mb-0">
+                        <i class="fas fa-magic me-2"></i>Create Advanced Ad
+                    </h3>
+                    <p class="mb-0 small opacity-75">No HTML needed - just fill in the details and we'll style it beautifully</p>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST" action="{{ url_for('admin.create_advanced_ad') }}" id="advancedAdForm">
+                        {{ form.hidden_tag() }}
+                        
+                        <!-- Ad Content Section -->
+                        <div class="section-header mb-4">
+                            <h5 class="fw-bold text-primary">
+                                <i class="fas fa-file-alt me-2"></i>Ad Content
+                            </h5>
+                            <hr>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label fw-bold">Ad Title *</label>
+                                <input type="text" name="title" class="form-control form-control-lg" 
+                                       placeholder="Enter a catchy title..." required maxlength="100">
+                                <small class="text-muted">Keep it short and compelling</small>
+                            </div>
+                            
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label fw-bold">Message *</label>
+                                <textarea name="message" class="form-control" rows="4" 
+                                          placeholder="Describe your offering..." required maxlength="300"></textarea>
+                                <small class="text-muted">Clear and concise message (max 300 characters)</small>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Button Text *</label>
+                                <input type="text" name="cta_text" class="form-control" 
+                                       placeholder="e.g., Learn More, Shop Now" value="Learn More" required>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Button Link *</label>
+                                <input type="url" name="cta_url" class="form-control" 
+                                       placeholder="https://example.com" required>
+                            </div>
+                            
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label fw-bold">Image URL (Optional)</label>
+                                <input type="url" name="image_url" class="form-control" 
+                                       placeholder="https://example.com/image.jpg">
+                                <small class="text-muted">Add an image to make your ad more engaging</small>
+                            </div>
+                        </div>
+                        
+                        <!-- Ad Styling Section -->
+                        <div class="section-header mb-4 mt-5">
+                            <h5 class="fw-bold text-primary">
+                                <i class="fas fa-palette me-2"></i>Ad Style
+                            </h5>
+                            <hr>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Style Template</label>
+                                <select name="ad_style" class="form-select" id="styleSelect">
+                                    <option value="modern" selected>Modern - Clean and contemporary</option>
+                                    <option value="classic">Classic - Traditional and professional</option>
+                                    <option value="minimal">Minimal - Simple and elegant</option>
+                                    <option value="vibrant">Vibrant - Bold and eye-catching</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Color Scheme</label>
+                                <select name="color_scheme" class="form-select" id="colorSelect">
+                                    <option value="blue" selected>Blue - Trust & Professionalism</option>
+                                    <option value="green">Green - Growth & Health</option>
+                                    <option value="orange">Orange - Energy & Enthusiasm</option>
+                                    <option value="purple">Purple - Creativity & Luxury</option>
+                                    <option value="red">Red - Urgency & Passion</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label fw-bold">Placement</label>
+                                <div class="row g-3">
+                                    <div class="col-md-3">
+                                        <div class="placement-option">
+                                            <input type="radio" name="placement" value="popup" id="popup" checked>
+                                            <label for="popup" class="placement-label">
+                                                <i class="fas fa-window-restore fa-2x mb-2"></i>
+                                                <div class="fw-bold">Popup</div>
+                                                <small>Modal overlay</small>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="placement-option">
+                                            <input type="radio" name="placement" value="sidebar" id="sidebar">
+                                            <label for="sidebar" class="placement-label">
+                                                <i class="fas fa-th-large fa-2x mb-2"></i>
+                                                <div class="fw-bold">Sidebar</div>
+                                                <small>Right column</small>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="placement-option">
+                                            <input type="radio" name="placement" value="inline" id="inline">
+                                            <label for="inline" class="placement-label">
+                                                <i class="fas fa-align-center fa-2x mb-2"></i>
+                                                <div class="fw-bold">Inline</div>
+                                                <small>Within content</small>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="placement-option">
+                                            <input type="radio" name="placement" value="header" id="header">
+                                            <label for="header" class="placement-label">
+                                                <i class="fas fa-minus fa-2x mb-2"></i>
+                                                <div class="fw-bold">Banner</div>
+                                                <small>Top of page</small>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Advertiser Info Section -->
+                        <div class="section-header mb-4 mt-5">
+                            <h5 class="fw-bold text-primary">
+                                <i class="fas fa-building me-2"></i>Advertiser Information
+                            </h5>
+                            <hr>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Advertiser Name *</label>
+                                <input type="text" name="advertiser_name" class="form-control" 
+                                       placeholder="Company name" required>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Contact Email *</label>
+                                <input type="email" name="advertiser_email" class="form-control" 
+                                       placeholder="contact@example.com" required>
+                            </div>
+                            
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label fw-bold">Website</label>
+                                <input type="url" name="advertiser_website" class="form-control" 
+                                       placeholder="https://example.com">
+                            </div>
+                        </div>
+                        
+                        <!-- Campaign Details Section -->
+                        <div class="section-header mb-4 mt-5">
+                            <h5 class="fw-bold text-primary">
+                                <i class="fas fa-calendar-alt me-2"></i>Campaign Details
+                            </h5>
+                            <hr>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label fw-bold">Price ($)</label>
+                                <input type="number" name="price" class="form-control" 
+                                       placeholder="0.00" step="0.01" min="0">
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label fw-bold">Start Date</label>
+                                <input type="date" name="start_date" class="form-control">
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label fw-bold">End Date (Optional)</label>
+                                <input type="date" name="end_date" class="form-control">
+                            </div>
+                        </div>
+                        
+                        <!-- Preview Section -->
+                        <div class="section-header mb-4 mt-5">
+                            <h5 class="fw-bold text-primary">
+                                <i class="fas fa-eye me-2"></i>Live Preview
+                            </h5>
+                            <hr>
+                        </div>
+                        
+                        <div id="adPreview" class="ad-preview-container">
+                            <p class="text-muted text-center py-5">
+                                <i class="fas fa-image fa-3x mb-3 d-block"></i>
+                                Fill in the form to see a preview of your ad
+                            </p>
+                        </div>
+                        
+                        <!-- Submit Buttons -->
+                        <div class="d-flex justify-content-between mt-5">
+                            <a href="{{ url_for('admin.manage_ads') }}" class="btn btn-outline-secondary btn-lg">
+                                <i class="fas fa-arrow-left me-2"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary btn-lg px-5">
+                                <i class="fas fa-check me-2"></i>Create Ad
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Help Card -->
+            <div class="card mt-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fas fa-question-circle me-2"></i>Tips for Creating Effective Ads</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="fw-bold">✨ Best Practices:</h6>
+                            <ul>
+                                <li>Keep titles under 60 characters</li>
+                                <li>Use action-oriented button text</li>
+                                <li>Choose high-quality images</li>
+                                <li>Test different color schemes</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="fw-bold">🎯 Placement Guide:</h6>
+                            <ul>
+                                <li><strong>Popup:</strong> High visibility, best for announcements</li>
+                                <li><strong>Sidebar:</strong> Persistent, less intrusive</li>
+                                <li><strong>Inline:</strong> Natural integration with content</li>
+                                <li><strong>Banner:</strong> Maximum exposure at top</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #4A90E2 0%, #357ABD 100%);
+}
+
+.section-header h5 {
+    display: flex;
+    align-items: center;
+}
+
+.placement-option {
+    position: relative;
+}
+
+.placement-option input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+}
+
+.placement-label {
+    display: block;
+    text-align: center;
+    padding: 20px;
+    border: 2px solid #E0E0E0;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.placement-option input[type="radio"]:checked + .placement-label {
+    border-color: #4A90E2;
+    background: #E3F2FD;
+}
+
+.placement-label:hover {
+    border-color: #4A90E2;
+    transform: translateY(-2px);
+}
+
+.ad-preview-container {
+    min-height: 300px;
+    border: 2px dashed #E0E0E0;
+    border-radius: 12px;
+    padding: 30px;
+    background: #FAFAFA;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #4A90E2;
+    box-shadow: 0 0 0 0.2rem rgba(74, 144, 226, 0.25);
+}
+
+.btn-lg {
+    padding: 12px 30px;
+    border-radius: 8px;
+}
+</style>
+
+<script>
+// Live preview functionality
+document.getElementById('advancedAdForm').addEventListener('input', updatePreview);
+
+function updatePreview() {
+    // Get form values
+    const title = document.querySelector('input[name="title"]').value || 'Your Ad Title';
+    const message = document.querySelector('textarea[name="message"]').value || 'Your compelling message will appear here...';
+    const ctaText = document.querySelector('input[name="cta_text"]').value || 'Learn More';
+    const imageUrl = document.querySelector('input[name="image_url"]').value;
+    const style = document.getElementById('styleSelect').value;
+    const color = document.getElementById('colorSelect').value;
+    const placement = document.querySelector('input[name="placement"]:checked').value;
+    
+    // Color schemes
+    const colors = {
+        blue: {primary: '#4A90E2', light: '#E3F2FD'},
+        green: {primary: '#4CAF50', light: '#E8F5E9'},
+        orange: {primary: '#FF9800', light: '#FFF3E0'},
+        purple: {primary: '#9C27B0', light: '#F3E5F5'},
+        red: {primary: '#F44336', light: '#FFEBEE'}
+    };
+    
+    const scheme = colors[color];
+    
+    // Generate preview HTML based on placement
+    let previewHTML = '';
+    
+    if (placement === 'popup') {
+        previewHTML = `
+            <div style="max-width: 500px; margin: 0 auto; background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.2);">
+                <div style="padding: 30px; ${style === 'vibrant' ? `background: linear-gradient(135deg, ${scheme.primary}, #357ABD);` : `background: ${scheme.light};`}">
+                    <span style="display: inline-block; background: ${scheme.primary}; color: white; padding: 5px 12px; border-radius: 20px; font-size: 11px; margin-bottom: 15px;">Sponsored</span>
+                    ${imageUrl ? `<div style="margin-bottom: 20px;"><img src="${imageUrl}" style="width: 100%; border-radius: 12px;" /></div>` : ''}
+                    <h3 style="color: ${style === 'vibrant' ? 'white' : '#2C3E50'}; margin-bottom: 15px;">${title}</h3>
+                    <p style="color: ${style === 'vibrant' ? 'rgba(255,255,255,0.9)' : '#546E7A'}; margin-bottom: 25px;">${message}</p>
+                    <a href="#" style="display: inline-block; background: ${style === 'vibrant' ? 'white' : scheme.primary}; color: ${style === 'vibrant' ? scheme.primary : 'white'}; padding: 14px 30px; border-radius: 50px; text-decoration: none; font-weight: 600;">
+                        ${ctaText}
+                    </a>
+                </div>
+            </div>
+        `;
+    } else if (placement === 'sidebar') {
+        previewHTML = `
+            <div style="max-width: 300px; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                ${imageUrl ? `<div style="height: 150px; overflow: hidden;"><img src="${imageUrl}" style="width: 100%; height: 100%; object-fit: cover;" /></div>` : ''}
+                <div style="padding: 15px;">
+                    <h4 style="color: #2C3E50; margin-bottom: 10px; font-size: 16px;">${title}</h4>
+                    <p style="color: #546E7A; font-size: 13px; margin-bottom: 12px;">${message}</p>
+                    <a href="#" style="display: block; text-align: center; background: ${scheme.primary}; color: white; padding: 10px; border-radius: 8px; text-decoration: none; font-weight: 600;">
+                        ${ctaText}
+                    </a>
+                </div>
+            </div>
+        `;
+    } else if (placement === 'inline') {
+        previewHTML = `
+            <div style="background: ${scheme.light}; border: 2px solid ${scheme.primary}; border-radius: 12px; padding: 20px;">
+                <div style="color: ${scheme.primary}; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 15px;">
+                    <i class="fas fa-ad"></i> Sponsored Content
+                </div>
+                <div style="display: flex; gap: 20px; align-items: center;">
+                    ${imageUrl ? `<div style="flex: 0 0 200px; height: 150px; border-radius: 8px; overflow: hidden;"><img src="${imageUrl}" style="width: 100%; height: 100%; object-fit: cover;" /></div>` : ''}
+                    <div>
+                        <h3 style="color: #2C3E50; margin-bottom: 10px;">${title}</h3>
+                        <p style="color: #546E7A; margin-bottom: 15px;">${message}</p>
+                        <a href="#" style="display: inline-block; background: ${scheme.primary}; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: 600;">
+                            ${ctaText}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        `;
+    } else { // header
+        previewHTML = `
+            <div style="background: linear-gradient(135deg, ${scheme.primary}, #357ABD); padding: 15px; border-radius: 12px;">
+                <div style="display: flex; align-items: center; gap: 20px; color: white;">
+                    ${imageUrl ? `<div style="flex: 0 0 80px; height: 80px; border-radius: 8px; overflow: hidden;"><img src="${imageUrl}" style="width: 100%; height: 100%; object-fit: cover;" /></div>` : ''}
+                    <div style="flex: 1;">
+                        <span style="background: rgba(255,255,255,0.2); padding: 3px 10px; border-radius: 12px; font-size: 10px; font-weight: 600; text-transform: uppercase;">Sponsored</span>
+                        <h3 style="font-size: 18px; margin: 5px 0;">${title}</h3>
+                        <p style="font-size: 14px; opacity: 0.9; margin: 0;">${message}</p>
+                    </div>
+                    <a href="#" style="background: white; color: ${scheme.primary}; padding: 10px 25px; border-radius: 25px; text-decoration: none; font-weight: 600; white-space: nowrap;">
+                        ${ctaText}
+                    </a>
+                </div>
+            </div>
+        `;
+    }
+    
+    document.getElementById('adPreview').innerHTML = previewHTML;
+}
+
+// Initial preview
+updatePreview();
+</script>
+{% endblock %}

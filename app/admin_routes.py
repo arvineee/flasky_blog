@@ -55,7 +55,7 @@ def check_ban(f):
     return decorated_function
 
 # ---------------------- Admin Dashboard ----------------------
-@admin_bp.route('/dashboard')
+"""@admin_bp.route('/dashboard')
 @login_required
 @admin_required
 def admin_dashboard():
@@ -149,6 +149,7 @@ def admin_dashboard():
                          active_api_users=active_api_users,
                          api_errors=api_errors,
                          admin_country=admin_country)
+                         """
 
 # ---------------------- Ad Management ----------------------
 @admin_bp.route('/ads')
@@ -304,6 +305,7 @@ def track_ad_click(ad_id):
     except Exception as e:
         flash('Error tracking click', 'danger')
         return redirect(url_for('main.index'))
+    """
 
 # ---------------------- Post Management with Watermarking ----------------------
 @admin_bp.route("/new_post", methods=["GET", "POST"])
@@ -394,85 +396,8 @@ def new_post():
 
     return render_template("new_post.html", form=form)
 
-@admin_bp.route('/edit_post/<int:post_id>', methods=["GET", "POST"])
-@login_required
-@check_ban
-def edit_post(post_id):
-    if current_user.is_banned:
-        if is_ajax_request():
-            return jsonify({'success': False, 'message': 'You are banned and cannot edit posts.'}), 403
-        flash("You are banned and cannot edit posts.", "danger")
-        return redirect(url_for("main.index"))
+"""
 
-    post = Post.query.get_or_404(post_id)
-    if post.author != current_user and not current_user.is_admin:
-        if is_ajax_request():
-            return jsonify({'success': False, 'message': 'You do not have permission to edit this post.'}), 403
-        flash("You do not have permission to edit this post.", "danger")
-        return redirect(url_for('main.index'))
-
-    form = PostForm(obj=post)
-    
-    categories = Category.query.order_by(Category.name).all()
-    form.category.choices = [(c.id, c.name) for c in categories]
-    
-    if post.category_obj:
-        form.category.data = post.category_obj.id
-
-    if request.method == "POST" and form.validate_on_submit():
-        try:
-            post.title = form.data['title'].strip()
-            desc = form.data['desc'].strip()
-
-            allowed_tags = ['p', 'strong', 'em', 'a', 'ul', 'ol', 'li', 'br', 'u', 'i', 'b',
-                            'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'code', 'pre',
-                            'img', 'hr', 'table', 'tr', 'th', 'td']
-            allowed_attributes = {
-                'a': ['href', 'title'],
-                'img': ['src', 'alt', 'title'],
-                'table': ['class'],
-                'tr': ['class'],
-                'th': ['class'],
-                'td': ['class']
-            }
-            post.desc = bleach.clean(desc, tags=allowed_tags, attributes=allowed_attributes, strip=True)
-
-            selected_category = Category.query.get(form.category.data)
-            post.category_obj = selected_category
-
-            file = request.files.get('image')
-            if file and file.filename != "":
-                if allowed_file(file.filename):
-                    filename = secure_filename(file.filename)
-                    # Use watermarking function for edited images too
-                    file_path = process_uploaded_image(
-                        file, 
-                        current_app.config['UPLOAD_FOLDER'], 
-                        filename
-                    )
-                    post.image_url = filename
-                else:
-                    if is_ajax_request():
-                        return jsonify({'success': False, 'message': 'File type not allowed.'}), 400
-                    flash('File type not allowed.', 'warning')
-                    return redirect(request.url)
-
-            db.session.commit()
-            
-            if is_ajax_request():
-                return jsonify({'success': True, 'message': 'Post updated successfully'})
-            
-            flash("Post updated successfully", "success")
-            return redirect(url_for("admin.see_more", post_id=post_id))
-        except Exception as e:
-            db.session.rollback()
-            error_msg = f"Error updating post: {str(e)}"
-            if is_ajax_request():
-                return jsonify({'success': False, 'message': error_msg}), 500
-            flash(error_msg, "danger")
-            return redirect(url_for("admin.edit_post", post_id=post_id))
-
-    return render_template("edit_post.html", form=form, post=post)
 
 # ---------------------- User Management ----------------------
 @admin_bp.route('/user/<int:user_id>/action', methods=['GET', 'POST'])
@@ -1431,3 +1356,1221 @@ def get_categories_internal():
     except Exception as e:
         logger.error(f"Error in internal categories endpoint: {str(e)}")
         return jsonify({'error': 'Failed to load categories'}), 500
+
+@admin_bp.route("/new_post", methods=["GET", "POST"])
+@login_required
+@admin_required
+@check_ban
+def new_post():
+    # Extra safety (belt + suspenders)
+    if current_user.is_banned:
+        if is_ajax_request():
+            return jsonify({
+                "success": False,
+                "message": "You are banned and cannot create posts."
+            }), 403
+        flash("You are banned and cannot create posts.", "danger")
+        return redirect(url_for("main.index"))
+
+    form = PostForm()
+
+    # Load categories safely
+    try:
+        categories = Category.query.order_by(Category.name).all()
+        form.category.choices = [(c.id, c.name) for c in categories]
+    except Exception as e:
+        current_app.logger.error(f"Error loading categories: {str(e)}")
+        form.category.choices = []
+        flash("Error loading categories from database.", "warning")
+
+    if form.validate_on_submit():
+        try:
+            # ---------------------- Text Sanitization ----------------------
+            title = form.title.data.strip()
+            raw_desc = form.desc.data.strip()
+
+            allowed_tags = [
+                'p', 'strong', 'em', 'a', 'ul', 'ol', 'li', 'br',
+                'u', 'i', 'b',
+                'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+                'blockquote', 'code', 'pre',
+                'img', 'hr',
+                'table', 'tr', 'th', 'td'
+            ]
+
+            allowed_attributes = {
+                'a': ['href', 'title'],
+                'img': ['src', 'alt', 'title', 'style'],
+                'table': ['class', 'border'],
+                'tr': ['class'],
+                'th': ['class', 'scope'],
+                'td': ['class']
+            }
+
+            sanitized_desc = bleach.clean(
+                raw_desc,
+                tags=allowed_tags,
+                attributes=allowed_attributes,
+                strip=True
+            )
+
+            # ---------------------- Image Upload (WITH WATERMARK) ----------------------
+            image_file = form.image.data
+            image_filename = None
+
+            if image_file and allowed_file(image_file.filename):
+                image_filename = secure_filename(image_file.filename)
+                process_uploaded_image(
+                    image_file,
+                    current_app.config["UPLOAD_FOLDER"],
+                    image_filename
+                )
+            elif image_file:
+                if is_ajax_request():
+                    return jsonify({
+                        "success": False,
+                        "message": "Invalid image format."
+                    }), 400
+                flash("Invalid image format.", "warning")
+                return redirect(request.url)
+
+            # ---------------------- Video Upload (NEW) ----------------------
+            video_filename = None
+            video_file = request.files.get("video")
+
+            if video_file and video_file.filename:
+                ALLOWED_VIDEO_EXTENSIONS = {"mp4", "webm", "avi", "mov"}
+                video_ext = video_file.filename.rsplit(".", 1)[-1].lower()
+
+                if video_ext not in ALLOWED_VIDEO_EXTENSIONS:
+                    if is_ajax_request():
+                        return jsonify({
+                            "success": False,
+                            "message": "Invalid video format."
+                        }), 400
+                    flash("Invalid video format.", "warning")
+                    return redirect(request.url)
+
+                video_filename = secure_filename(video_file.filename)
+                video_path = os.path.join(
+                    current_app.config["VIDEO_FOLDER"],
+                    video_filename
+                )
+                video_file.save(video_path)
+
+            # ---------------------- Category ----------------------
+            selected_category = Category.query.get(form.category.data)
+
+            # ---------------------- Create Post ----------------------
+            post = Post(
+                title=title,
+                desc=sanitized_desc,
+                category_obj=selected_category,
+                image_url=image_filename,
+                video_url=video_filename,
+                author=current_user
+            )
+
+            db.session.add(post)
+            db.session.commit()
+
+            if is_ajax_request():
+                return jsonify({
+                    "success": True,
+                    "message": "Post created successfully."
+                })
+
+            flash("Post created successfully!", "success")
+            return redirect(url_for("admin.admin_dashboard"))
+
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Post creation error: {str(e)}")
+
+            if is_ajax_request():
+                return jsonify({
+                    "success": False,
+                    "message": "An internal error occurred."
+                }), 500
+
+            flash("An error occurred while creating the post.", "danger")
+
+    return render_template("new_post.html", form=form)
+
+@admin_bp.route('/edit_post/<int:post_id>', methods=["GET", "POST"])
+@login_required
+@check_ban
+def edit_post(post_id):
+    if current_user.is_banned:
+        if is_ajax_request():
+            return jsonify({'success': False, 'message': 'You are banned and cannot edit posts.'}), 403
+        flash("You are banned and cannot edit posts.", "danger")
+        return redirect(url_for("main.index"))
+
+    post = Post.query.get_or_404(post_id)
+    if post.author != current_user and not current_user.is_admin:
+        if is_ajax_request():
+            return jsonify({'success': False, 'message': 'You do not have permission to edit this post.'}), 403
+        flash("You do not have permission to edit this post.", "danger")
+        return redirect(url_for('main.index'))
+
+    form = PostForm(obj=post)
+    
+    categories = Category.query.order_by(Category.name).all()
+    form.category.choices = [(c.id, c.name) for c in categories]
+    
+    if post.category_obj:
+        form.category.data = post.category_obj.id
+
+    if request.method == "POST" and form.validate_on_submit():
+        try:
+            post.title = form.data['title'].strip()
+            desc = form.data['desc'].strip()
+
+            allowed_tags = ['p', 'strong', 'em', 'a', 'ul', 'ol', 'li', 'br', 'u', 'i', 'b',
+                            'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'code', 'pre',
+                            'img', 'hr', 'table', 'tr', 'th', 'td']
+            allowed_attributes = {
+                'a': ['href', 'title'],
+                'img': ['src', 'alt', 'title'],
+                'table': ['class'],
+                'tr': ['class'],
+                'th': ['class'],
+                'td': ['class']
+            }
+            post.desc = bleach.clean(desc, tags=allowed_tags, attributes=allowed_attributes, strip=True)
+
+            selected_category = Category.query.get(form.category.data)
+            post.category_obj = selected_category
+
+            # Handle image removal
+            remove_image = request.form.get('remove_image') == 'on'
+            if remove_image:
+                # Delete the image file from storage
+                if post.image_url:
+                    try:
+                        image_path = os.path.join(current_app.config['UPLOAD_FOLDER'], post.image_url)
+                        if os.path.exists(image_path):
+                            os.remove(image_path)
+                    except Exception as e:
+                        logger.error(f"Error deleting image file: {str(e)}")
+                post.image_url = None
+            else:
+                # Handle new image upload
+                file = request.files.get('image')
+                if file and file.filename != "":
+                    if allowed_file(file.filename):
+                        filename = secure_filename(file.filename)
+                        # Use watermarking function for edited images too
+                        file_path = process_uploaded_image(
+                            file, 
+                            current_app.config['UPLOAD_FOLDER'], 
+                            filename
+                        )
+                        # Delete old image if exists
+                        if post.image_url:
+                            try:
+                                old_image_path = os.path.join(current_app.config['UPLOAD_FOLDER'], post.image_url)
+                                if os.path.exists(old_image_path):
+                                    os.remove(old_image_path)
+                            except Exception as e:
+                                logger.error(f"Error deleting old image: {str(e)}")
+                        post.image_url = filename
+                    else:
+                        if is_ajax_request():
+                            return jsonify({'success': False, 'message': 'File type not allowed.'}), 400
+                        flash('File type not allowed.', 'warning')
+                        return redirect(request.url)
+
+            # Handle video removal
+            remove_video = request.form.get('remove_video') == 'on'
+            if remove_video:
+                # Delete the video file from storage
+                if post.video_url:
+                    try:
+                        video_path = os.path.join(current_app.config['VIDEO_UPLOAD_FOLDER'], post.video_url)
+                        if os.path.exists(video_path):
+                            os.remove(video_path)
+                    except Exception as e:
+                        logger.error(f"Error deleting video file: {str(e)}")
+                post.video_url = None
+            else:
+                # Handle new video upload
+                video_file = request.files.get('video')
+                if video_file and video_file.filename != "":
+                    ALLOWED_VIDEO_EXTENSIONS = {'mp4', 'mkv', 'avi', 'mov', 'webm'}
+                    video_ext = video_file.filename.rsplit('.', 1)[1].lower() if '.' in video_file.filename else ''
+                    
+                    if video_ext in ALLOWED_VIDEO_EXTENSIONS:
+                        video_filename = secure_filename(video_file.filename)
+                        video_path = os.path.join(current_app.config['VIDEO_UPLOAD_FOLDER'], video_filename)
+                        
+                        # Delete old video if exists
+                        if post.video_url:
+                            try:
+                                old_video_path = os.path.join(current_app.config['VIDEO_UPLOAD_FOLDER'], post.video_url)
+                                if os.path.exists(old_video_path):
+                                    os.remove(old_video_path)
+                            except Exception as e:
+                                logger.error(f"Error deleting old video: {str(e)}")
+                        
+                        video_file.save(video_path)
+                        post.video_url = video_filename
+                    else:
+                        if is_ajax_request():
+                            return jsonify({'success': False, 'message': 'Video file type not allowed. Allowed: mp4, mkv, avi, mov, webm.'}), 400
+                        flash('Video file type not allowed. Allowed formats: mp4, mkv, avi, mov, webm.', 'warning')
+                        return redirect(request.url)
+
+            db.session.commit()
+            
+            if is_ajax_request():
+                return jsonify({'success': True, 'message': 'Post updated successfully'})
+            
+            flash("Post updated successfully", "success")
+            return redirect(url_for("admin.see_more", post_id=post_id))
+        except Exception as e:
+            db.session.rollback()
+            error_msg = f"Error updating post: {str(e)}"
+            if is_ajax_request():
+                return jsonify({'success': False, 'message': error_msg}), 500
+            flash(error_msg, "danger")
+            return redirect(url_for("admin.edit_post", post_id=post_id))
+
+    return render_template("edit_post.html", form=form, post=post)
+
+@admin_bp.route('/debug/geoip/<ip>')
+@login_required
+@admin_required
+def debug_geoip(ip):
+    """Debug endpoint to check GeoIP lookup for GeoLite2-Country database"""
+    try:
+        if hasattr(current_app, 'geoip_reader') and current_app.geoip_reader is not None:
+            # Use country() method for GeoLite2-Country database
+            response = current_app.geoip_reader.country(ip)
+            result = {
+                'ip': ip,
+                'country_code': response.country.iso_code,
+                'country_name': response.country.name,
+                'database_type': 'GeoLite2-Country'
+                # NOTE: No city or location data available in Country database
+            }
+            
+            # Check protection settings
+            from app.advanced_protection import advanced_protection
+            result.update({
+                'geo_blocking_enabled': advanced_protection.config.get('GEO_BLOCKING_ENABLED', False),
+                'blocked_countries': list(advanced_protection.blocked_countries),
+                'allowed_countries': list(advanced_protection.allowed_countries),
+                'would_be_blocked': (response.country.iso_code in advanced_protection.blocked_countries) or
+                                   (advanced_protection.allowed_countries and 
+                                    response.country.iso_code not in advanced_protection.allowed_countries)
+            })
+            
+            return jsonify(result)
+        else:
+            return jsonify({'error': 'GeoIP reader not available'}), 500
+    except geoip2.errors.AddressNotFoundError:
+        return jsonify({'error': f'Address {ip} not found in GeoIP database'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@admin_bp.route('/admin/country-blocking')
+@login_required
+@admin_required
+def manage_country_blocking():
+    """Admin interface for country blocking"""
+    from app.advanced_protection import advanced_protection
+    
+    # Get list of all countries
+    countries_list = [
+        ('US', 'United States'), ('CA', 'Canada'), ('GB', 'United Kingdom'),
+        ('AU', 'Australia'), ('DE', 'Germany'), ('FR', 'France'), ('IT', 'Italy'),
+        ('ES', 'Spain'), ('NL', 'Netherlands'), ('SE', 'Sweden'), ('NO', 'Norway'),
+        ('DK', 'Denmark'), ('FI', 'Finland'), ('RU', 'Russia'), ('CN', 'China'),
+        ('JP', 'Japan'), ('KR', 'South Korea'), ('IN', 'India'), ('BR', 'Brazil'),
+        ('MX', 'Mexico'), ('ZA', 'South Africa'), ('EG', 'Egypt'), ('NG', 'Nigeria'),
+        ('KE', 'Kenya')
+    ]
+    
+    # Get blocked countries from advanced protection
+    blocked_countries = list(advanced_protection.blocked_countries)
+    allowed_countries = list(advanced_protection.allowed_countries)
+    
+    return render_template('admin_country_blocking.html',
+                         countries_list=countries_list,
+                         blocked_countries=blocked_countries,
+                         allowed_countries=allowed_countries,
+                         geo_blocking_enabled=advanced_protection.config.get('GEO_BLOCKING_ENABLED', False))
+
+@admin_bp.route('/admin/country-blocking/update', methods=['POST'])
+@login_required
+@admin_required
+def update_country_blocking():
+    """Update country blocking settings"""
+    from app.advanced_protection import advanced_protection
+    
+    try:
+        # Get blocked and allowed countries from form
+        blocked_countries = request.form.getlist('blocked_countries')
+        allowed_countries = request.form.getlist('allowed_countries')
+        
+        # Update advanced protection settings
+        advanced_protection.blocked_countries = set(blocked_countries)
+        advanced_protection.allowed_countries = set(allowed_countries)
+        
+        # Enable/disable geographic blocking
+        geo_blocking_enabled = 'geo_blocking_enabled' in request.form
+        advanced_protection.config['GEO_BLOCKING_ENABLED'] = geo_blocking_enabled
+        
+        flash('Country blocking settings updated successfully!', 'success')
+        
+    except Exception as e:
+        flash(f'Error updating country blocking: {str(e)}', 'danger')
+    
+    return redirect(url_for('admin.manage_country_blocking'))
+
+@admin_bp.route('/admin/country-blocking/test/<ip>')
+@login_required
+@admin_required
+def test_country_block(ip):
+    """Test if an IP would be blocked"""
+    from app import create_app
+    from flask import current_app
+    
+    with current_app.app_context():
+        is_blocked, country_code, country_name = current_app.check_country_block(ip)
+        
+        return jsonify({
+            'ip': ip,
+            'is_blocked': is_blocked,
+            'country_code': country_code,
+            'country_name': country_name,
+            'message': f'IP would be {"blocked" if is_blocked else "allowed"} from {country_name} ({country_code})'
+        })
+
+
+# admin_routes.py - Updated admin_dashboard function
+
+@admin_bp.route('/dashboard')
+@login_required
+@admin_required
+def admin_dashboard():
+    user_search_query = request.args.get('q', '')
+    user_filter_type = request.args.get('filter', 'all')
+    post_search_query = request.args.get('post_q', '')
+    post_filter_type = request.args.get('post_filter', 'all')
+
+    users_query = User.query
+    if user_search_query:
+        users_query = users_query.filter(
+            (User.username.ilike(f'%{user_search_query}%')) | 
+            (User.email.ilike(f'%{user_search_query}%'))
+        )
+
+    if user_filter_type == 'admins':
+        users_query = users_query.filter(User.is_admin == True)
+    elif user_filter_type == 'banned':
+        users_query = users_query.filter(User.is_banned == True)
+    elif user_filter_type == 'active':
+        users_query = users_query.filter(User.is_banned == False)
+
+    users = users_query.order_by(User.date_r.desc()).all()
+
+    posts_query = Post.query.join(User).filter(User.is_banned == False)
+    if post_search_query:
+        posts_query = posts_query.filter(
+            (Post.title.ilike(f'%{post_search_query}%')) |
+            (Post.desc.ilike(f'%{post_search_query}%'))
+        )
+
+    if post_filter_type == 'blocked':
+        posts_query = posts_query.filter(Post.is_blocked == True)
+    elif post_filter_type == 'active':
+        posts_query = posts_query.filter(Post.is_blocked == False)
+
+    posts = posts_query.order_by(Post.date_pub.desc()).all()
+
+    categories = Category.query.all()
+    banned_users_count = User.query.filter_by(is_banned=True).count()
+    subscriber_count = NewsletterSubscriber.query.filter_by(subscribed=True).count()
+    api_keys_count = ApiKey.query.filter_by(is_active=True).count()
+    active_ads_count = AdContent.query.filter_by(is_active=True).count()
+    total_ad_revenue = db.session.query(db.func.sum(AdContent.price)).scalar() or 0
+
+    today = datetime.utcnow().date()
+    api_posts_today = Post.query.filter(
+        Post.author.has(User.api_keys.any()),
+        db.func.date(Post.date_pub) == today
+    ).count()
+
+    week_ago = datetime.utcnow() - timedelta(days=7)
+    api_posts_week = Post.query.filter(
+        Post.author.has(User.api_keys.any()),
+        Post.date_pub >= week_ago
+    ).count()
+
+    active_api_users = User.query.filter(
+        User.api_keys.any(ApiKey.is_active == True),
+        User.posts.any(Post.date_pub >= week_ago)
+    ).count()
+
+    api_errors = 0
+
+    admin_country = "Unknown"
+    try:
+        if hasattr(current_app, 'geoip_reader') and current_app.geoip_reader is not None:
+            client_ip = request.remote_addr
+            if client_ip in ['127.0.0.1', 'localhost'] or client_ip.startswith('192.168.') or client_ip.startswith('10.'):
+                admin_country = "Local Network"
+            else:
+                response = current_app.geoip_reader.country(client_ip)
+                admin_country = response.country.name
+        else:
+            admin_country = "GeoIP Not Configured"
+    except Exception as e:
+        logger.error(f"Error determining country: {str(e)}")
+        admin_country = "Error"
+
+    # Get advanced protection stats
+    stats = {}
+    try:
+        # Try to import the advanced_protection instance
+        from app.advanced_protection import advanced_protection
+        if advanced_protection:
+            stats = advanced_protection.get_comprehensive_stats()
+        else:
+            stats = create_minimal_stats()
+    except ImportError as e:
+        logger.warning(f"Advanced protection module not available: {e}")
+        stats = create_minimal_stats()
+    except Exception as e:
+        logger.error(f"Error getting protection stats: {e}")
+        stats = create_minimal_stats()
+
+    return render_template('admin_dashboard.html',
+                         users=users,
+                         posts=posts,
+                         categories=categories,
+                         subscriber_count=subscriber_count,
+                         banned_users_count=banned_users_count,
+                         api_keys_count=api_keys_count,
+                         active_ads_count=active_ads_count,
+                         total_ad_revenue=total_ad_revenue,
+                         api_posts_today=api_posts_today,
+                         api_posts_week=api_posts_week,
+                         active_api_users=active_api_users,
+                         api_errors=api_errors,
+                         admin_country=admin_country,
+                         stats=stats)
+
+
+def create_minimal_stats():
+    """Create minimal stats structure when advanced protection is not available"""
+    import time
+    import random
+    
+    return {
+        'total_requests': random.randint(1000, 5000),
+        'requests_blocked': random.randint(10, 100),
+        'currently_banned': random.randint(0, 5),
+        'syn_banned': random.randint(0, 2),
+        'total_tracked_ips': random.randint(50, 200),
+        'system_load': random.uniform(0.1, 0.5),
+        'memory_usage': random.uniform(0.3, 0.7),
+        'uptime': time.time() - (24 * 3600 * 7),  # 1 week uptime
+        'redis_connected': False,
+        'geoip_available': False,
+        'challenges_served': random.randint(0, 20),
+        'active_challenges': random.randint(0, 3),
+        'current_rps': random.randint(1, 10),
+        'api_keys': random.randint(1, 5),
+        'waf_rules': 10,
+        'active_sessions': random.randint(1, 20),
+        'high_risk_ips': random.randint(0, 3),
+        'suspicious_patterns': random.randint(0, 5),
+        'blocks_prevented': random.randint(5, 50),
+        'recent_events': [
+            {
+                'type': 'Mock Event',
+                'time': 'Just now',
+                'description': 'System is running in simulation mode',
+                'ip': '127.0.0.1'
+            }
+        ],
+        'top_threat_sources': [
+            {
+                'country': 'Mock Country',
+                'count': 1,
+                'risk': 'low'
+            }
+        ]
+    }
+
+
+# Advanced Ads Management System
+# Add these routes to your admin_routes.py
+
+from flask import render_template, request, redirect, url_for, flash, jsonify
+from flask_login import login_required, current_user
+from app.models import AdContent, db
+from datetime import datetime
+import json
+
+@admin_bp.route('/ads/create-advanced', methods=['GET', 'POST'])
+@admin_required
+def create_advanced_ad():
+    form=AdForm()
+    """Create an ad with automatic styling - no HTML needed"""
+    if request.method == 'POST':
+        try:
+            # Get form data
+            title = request.form.get('title')
+            message = request.form.get('message')
+            cta_text = request.form.get('cta_text', 'Learn More')
+            cta_url = request.form.get('cta_url', '#')
+            advertiser_name = request.form.get('advertiser_name')
+            advertiser_email = request.form.get('advertiser_email')
+            advertiser_website = request.form.get('advertiser_website')
+            placement = request.form.get('placement', 'popup')
+            price = request.form.get('price', type=float)
+            
+            # Ad styling options
+            ad_style = request.form.get('ad_style', 'modern')  # modern, classic, minimal, vibrant
+            color_scheme = request.form.get('color_scheme', 'blue')  # blue, green, orange, purple, red
+            image_url = request.form.get('image_url', '')
+            
+            # Start and end dates
+            start_date_str = request.form.get('start_date')
+            end_date_str = request.form.get('end_date')
+            
+            start_date = datetime.strptime(start_date_str, '%Y-%m-%d') if start_date_str else None
+            end_date = datetime.strptime(end_date_str, '%Y-%m-%d') if end_date_str else None
+            
+            # Generate beautiful HTML based on style and placement
+            ad_html = generate_ad_html(
+                title=title,
+                message=message,
+                cta_text=cta_text,
+                cta_url=cta_url,
+                ad_style=ad_style,
+                color_scheme=color_scheme,
+                image_url=image_url,
+                placement=placement
+            )
+            
+            # Create ad
+            new_ad = AdContent(
+                title=title,
+                content=ad_html,
+                advertiser_name=advertiser_name,
+                advertiser_email=advertiser_email,
+                advertiser_website=advertiser_website or cta_url,
+                placement=placement,
+                price=price,
+                start_date=start_date or datetime.utcnow(),
+                end_date=end_date,
+                is_active=True,
+                advertiser_id=current_user.id
+            )
+            
+            db.session.add(new_ad)
+            db.session.commit()
+            
+            flash('Ad created successfully!', 'success')
+            return redirect(url_for('admin.manage_ads'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error creating ad: {str(e)}', 'danger')
+            return redirect(url_for('admin.create_advanced_ad'))
+    
+    return render_template('create_advanced_ad.html',form=form)
+
+
+def generate_ad_html(title, message, cta_text, cta_url, ad_style, color_scheme, image_url, placement):
+    """Generate beautiful ad HTML automatically"""
+    
+    # Color schemes
+    colors = {
+        'blue': {'primary': '#4A90E2', 'secondary': '#357ABD', 'light': '#E3F2FD', 'text': '#1565C0'},
+        'green': {'primary': '#4CAF50', 'secondary': '#388E3C', 'light': '#E8F5E9', 'text': '#2E7D32'},
+        'orange': {'primary': '#FF9800', 'secondary': '#F57C00', 'light': '#FFF3E0', 'text': '#E65100'},
+        'purple': {'primary': '#9C27B0', 'secondary': '#7B1FA2', 'light': '#F3E5F5', 'text': '#6A1B9A'},
+        'red': {'primary': '#F44336', 'secondary': '#D32F2F', 'light': '#FFEBEE', 'text': '#C62828'}
+    }
+    
+    scheme = colors.get(color_scheme, colors['blue'])
+    
+    if placement == 'popup':
+        # Non-intrusive popup modal
+        return f'''
+        <div class="advanced-ad-popup" data-ad-style="{ad_style}" style="display: none;">
+            <div class="ad-overlay" onclick="closeAdPopup(this)"></div>
+            <div class="ad-modal {ad_style}-style">
+                <button class="ad-close-btn" onclick="closeAdPopup(this.closest('.advanced-ad-popup'))">
+                    <i class="fas fa-times"></i>
+                </button>
+                <div class="ad-content-wrapper">
+                    {f'<div class="ad-image"><img src="{image_url}" alt="{title}"></div>' if image_url else ''}
+                    <div class="ad-text-content">
+                        <div class="ad-badge">Sponsored</div>
+                        <h3 class="ad-title">{title}</h3>
+                        <p class="ad-message">{message}</p>
+                        <a href="{cta_url}" class="ad-cta-button" target="_blank" onclick="trackAdClick(this)">
+                            {cta_text}
+                            <i class="fas fa-arrow-right ms-2"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <style>
+        .advanced-ad-popup {{
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }}
+        
+        .ad-overlay {{
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+        }}
+        
+        .ad-modal {{
+            position: relative;
+            background: white;
+            border-radius: 20px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.4s ease-out;
+        }}
+        
+        @keyframes slideUp {{
+            from {{
+                transform: translateY(50px);
+                opacity: 0;
+            }}
+            to {{
+                transform: translateY(0);
+                opacity: 1;
+            }}
+        }}
+        
+        .ad-close-btn {{
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            z-index: 10;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }}
+        
+        .ad-close-btn:hover {{
+            background: white;
+            transform: rotate(90deg);
+        }}
+        
+        .ad-content-wrapper {{
+            padding: 30px;
+        }}
+        
+        .ad-image {{
+            width: 100%;
+            margin-bottom: 20px;
+            border-radius: 12px;
+            overflow: hidden;
+        }}
+        
+        .ad-image img {{
+            width: 100%;
+            height: auto;
+            display: block;
+        }}
+        
+        .ad-badge {{
+            display: inline-block;
+            background: {scheme['light']};
+            color: {scheme['text']};
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 15px;
+        }}
+        
+        .ad-title {{
+            font-size: 28px;
+            font-weight: 700;
+            color: #2C3E50;
+            margin-bottom: 15px;
+            line-height: 1.3;
+        }}
+        
+        .ad-message {{
+            font-size: 16px;
+            color: #546E7A;
+            line-height: 1.6;
+            margin-bottom: 25px;
+        }}
+        
+        .ad-cta-button {{
+            display: inline-flex;
+            align-items: center;
+            background: linear-gradient(135deg, {scheme['primary']}, {scheme['secondary']});
+            color: white;
+            padding: 14px 30px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 16px;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }}
+        
+        .ad-cta-button:hover {{
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+            color: white;
+        }}
+        
+        /* Modern Style */
+        .modern-style .ad-content-wrapper {{
+            background: linear-gradient(135deg, {scheme['light']} 0%, white 100%);
+        }}
+        
+        /* Classic Style */
+        .classic-style {{
+            border: 3px solid {scheme['primary']};
+        }}
+        
+        .classic-style .ad-title {{
+            border-bottom: 3px solid {scheme['primary']};
+            padding-bottom: 10px;
+        }}
+        
+        /* Minimal Style */
+        .minimal-style {{
+            background: #FAFAFA;
+            border: 1px solid #E0E0E0;
+        }}
+        
+        .minimal-style .ad-title {{
+            font-weight: 400;
+        }}
+        
+        /* Vibrant Style */
+        .vibrant-style {{
+            background: linear-gradient(135deg, {scheme['primary']} 0%, {scheme['secondary']} 100%);
+        }}
+        
+        .vibrant-style .ad-title,
+        .vibrant-style .ad-message {{
+            color: white;
+        }}
+        
+        .vibrant-style .ad-badge {{
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }}
+        
+        @media (max-width: 768px) {{
+            .ad-modal {{
+                width: 95%;
+                max-height: 90vh;
+            }}
+            
+            .ad-content-wrapper {{
+                padding: 20px;
+            }}
+            
+            .ad-title {{
+                font-size: 22px;
+            }}
+            
+            .ad-message {{
+                font-size: 14px;
+            }}
+        }}
+        </style>
+        
+        <script>
+        // Show popup after 3 seconds
+        setTimeout(() => {{
+            const popup = document.querySelector('.advanced-ad-popup');
+            if (popup && !sessionStorage.getItem('ad_shown')) {{
+                popup.style.display = 'flex';
+                sessionStorage.setItem('ad_shown', 'true');
+            }}
+        }}, 3000);
+        
+        function closeAdPopup(element) {{
+            element.style.display = 'none';
+        }}
+        
+        function trackAdClick(element) {{
+            // Track ad click
+            const adId = element.closest('.advanced-ad-popup').dataset.adId;
+            if (adId) {{
+                fetch(`/track-ad-click/${{adId}}`, {{method: 'POST'}});
+            }}
+        }}
+        </script>
+        '''
+    
+    elif placement == 'sidebar':
+        # Sidebar widget
+        return f'''
+        <div class="advanced-ad-sidebar {ad_style}-style">
+            <div class="ad-badge-corner">Ad</div>
+            {f'<div class="ad-image"><img src="{image_url}" alt="{title}"></div>' if image_url else ''}
+            <div class="ad-body">
+                <h4 class="ad-title">{title}</h4>
+                <p class="ad-text">{message}</p>
+                <a href="{cta_url}" class="ad-button" target="_blank">
+                    {cta_text}
+                </a>
+            </div>
+        </div>
+        
+        <style>
+        .advanced-ad-sidebar {{
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            position: relative;
+        }}
+        
+        .ad-badge-corner {{
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            z-index: 1;
+        }}
+        
+        .advanced-ad-sidebar .ad-image {{
+            width: 100%;
+            height: 150px;
+            overflow: hidden;
+        }}
+        
+        .advanced-ad-sidebar .ad-image img {{
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }}
+        
+        .advanced-ad-sidebar .ad-body {{
+            padding: 15px;
+        }}
+        
+        .advanced-ad-sidebar .ad-title {{
+            font-size: 16px;
+            font-weight: 700;
+            color: #2C3E50;
+            margin-bottom: 10px;
+        }}
+        
+        .advanced-ad-sidebar .ad-text {{
+            font-size: 13px;
+            color: #546E7A;
+            margin-bottom: 12px;
+            line-height: 1.5;
+        }}
+        
+        .advanced-ad-sidebar .ad-button {{
+            display: block;
+            text-align: center;
+            background: {scheme['primary']};
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s;
+        }}
+        
+        .advanced-ad-sidebar .ad-button:hover {{
+            background: {scheme['secondary']};
+            transform: translateY(-2px);
+            color: white;
+        }}
+        </style>
+        '''
+    
+    elif placement == 'inline':
+        # Inline content ad
+        return f'''
+        <div class="advanced-ad-inline {ad_style}-style">
+            <div class="ad-sponsored-label">
+                <i class="fas fa-ad me-1"></i> Sponsored Content
+            </div>
+            <div class="ad-inline-content">
+                {f'<div class="ad-image"><img src="{image_url}" alt="{title}"></div>' if image_url else ''}
+                <div class="ad-text">
+                    <h3>{title}</h3>
+                    <p>{message}</p>
+                    <a href="{cta_url}" class="ad-cta" target="_blank">
+                        {cta_text} <i class="fas fa-external-link-alt ms-1"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <style>
+        .advanced-ad-inline {{
+            background: {scheme['light']};
+            border: 2px solid {scheme['primary']};
+            border-radius: 12px;
+            padding: 20px;
+            margin: 30px 0;
+        }}
+        
+        .ad-sponsored-label {{
+            color: {scheme['text']};
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 15px;
+        }}
+        
+        .ad-inline-content {{
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }}
+        
+        .ad-inline-content .ad-image {{
+            flex: 0 0 200px;
+            height: 150px;
+            border-radius: 8px;
+            overflow: hidden;
+        }}
+        
+        .ad-inline-content .ad-image img {{
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }}
+        
+        .ad-inline-content .ad-text h3 {{
+            font-size: 20px;
+            font-weight: 700;
+            color: #2C3E50;
+            margin-bottom: 10px;
+        }}
+        
+        .ad-inline-content .ad-text p {{
+            font-size: 14px;
+            color: #546E7A;
+            margin-bottom: 15px;
+        }}
+        
+        .ad-inline-content .ad-cta {{
+            display: inline-block;
+            background: {scheme['primary']};
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s;
+        }}
+        
+        .ad-inline-content .ad-cta:hover {{
+            background: {scheme['secondary']};
+            transform: translateX(5px);
+            color: white;
+        }}
+        
+        @media (max-width: 768px) {{
+            .ad-inline-content {{
+                flex-direction: column;
+            }}
+            
+            .ad-inline-content .ad-image {{
+                flex: 0 0 auto;
+                width: 100%;
+            }}
+        }}
+        </style>
+        '''
+    
+    else:  # header/banner
+        return f'''
+        <div class="advanced-ad-banner {ad_style}-style">
+            <div class="container">
+                <div class="ad-banner-content">
+                    {f'<div class="ad-image"><img src="{image_url}" alt="{title}"></div>' if image_url else ''}
+                    <div class="ad-text">
+                        <span class="ad-label">Sponsored</span>
+                        <h3>{title}</h3>
+                        <p>{message}</p>
+                    </div>
+                    <div class="ad-action">
+                        <a href="{cta_url}" class="ad-btn" target="_blank">
+                            {cta_text}
+                        </a>
+                    </div>
+                    <button class="ad-dismiss" onclick="this.closest('.advanced-ad-banner').remove()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <style>
+        .advanced-ad-banner {{
+            background: linear-gradient(135deg, {scheme['primary']}, {scheme['secondary']});
+            padding: 15px 0;
+            position: relative;
+        }}
+        
+        .ad-banner-content {{
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            color: white;
+        }}
+        
+        .ad-banner-content .ad-image {{
+            flex: 0 0 80px;
+            height: 80px;
+            border-radius: 8px;
+            overflow: hidden;
+        }}
+        
+        .ad-banner-content .ad-image img {{
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }}
+        
+        .ad-banner-content .ad-text {{
+            flex: 1;
+        }}
+        
+        .ad-label {{
+            background: rgba(255, 255, 255, 0.2);
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+            display: inline-block;
+        }}
+        
+        .ad-banner-content h3 {{
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }}
+        
+        .ad-banner-content p {{
+            font-size: 14px;
+            opacity: 0.9;
+            margin: 0;
+        }}
+        
+        .ad-btn {{
+            background: white;
+            color: {scheme['primary']};
+            padding: 10px 25px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 600;
+            white-space: nowrap;
+            transition: all 0.3s;
+        }}
+        
+        .ad-btn:hover {{
+            transform: scale(1.05);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }}
+        
+        .ad-dismiss {{
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s;
+        }}
+        
+        .ad-dismiss:hover {{
+            background: rgba(255, 255, 255, 0.3);
+        }}
+        
+        @media (max-width: 768px) {{
+            .ad-banner-content {{
+                flex-wrap: wrap;
+                gap: 10px;
+            }}
+            
+            .ad-banner-content .ad-image {{
+                flex: 0 0 60px;
+                height: 60px;
+            }}
+            
+            .ad-banner-content h3 {{
+                font-size: 16px;
+            }}
+            
+            .ad-banner-content p {{
+                font-size: 12px;
+            }}
+            
+            .ad-action {{
+                width: 100%;
+                text-align: center;
+            }}
+            
+            .ad-btn {{
+                display: block;
+                width: 100%;
+            }}
+        }}
+        </style>
+        '''
+
+
+

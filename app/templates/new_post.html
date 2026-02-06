@@ -97,6 +97,22 @@
                                 <div class="invalid-feedback d-block">{{ error }}</div>
                                 {% endfor %}
                             </div>
+                            <div class="mb-4">
+    <label class="form-label fw-semibold text-dark">{{ form.video.label }} (Optional)</label>
+    <div class="file-upload-area border rounded-3 p-4 text-center bg-light">
+        <div class="mb-3">
+            <i class="fas fa-video fa-3x text-info"></i>
+        </div>
+        <div class="mb-3">
+            {{ form.video(class="form-control d-none", id="videoUpload", accept="video/mp4,video/webm") }}
+            <label for="videoUpload" class="btn btn-outline-info rounded-pill px-4">
+                <i class="fas fa-upload me-2"></i>Choose Video
+            </label>
+        </div>
+        <p class="small text-muted mb-0">Allowed formats: MP4, WebM (Max 50MB)</p>
+        <div id="videoFileName" class="small text-dark mt-2"></div>
+    </div>
+</div>
                             
                             <!-- Image Preview -->
                             <div class="image-preview mt-3 text-center" id="imagePreview" style="display: none;">

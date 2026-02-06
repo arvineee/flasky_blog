@@ -1,14 +1,120 @@
-# Ignore environment variables
-.env
-
-# Python cache files
+# ==================================================
+# Python / Flask
+# ==================================================
 __pycache__/
-*.pyc
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+.Python
 
-# SQLite database file
-database.db
-
-# Virtual environment
+# Virtual environments
 venv/
-.flask
-instance/database.db
+.venv/
+env/
+
+# ==================================================
+# Environment & Secrets
+# ==================================================
+.env
+.env.*
+*.key
+*.pem
+*.crt
+
+# ==================================================
+# Flask runtime / instance
+# ==================================================
+instance/
+*.log
+logs/
+flask_session/
+.cache/
+
+# ==================================================
+# Databases
+# ==================================================
+*.sqlite3
+*.db
+
+# ==================================================
+# Redis
+# ==================================================
+dump.rdb
+
+# ==================================================
+# Uploads & Generated Media
+# ==================================================
+app/static/images/*
+app/static/videos/*
+
+# Keep directories
+!app/static/images/.gitkeep
+!app/static/videos/.gitkeep
+
+# ==================================================
+# GeoIP (licensed / large files)
+# ==================================================
+app/geoip/*.mmdb
+
+# ==================================================
+# OS / Home folder junk
+# ==================================================
+.DS_Store
+.DS_Store?
+.Trashes
+Thumbs.db
+desktop.ini
+
+# Shell / history
+.bash_history
+.zsh_history
+.fish_history
+.python_history
+.lesshst
+.wget-hsts
+
+# SSH / GPG (never commit)
+.ssh/
+.gnupg/
+
+# User caches
+.cache/
+.local/
+
+# ==================================================
+# Editors / IDEs
+# ==================================================
+.vscode/
+.idea/
+.history/
+*.swp
+*.swo
+*.swn
+*~
+
+# ==================================================
+# Node / frontend (future-proof)
+# ==================================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-store/
+
+# ==================================================
+# Archives / temp
+# ==================================================
+*.zip
+*.tar
+*.tar.gz
+*.rar
+*.7z
+*.tmp
+*.bak
+*.old
+
+# ==================================================
+# Tests / scratch
+# ==================================================
+test_script.py

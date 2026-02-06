@@ -72,11 +72,11 @@
                 <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="flex-grow-1">
-                            <h6 class="card-title text-dark-50">Banned Users</h6>
-                            <h3 class="fw-bold mb-0">{{ banned_users_count }}</h3>
+                            <h6 class="card-title text-dark-50">Active Ads</h6>
+                            <h3 class="fw-bold mb-0">{{ active_ads_count }}</h3>
                         </div>
                         <div class="stat-icon">
-                            <i class="fas fa-ban fa-2x"></i>
+                            <i class="fas fa-ad fa-2x"></i>
                         </div>
                     </div>
                 </div>
@@ -87,16 +87,55 @@
                 <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="flex-grow-1">
-                            <h6 class="card-title text-white-50">API Keys</h6>
-                            <h3 class="fw-bold mb-0">{{ api_keys_count }}</h3>
+                            <h6 class="card-title text-white-50">Ad Revenue</h6>
+                            <h3 class="fw-bold mb-0">${{ "%.2f"|format(total_ad_revenue) }}</h3>
                         </div>
                         <div class="stat-icon">
-                            <i class="fas fa-key fa-2x"></i>
+                            <i class="fas fa-dollar-sign fa-2x"></i>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
+    <!-- Add this after your stats cards row -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-info">
+            <div class="card-header bg-info text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Quick Statistics Overview</h5>
+                    <a href="{{ url_for('advanced_protection.stats_page') }}" class="btn btn-sm btn-light">
+                        View Full Stats <i class="fas fa-arrow-right ms-1"></i>
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <h3 class="text-primary" id="stat-total-requests">{{ "{:,}".format(stats.total_requests) }}</h3>
+                        <small class="text-muted">Total Requests</small>
+                    </div>
+                    <div class="col-md-3">
+                        <h3 class="text-danger" id="stat-blocked">{{ "{:,}".format(stats.requests_blocked) }}</h3>
+                        <small class="text-muted">Blocked</small>
+                    </div>
+                    <div class="col-md-3">
+                        <h3 class="text-warning" id="stat-banned">{{ stats.currently_banned }}</h3>
+                        <small class="text-muted">Banned IPs</small>
+                    </div>
+                    <div class="col-md-3">
+                        <h3 class="text-success" id="stat-rps">{{ stats.current_rps }}</h3>
+                        <small class="text-muted">Current RPS</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <!-- API Stats Row -->
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-4 row-cols-xl-5 mb-4">
         <div class="col mb-4">
             <div class="card stat-card bg-info text-white">
                 <div class="card-body">
@@ -112,86 +151,67 @@
                 </div>
             </div>
         </div>
-    </div>
-    <!--ads stat -->
-<div class="row row-cols-1 row-cols-sm-2 row-cols-md-4 row-cols-xl-5 mb-4">
-    <div class="col mb-4">
-        <div class="card stat-card bg-primary text-white">
-            <div class="card-body">
-                <div class="d-flex align-items-center">
-                    <div class="flex-grow-1">
-                        <h6 class="card-title text-white-50">Total Users</h6>
-                        <h3 class="fw-bold mb-0">{{ users|length }}</h3>
+        <div class="col mb-4">
+            <div class="card stat-card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h6 class="card-title text-white-50">API Keys</h6>
+                            <h3 class="fw-bold mb-0">{{ api_keys_count }}</h3>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fas fa-key fa-2x"></i>
+                        </div>
                     </div>
-                    <div class="stat-icon">
-                        <i class="fas fa-users fa-2x"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col mb-4">
+            <div class="card stat-card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h6 class="card-title text-white-50">API Posts Today</h6>
+                            <h3 class="fw-bold mb-0">{{ api_posts_today }}</h3>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fas fa-code fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col mb-4">
+            <div class="card stat-card bg-warning text-dark">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h6 class="card-title text-dark-50">Active API Users</h6>
+                            <h3 class="fw-bold mb-0">{{ active_api_users }}</h3>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fas fa-user-check fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col mb-4">
+            <div class="card stat-card bg-danger text-white">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h6 class="card-title text-white-50">Banned Users</h6>
+                            <h3 class="fw-bold mb-0">{{ banned_users_count }}</h3>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fas fa-ban fa-2x"></i>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-    <div class="col mb-4">
-        <div class="card stat-card bg-success text-white">
-            <div class="card-body">
-                <div class="d-flex align-items-center">
-                    <div class="flex-grow-1">
-                        <h6 class="card-title text-white-50">Total Posts</h6>
-                        <h3 class="fw-bold mb-0">{{ posts|length }}</h3>
-                    </div>
-                    <div class="stat-icon">
-                        <i class="fas fa-file-alt fa-2x"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col mb-4">
-        <div class="card stat-card bg-info text-white">
-            <div class="card-body">
-                <div class="d-flex align-items-center">
-                    <div class="flex-grow-1">
-                        <h6 class="card-title text-white-50">Subscribers</h6>
-                        <h3 class="fw-bold mb-0">{{ subscriber_count }}</h3>
-                    </div>
-                    <div class="stat-icon">
-                        <i class="fas fa-envelope fa-2x"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col mb-4">
-        <div class="card stat-card bg-warning text-dark">
-            <div class="card-body">
-                <div class="d-flex align-items-center">
-                    <div class="flex-grow-1">
-                        <h6 class="card-title text-dark-50">Active Ads</h6>
-                        <h3 class="fw-bold mb-0">{{ active_ads_count }}</h3>
-                    </div>
-                    <div class="stat-icon">
-                        <i class="fas fa-ad fa-2x"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col mb-4">
-        <div class="card stat-card bg-dark text-white">
-            <div class="card-body">
-                <div class="d-flex align-items-center">
-                    <div class="flex-grow-1">
-                        <h6 class="card-title text-white-50">Ad Revenue</h6>
-                        <h3 class="fw-bold mb-0">${{ "%.2f"|format(total_ad_revenue) }}</h3>
-                    </div>
-                    <div class="stat-icon">
-                        <i class="fas fa-dollar-sign fa-2x"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
 
     <!-- Quick Actions Row -->
     <div class="row mb-4">
@@ -202,19 +222,13 @@
                 </div>
                 <div class="card-body">
                     <div class="d-flex flex-wrap gap-2">
-			     <a href="{{ url_for('admin.manage_ads') }}" class="btn btn-action">
-        <i class="fas fa-ad me-1"></i> Manage Ads
-    </a>
-    
-    <a href="{{ url_for('ads.ad_stats') }}" class="btn btn-action">
-        <i class="fas fa-chart-line me-1"></i> Ad Analytics
-    </a>
-    <a href="{{ url_for('ads.ad_analytics') }}" class="btn btn-action">
-        <i class="fas fa-chart-bar me-1"></i> Advanced Stats
-    </a>
-    
-
-                       <a href="{{ url_for('admin.admin_traffic_stats') }}" class="btn btn-action">
+                        <a href="{{ url_for('admin.manage_ads') }}" class="btn btn-action">
+    <i class="fas fa-ad me-1"></i> Manage Ads
+</a>
+<a href="{{ url_for('admin.create_advanced_ad') }}" class="btn btn-action btn-primary">
+    <i class="fas fa-magic me-1"></i> Create Advanced Ad
+</a>
+                        <a href="{{ url_for('admin.admin_traffic_stats') }}" class="btn btn-action">
                             <i class="fas fa-chart-line me-1"></i> Traffic Stats
                         </a>
                         <a href="{{ url_for('admin.manage_ads_txt') }}" class="btn btn-action">
@@ -244,6 +258,99 @@
                         <a href="{{ url_for('admin.manage_api_keys') }}" class="btn btn-action">
                             <i class="fas fa-key me-1"></i> API Keys
                         </a>
+                        <a href="{{ url_for('advanced_protection.stats_page') }}" class="btn btn-info">
+    <i class="fas fa-chart-line me-1"></i>View Detailed Statistics
+</a>
+                        <a href="{{ url_for('admin.manage_country_blocking') }}" class="btn btn-action">
+    <i class="fas fa-globe-americas me-1"></i>Country Blocking
+</a>
+                        <!-- NEW: Advanced Protection Links -->
+                        <a href="{{ url_for('advanced_protection.dashboard') }}" class="btn btn-action">
+                            <i class="fas fa-shield-alt me-1"></i> Advanced Protection
+                        </a>
+                        <a href="{{ url_for('advanced_protection.dashboard') }}" class="btn btn-action">
+                            <i class="fas fa-globe-americas me-1"></i> Country Management
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Advanced Security & Protection Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-shield-alt me-2"></i>Advanced Security & Protection</h5>
+                    <div>
+                        <a href="{{ url_for('advanced_protection.dashboard') }}" class="btn btn-sm btn-light me-2">
+                            <i class="fas fa-external-link-alt me-1"></i>Open Dashboard
+                        </a>
+                        <a href="{{ url_for('admin.ddos_protection_management') }}" class="btn btn-sm btn-outline-light">
+                            <i class="fas fa-fire me-1"></i>DDoS Protection
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card bg-light mb-3">
+                                <div class="card-body">
+                                    <h5 class="card-title">🛡️ Advanced Protection Dashboard</h5>
+                                    <p class="card-text">Comprehensive security monitoring, threat protection, and real-time analytics with GeoLite2 integration.</p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="badge bg-danger">Security</span>
+                                        <a href="{{ url_for('advanced_protection.dashboard') }}" class="btn btn-sm btn-danger">
+                                            <i class="fas fa-rocket me-1"></i>Access Dashboard
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-light mb-3">
+                                <div class="card-body">
+                                    <h5 class="card-title">🌍 Country Management</h5>
+                                    <p class="card-text">Manage allowed/blocked countries for geographic blocking using GeoLite2 database.</p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="badge bg-success">GeoIP</span>
+                                        <a href="{{ url_for('advanced_protection.dashboard') }}" class="btn btn-sm btn-success">
+                                            <i class="fas fa-cog me-1"></i>Manage Countries
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <h6>Security Quick Stats</h6>
+                        <div class="row text-center">
+                            <div class="col-md-3 col-6 mb-2">
+                                <div class="border rounded p-2">
+                                    <div class="text-primary fw-bold">Active</div>
+                                    <small class="text-muted">Protection Mode</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6 mb-2">
+                                <div class="border rounded p-2">
+                                    <div class="text-success fw-bold">{{ 'Enabled' if ddos_protection else 'Disabled' }}</div>
+                                    <small class="text-muted">DDoS Protection</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6 mb-2">
+                                <div class="border rounded p-2">
+                                    <div class="text-info fw-bold">GeoLite2</div>
+                                    <small class="text-muted">Database</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6 mb-2">
+                                <div class="border rounded p-2">
+                                    <div class="text-warning fw-bold">WAF</div>
+                                    <small class="text-muted">Rules Active</small>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -642,164 +749,28 @@
             </div>
         </div>
     </div>
-
-    <!-- Advanced Protection Section -->
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">
-                    <i class="fas fa-shield-alt me-2"></i>Advanced Protection
-                    <span class="badge bg-light text-dark ms-2">Real-time</span>
-                </h5>
-                <div>
-                    <a href="{{ url_for('advanced_protection.dashboard') }}" class="btn btn-sm btn-light me-2">
-                        <i class="fas fa-cog me-1"></i>Manage Protection
-                    </a>
-                    <a href="{{ url_for('admin.ddos_protection_management') }}" class="btn btn-sm btn-outline-light">
-                        <i class="fas fa-network-wired me-1"></i>DDoS Settings
-                    </a>
-                </div>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-8">
-                        <h6>Protection Status</h6>
-                        <div class="row mb-3">
-                            <div class="col-md-3 col-6">
-                                <div class="border rounded p-2 text-center">
-                                    <div class="text-primary fw-bold">{{ advanced_protection.stats.total_requests if advanced_protection else 0 }}</div>
-                                    <small class="text-muted">Total Requests</small>
-                                </div>
-                            </div>
-                            <div class="col-md-3 col-6">
-                                <div class="border rounded p-2 text-center">
-                                    <div class="text-danger fw-bold">{{ advanced_protection.stats.requests_blocked if advanced_protection else 0 }}</div>
-                                    <small class="text-muted">Blocked Requests</small>
-                                </div>
-                            </div>
-                            <div class="col-md-3 col-6">
-                                <div class="border rounded p-2 text-center">
-                                    <div class="text-warning fw-bold">{{ advanced_protection.stats.currently_banned if advanced_protection else 0 }}</div>
-                                    <small class="text-muted">Banned IPs</small>
-                                </div>
-                            </div>
-                            <div class="col-md-3 col-6">
-                                <div class="border rounded p-2 text-center">
-                                    <div class="text-success fw-bold">{{ advanced_protection.stats.challenges_served if advanced_protection else 0 }}</div>
-                                    <small class="text-muted">Challenges</small>
-                                </div>
-                            </div>
-                        </div>
-
-                        <h6>Quick Protection Actions</h6>
-                        <div class="d-flex flex-wrap gap-2 mb-3">
-                            <form method="POST" action="{{ url_for('advanced_protection.set_protection_mode', mode='under_attack') }}" class="d-inline">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                                <button type="submit" class="btn btn-sm btn-outline-danger">
-                                    <i class="fas fa-fire me-1"></i>Under Attack Mode
-                                </button>
-                            </form>
-                            <form method="POST" action="{{ url_for('advanced_protection.set_protection_mode', mode='active') }}" class="d-inline">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                                <button type="submit" class="btn btn-sm btn-outline-success">
-                                    <i class="fas fa-shield-alt me-1"></i>Active Protection
-                                </button>
-                            </form>
-                            <form method="POST" action="{{ url_for('advanced_protection.set_protection_mode', mode='monitor') }}" class="d-inline">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                                <button type="submit" class="btn btn-sm btn-outline-warning">
-                                    <i class="fas fa-eye me-1"></i>Monitor Only
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <h6>System Status</h6>
-                        <div class="list-group list-group-flush">
-                            <div class="list-group-item d-flex justify-content-between align-items-center px-0">
-                                <span>Redis</span>
-                                <span class="badge bg-{{ 'success' if advanced_protection and advanced_protection.redis_client else 'danger' }}">
-                                    {{ 'Connected' if advanced_protection and advanced_protection.redis_client else 'Disconnected' }}
-                                </span>
-                            </div>
-                            <div class="list-group-item d-flex justify-content-between align-items-center px-0">
-                                <span>GeoIP</span>
-                                <span class="badge bg-{{ 'success' if advanced_protection and advanced_protection.geoip_reader else 'warning' }}">
-                                    {{ 'Available' if advanced_protection and advanced_protection.geoip_reader else 'Unavailable' }}
-                                </span>
-                            </div>
-                            <div class="list-group-item d-flex justify-content-between align-items-center px-0">
-                                <span>WAF</span>
-                                <span class="badge bg-{{ 'success' if advanced_protection and advanced_protection.config.WAF_ENABLED else 'secondary' }}">
-                                    {{ 'Enabled' if advanced_protection and advanced_protection.config.WAF_ENABLED else 'Disabled' }}
-                                </span>
-                            </div>
-                            <div class="list-group-item d-flex justify-content-between align-items-center px-0">
-                                <span>Challenges</span>
-                                <span class="badge bg-{{ 'success' if advanced_protection and advanced_protection.config.JS_CHALLENGE_ENABLED else 'secondary' }}">
-                                    {{ 'Enabled' if advanced_protection and advanced_protection.config.JS_CHALLENGE_ENABLED else 'Disabled' }}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Recent Security Events -->
-                <div class="mt-3">
-                    <h6>Recent Security Events</h6>
-                    {% if advanced_protection and advanced_protection.stats.recent_events %}
-                    <div class="table-responsive">
-                        <table class="table table-sm">
-                            <thead>
-                                <tr>
-                                    <th>Time</th>
-                                    <th>IP</th>
-                                    <th>Event</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for event in advanced_protection.stats.recent_events[:5] %}
-                                <tr>
-                                    <td><small>{{ event.time }}</small></td>
-                                    <td><code>{{ event.ip }}</code></td>
-                                    <td><small>{{ event.description }}</small></td>
-                                    <td>
-                                        {% if event.type == 'IP Banned' %}
-                                        <form method="POST" action="{{ url_for('advanced_protection.unban_ip_route', ip=event.ip) }}" class="d-inline">
-                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                                            <button type="submit" class="btn btn-sm btn-outline-success">Unban</button>
-                                        </form>
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                    {% else %}
-                    <p class="text-muted text-center">No recent security events</p>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
+</div>
+<!-- Add this in the System Status card or create a new section -->
+<div class="mt-4">
+    <h6 class="mb-3">GeoIP Test</h6>
+    <div class="input-group mb-3">
+        <input type="text" id="testIp" class="form-control" placeholder="Enter IP to test" value="{{ request.remote_addr }}">
+        <button class="btn btn-outline-info" onclick="testGeoIP()">Test Blocking</button>
     </div>
+    <div id="geoipResult" class="alert alert-info" style="display: none;"></div>
 </div>
 
-    <!-- Toast Notification Container -->
-    <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
-        <div id="actionToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
-            <div class="toast-header">
-                <strong class="me-auto" id="toast-title">System Notification</strong>
-                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
-            </div>
-            <div class="toast-body" id="toast-message">
-                Action completed successfully.
-            </div>
+<!-- Toast Notification Container -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+    <div id="actionToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <strong class="me-auto" id="toast-title">System Notification</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body" id="toast-message">
+            Action completed successfully.
         </div>
     </div>
-
 </div>
 
 <style>
@@ -910,6 +881,32 @@ body {
     border-left: 4px solid var(--primary-color);
 }
 
+/* Security Section Styles */
+.bg-danger {
+    background: linear-gradient(135deg, #e74c3c, #c0392b) !important;
+}
+
+.bg-success {
+    background: linear-gradient(135deg, #2ecc71, #27ae60) !important;
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    border: none;
+    color: white;
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #2ecc71, #27ae60);
+    border: none;
+    color: white;
+}
+
+.btn-danger:hover, .btn-success:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .d-flex.flex-wrap {
@@ -937,7 +934,6 @@ body {
 </style>
 
 <script>
-<script>
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize Toast
     const actionToast = new bootstrap.Toast(document.getElementById('actionToast'));
@@ -959,6 +955,15 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         actionToast.show();
+    }
+    
+    // Get CSRF token for AJAX requests
+    function getCSRFToken() {
+        const csrfInput = document.querySelector('input[name="csrf_token"]');
+        if (csrfInput) {
+            return csrfInput.value;
+        }
+        return '';
     }
     
     // Handle user actions with AJAX
@@ -992,13 +997,17 @@ document.addEventListener('DOMContentLoaded', function() {
                     return;
             }
             
+            // Create form data with CSRF token
+            const formData = new FormData();
+            formData.append('csrf_token', getCSRFToken());
+            
             // Send AJAX request
             fetch(endpoint, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest'
-                }
+                },
+                body: formData
             })
             .then(response => {
                 if (!response.ok) {
@@ -1104,6 +1113,13 @@ document.addEventListener('DOMContentLoaded', function() {
             const postId = this.dataset.postId;
             const postTitle = this.dataset.postTitle;
             
+            // Confirmation for delete action
+            if (action === 'delete') {
+                if (!confirm(`Are you sure you want to delete the post "${postTitle}"? This action cannot be undone.`)) {
+                    return;
+                }
+            }
+            
             // Show loading state
             const originalHTML = this.innerHTML;
             this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
@@ -1119,24 +1135,23 @@ document.addEventListener('DOMContentLoaded', function() {
                     endpoint = `/admin/post/${postId}/unblock`;
                     break;
                 case 'delete':
-                    if (!confirm(`Are you sure you want to delete the post "${postTitle}"? This action cannot be undone.`)) {
-                        this.innerHTML = originalHTML;
-                        this.disabled = false;
-                        return;
-                    }
                     endpoint = `/admin/post/${postId}/delete`;
                     break;
                 default:
                     return;
             }
             
+            // Create form data with CSRF token
+            const formData = new FormData();
+            formData.append('csrf_token', getCSRFToken());
+            
             // Send AJAX request
             fetch(endpoint, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest'
-                }
+                },
+                body: formData
             })
             .then(response => {
                 if (!response.ok) {
@@ -1148,7 +1163,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (data.success) {
                     if (action === 'delete') {
                         // Remove the post row from the table
-                        document.getElementById(`post-row-${postId}`).remove();
+                        const postRow = document.getElementById(`post-row-${postId}`);
+                        if (postRow) {
+                            postRow.remove();
+                        }
                     } else {
                         // Update UI based on action
                         updatePostUIAfterAction(action, postId, postTitle);
@@ -1208,6 +1226,72 @@ document.addEventListener('DOMContentLoaded', function() {
                 break;
         }
     }
+    
+    // Check if there are any flash messages to show
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                showToast('{{ category|title }}', '{{ message }}', '{{ category }}');
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
 });
+// Add to your existing JavaScript in dashboard.html
+function testGeoIP() {
+    const ip = document.getElementById('testIp').value;
+    const resultDiv = document.getElementById('geoipResult');
+    
+    fetch(`/admin/debug/geoip/${ip}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                resultDiv.className = 'alert alert-warning';
+                resultDiv.innerHTML = `⚠️ ${data.error}`;
+            } else {
+                resultDiv.className = 'alert ' + (data.would_be_blocked ? 'alert-danger' : 'alert-success');
+                resultDiv.innerHTML = `
+                    <strong>IP:</strong> ${data.ip}<br>
+                    <strong>Country:</strong> ${data.country_name} (${data.country_code})<br>
+                    <strong>Database:</strong> ${data.database_type || 'GeoLite2-Country'}<br>
+                    <strong>Geo Blocking Enabled:</strong> ${data.geo_blocking_enabled}<br>
+                    <strong>Blocked Countries:</strong> ${data.blocked_countries.join(', ') || 'None'}<br>
+                    <strong>Allowed Countries:</strong> ${data.allowed_countries.join(', ') || 'All'}<br>
+                    <strong>Status:</strong> ${data.would_be_blocked ? '❌ WOULD BE BLOCKED' : '✅ WOULD BE ALLOWED'}
+                `;
+            }
+            resultDiv.style.display = 'block';
+        })
+        .catch(error => {
+            resultDiv.className = 'alert alert-danger';
+            resultDiv.innerHTML = `Error: ${error.message}`;
+            resultDiv.style.display = 'block';
+        });
+}
+<script>
+// Real-time stats update
+function updateQuickStats() {
+    fetch('/advanced-protection/admin/dashboard/stats')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update the quick stats
+                document.getElementById('stat-total-requests').textContent = 
+                    data.stats.total_requests.toLocaleString();
+                document.getElementById('stat-blocked').textContent = 
+                    data.stats.requests_blocked.toLocaleString();
+                document.getElementById('stat-banned').textContent = 
+                    data.stats.currently_banned;
+                document.getElementById('stat-rps').textContent = 
+                    data.stats.current_rps;
+                
+                console.log('Stats updated:', data.stats);
+            }
+        })
+        .catch(error => console.error('Error updating stats:', error));
+}
+
+// Update stats every 10 seconds
+setInterval(updateQuickStats, 10000);
+</script>
 </script>
 {% endblock %}

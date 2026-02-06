@@ -1,0 +1,475 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h2 fw-bold text-primary">
+                        <i class="fas fa-chart-line me-2"></i>Advanced Protection Statistics
+                    </h1>
+                    <p class="text-muted mb-0">Real-time security metrics and analytics</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-success" onclick="refreshStats()">
+                        <i class="fas fa-sync-alt me-1"></i>Refresh
+                    </button>
+                    <a href="{{ url_for('advanced_protection.dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Threat Level Alert -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="alert alert-{{ 'danger' if stats.threat_level == 'critical' else 'warning' if stats.threat_level == 'high' else 'info' if stats.threat_level == 'medium' else 'success' }} d-flex align-items-center">
+                <div class="flex-grow-1">
+                    <h5 class="alert-heading mb-1">
+                        <i class="fas fa-shield-alt me-2"></i>
+                        Current Threat Level: 
+                        <span class="badge bg-{{ 'danger' if stats.threat_level == 'critical' else 'warning' if stats.threat_level == 'high' else 'info' if stats.threat_level == 'medium' else 'success' }} text-uppercase">
+                            {{ stats.threat_level }}
+                        </span>
+                    </h5>
+                    <p class="mb-0">
+                        Protection Effectiveness: <strong>{{ "%.1f"|format(stats.protection_effectiveness) }}%</strong>
+                        | Block Rate: <strong>{{ "%.2f"|format(stats.block_rate) }}%</strong>
+                        | System Load: <strong>{{ "%.1f"|format(stats.system_load * 100) }}%</strong>
+                    </p>
+                </div>
+                <div id="auto-refresh-indicator" class="ms-3">
+                    <small class="text-muted">Auto-refresh: <span id="countdown">30</span>s</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Key Metrics Row -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card bg-primary text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-white-50 mb-1">Total Requests</h6>
+                            <h2 class="mb-0">{{ "{:,}".format(stats.total_requests) }}</h2>
+                            <small>Lifetime total</small>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fas fa-chart-bar fa-3x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card bg-danger text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-white-50 mb-1">Blocked Requests</h6>
+                            <h2 class="mb-0">{{ "{:,}".format(stats.requests_blocked) }}</h2>
+                            <small>{{ "%.2f"|format(stats.block_rate) }}% of total</small>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fas fa-ban fa-3x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card bg-warning text-dark h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1">Banned IPs</h6>
+                            <h2 class="mb-0">{{ stats.currently_banned }}</h2>
+                            <small>Currently active</small>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fas fa-user-slash fa-3x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card bg-info text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-white-50 mb-1">Current RPS</h6>
+                            <h2 class="mb-0">{{ stats.current_rps }}</h2>
+                            <small>Requests per second</small>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fas fa-tachometer-alt fa-3x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row mb-4">
+        <div class="col-lg-8 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fas fa-chart-area me-2"></i>Request Activity (24 Hours)</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="requestsChart" height="100"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Threat Distribution</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="threatChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Blocked IPs -->
+    <div class="row mb-4">
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fas fa-list-ol me-2"></i>Top Blocked IPs</h5>
+                </div>
+                <div class="card-body">
+                    {% if stats.top_blocked_ips %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>IP Address</th>
+                                    <th>Country</th>
+                                    <th>Blocks</th>
+                                    <th>Reputation</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for ip_data in stats.top_blocked_ips %}
+                                <tr>
+                                    <td><code>{{ ip_data.ip }}</code></td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ ip_data.country }}</span>
+                                    </td>
+                                    <td><span class="badge bg-danger">{{ ip_data.count }}</span></td>
+                                    <td>
+                                        <div class="progress" style="height: 10px; width: 80px;">
+                                            <div class="progress-bar bg-{{ 'danger' if ip_data.reputation > 70 else 'warning' if ip_data.reputation > 40 else 'success' }}" 
+                                                 style="width: {{ ip_data.reputation }}%"></div>
+                                        </div>
+                                        <small>{{ ip_data.reputation }}</small>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center mb-0">No blocked IPs recorded</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>Recent Attack Attempts</h5>
+                </div>
+                <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                    {% if stats.recent_attacks %}
+                    {% for attack in stats.recent_attacks %}
+                    <div class="alert alert-sm alert-{{ 'danger' if attack.action == 'banned' else 'warning' if attack.action == 'blocked' else 'info' }} py-2 px-3 mb-2">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <strong>{{ attack.ip }}</strong>
+                                <small class="d-block text-muted">{{ attack.reason }}</small>
+                                <small class="d-block"><code>{{ attack.path }}</code></small>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-{{ 'danger' if attack.action == 'banned' else 'warning' if attack.action == 'blocked' else 'info' }}">
+                                    {{ attack.action }}
+                                </span>
+                                <small class="d-block text-muted">{{ attack.timestamp|default('Just now') }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <p class="text-muted text-center mb-0">No recent attacks</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Statistics -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Detailed Statistics</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <div class="stat-detail">
+                                <label class="text-muted mb-1">Challenges Served</label>
+                                <div class="h4 mb-0">{{ "{:,}".format(stats.challenges_served) }}</div>
+                                <small>Success Rate: {{ "%.1f"|format(stats.challenge_success_rate) }}%</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="stat-detail">
+                                <label class="text-muted mb-1">Active Challenges</label>
+                                <div class="h4 mb-0">{{ stats.active_challenges }}</div>
+                                <small>Currently pending</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="stat-detail">
+                                <label class="text-muted mb-1">Tracked IPs</label>
+                                <div class="h4 mb-0">{{ "{:,}".format(stats.total_tracked_ips) }}</div>
+                                <small>High Risk: {{ stats.high_risk_ips }}</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="stat-detail">
+                                <label class="text-muted mb-1">SYN Flood Bans</label>
+                                <div class="h4 mb-0">{{ stats.syn_banned }}</div>
+                                <small>DDoS protection</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="stat-detail">
+                                <label class="text-muted mb-1">WAF Rules</label>
+                                <div class="h4 mb-0">{{ stats.waf_rules }}</div>
+                                <small>Active patterns</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="stat-detail">
+                                <label class="text-muted mb-1">API Keys</label>
+                                <div class="h4 mb-0">{{ stats.api_keys }}</div>
+                                <small>Registered</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="stat-detail">
+                                <label class="text-muted mb-1">Active Sessions</label>
+                                <div class="h4 mb-0">{{ stats.active_sessions }}</div>
+                                <small>Live connections</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="stat-detail">
+                                <label class="text-muted mb-1">Uptime</label>
+                                <div class="h4 mb-0">{{ "%.1f"|format(stats.uptime / 3600) }}h</div>
+                                <small>Protection active</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Status -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fas fa-server me-2"></i>System Status</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="text-muted mb-2">System Load</label>
+                                <div class="progress" style="height: 25px;">
+                                    <div class="progress-bar bg-{{ 'danger' if stats.system_load > 0.8 else 'warning' if stats.system_load > 0.6 else 'success' }}" 
+                                         style="width: {{ (stats.system_load * 100)|int }}%">
+                                        {{ "%.1f"|format(stats.system_load * 100) }}%
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="text-muted mb-2">Memory Usage</label>
+                                <div class="progress" style="height: 25px;">
+                                    <div class="progress-bar bg-{{ 'danger' if stats.memory_usage > 0.8 else 'warning' if stats.memory_usage > 0.6 else 'info' }}" 
+                                         style="width: {{ (stats.memory_usage * 100)|int }}%">
+                                        {{ "%.1f"|format(stats.memory_usage * 100) }}%
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="text-muted mb-2">Services Status</label>
+                                <div class="d-flex gap-2">
+                                    <span class="badge bg-{{ 'success' if stats.redis_connected else 'danger' }}">
+                                        <i class="fas fa-database me-1"></i>Redis: {{ 'ON' if stats.redis_connected else 'OFF' }}
+                                    </span>
+                                    <span class="badge bg-{{ 'success' if stats.geoip_available else 'warning' }}">
+                                        <i class="fas fa-globe me-1"></i>GeoIP: {{ 'ON' if stats.geoip_available else 'OFF' }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.stat-icon {
+    opacity: 0.3;
+}
+
+.stat-detail {
+    padding: 15px;
+    border-left: 3px solid #007bff;
+    background: #f8f9fa;
+    border-radius: 4px;
+}
+
+.alert-sm {
+    font-size: 0.875rem;
+}
+
+.progress {
+    border-radius: 10px;
+}
+
+.progress-bar {
+    border-radius: 10px;
+}
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script>
+// Auto-refresh functionality
+let countdown = 30;
+let countdownInterval;
+
+function startCountdown() {
+    countdown = 30;
+    if (countdownInterval) clearInterval(countdownInterval);
+    
+    countdownInterval = setInterval(() => {
+        countdown--;
+        document.getElementById('countdown').textContent = countdown;
+        
+        if (countdown <= 0) {
+            refreshStats();
+        }
+    }, 1000);
+}
+
+function refreshStats() {
+    window.location.reload();
+}
+
+// Initialize charts
+document.addEventListener('DOMContentLoaded', function() {
+    // Requests Chart
+    const requestsCtx = document.getElementById('requestsChart').getContext('2d');
+    const requestsChart = new Chart(requestsCtx, {
+        type: 'line',
+        data: {
+            labels: Array.from({length: 24}, (_, i) => `${i}h`),
+            datasets: [{
+                label: 'Total Requests',
+                data: {{ stats.hourly_requests|tojson }},
+                borderColor: 'rgb(75, 192, 192)',
+                backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                tension: 0.4
+            }, {
+                label: 'Blocked Requests',
+                data: {{ stats.hourly_blocks|tojson }},
+                borderColor: 'rgb(255, 99, 132)',
+                backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    position: 'top',
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    // Threat Distribution Chart
+    const threatCtx = document.getElementById('threatChart').getContext('2d');
+    const threatChart = new Chart(threatCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Rate Limit', 'WAF', 'Geo Block', 'SYN Flood', 'Suspicious', 'Other'],
+            datasets: [{
+                data: [
+                    {{ stats.threat_distribution.rate_limit }},
+                    {{ stats.threat_distribution.waf }},
+                    {{ stats.threat_distribution.geo_block }},
+                    {{ stats.threat_distribution.syn_flood }},
+                    {{ stats.threat_distribution.suspicious }},
+                    {{ stats.threat_distribution.other }}
+                ],
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.8)',
+                    'rgba(54, 162, 235, 0.8)',
+                    'rgba(255, 206, 86, 0.8)',
+                    'rgba(75, 192, 192, 0.8)',
+                    'rgba(153, 102, 255, 0.8)',
+                    'rgba(201, 203, 207, 0.8)'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+
+    // Start countdown
+    startCountdown();
+});
+</script>
+{% endblock %}

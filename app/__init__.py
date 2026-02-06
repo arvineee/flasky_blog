@@ -1,5 +1,16 @@
 import logging
-from flask import Flask, g, request, render_template
+import os
+import atexit
+import signal
+import getpass
+import re
+from datetime import datetime
+from functools import wraps
+
+import geoip2.database
+import click
+from flask import Flask, g, request, render_template, jsonify, redirect, url_for, flash, abort
+from flask.cli import with_appcontext
 from flask_bootstrap import Bootstrap
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
@@ -7,19 +18,11 @@ from flask_migrate import Migrate
 from flask_mail import Mail
 from flask_wtf.csrf import CSRFProtect, CSRFError
 from flask_ckeditor import CKEditor
-from datetime import datetime
-from config import Config
 from dotenv import load_dotenv
-import getpass
-import click
-from flask.cli import with_appcontext
-import os
-import atexit
-import signal
+
+from config import Config
 from .ddos_protection import ddos_protection
 from app.advanced_protection import advanced_protection
-import geoip2.database
-from datetime import datetime
 
 # Load environment variables
 load_dotenv()
@@ -44,6 +47,9 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
+    # Initialize advanced protection BEFORE defining functions that use it
+    advanced_protection.init_app(app)
+
     # Add custom escapejs filter
     @app.template_filter('escapejs')
     def escapejs_filter(value):
@@ -66,6 +72,46 @@ def create_app():
         }
         return ''.join(escape_map.get(c, c) for c in value)
 
+    # Country blocking function - define this BEFORE using it
+    def check_country_block(ip_address=None):
+        """
+        Check if an IP address is from a blocked country
+        Returns: (is_blocked, country_code, country_name)
+        """
+        if not ip_address:
+            ip_address = request.remote_addr
+        
+        # Skip if GeoIP not available or blocking disabled
+        if not hasattr(app, 'geoip_reader') or not app.geoip_reader:
+            return False, None, None
+        
+        # Check if geographic blocking is enabled in advanced protection
+        if not advanced_protection.config.get('GEO_BLOCKING_ENABLED', False):
+            return False, None, None
+        
+        try:
+            # Use country() method for GeoLite2-Country
+            response = app.geoip_reader.country(ip_address)
+            country_code = response.country.iso_code
+            country_name = response.country.name
+            
+            # Check if country is blocked
+            is_blocked = country_code in advanced_protection.blocked_countries
+            
+            # If allowed countries list is set, check if country is allowed
+            if advanced_protection.allowed_countries:
+                is_blocked = country_code not in advanced_protection.allowed_countries
+            
+            app.logger.debug(f"Country check for {ip_address}: {country_name} ({country_code}) - Blocked: {is_blocked}")
+            return is_blocked, country_code, country_name
+            
+        except Exception as e:
+            app.logger.error(f"Country check failed for {ip_address}: {str(e)}")
+            return False, None, None
+    
+    # Attach function to app instance
+    app.check_country_block = check_country_block
+
     # Initialize extensions with app
     db.init_app(app)
     login_manager.init_app(app)
@@ -74,7 +120,6 @@ def create_app():
     ckeditor.init_app(app)
     migrate.init_app(app, db)
     mail.init_app(app)
-    advanced_protection.init_app(app)
 
     # Initialize DDoS protection AFTER other extensions
     ddos_protection.init_app(app)
@@ -108,6 +153,11 @@ def create_app():
     VIDEO_UPLOAD_FOLDER = os.path.join(app.root_path, "static", "videos")
     os.makedirs(VIDEO_UPLOAD_FOLDER, exist_ok=True)
     app.config["VIDEO_UPLOAD_FOLDER"] = VIDEO_UPLOAD_FOLDER
+
+    @app.context_processor
+    def inject_ddos_protection():
+        from .ddos_protection import ddos_protection
+        return dict(ddos_protection=ddos_protection)
 
     # Initialize GeoIP reader
     try:
@@ -189,6 +239,91 @@ def create_app():
 
     atexit.register(stop_redis)
 
+    # Now define the before_request hook that uses check_country_block
+    @app.before_request
+    def enforce_country_blocking():
+        """Global country blocking enforcement"""
+        # Skip certain paths
+        skip_paths = [
+            '/static/', '/login', '/register', '/logout',
+            '/advanced-protection/', '/admin/login', '/contact',
+            '/api/', '/health', '/ads.txt', '/robots.txt',
+            '/favicon.ico', '/sitemap.xml'
+        ]
+        
+        current_path = request.path
+        
+        if any(current_path.startswith(path) for path in skip_paths):
+            return
+        
+        # Check if country is blocked
+        is_blocked, country_code, country_name = app.check_country_block()
+        
+        if is_blocked:
+            app.logger.warning(f"Global country block: {request.remote_addr} from {country_name} accessing {current_path}")
+            
+            # Check if it's an AJAX request
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({
+                    'error': 'Access denied',
+                    'message': f'Access from {country_name} is blocked',
+                    'country': country_code
+                }), 403
+            
+            # Render a custom blocked page
+            return render_template('country_blocked.html',
+                                 country_name=country_name,
+                                 country_code=country_code,
+                                 ip_address=request.remote_addr), 403
+
+    # Context processor for templates
+    @app.context_processor
+    def inject_country_check():
+        """Inject country checking function into all templates"""
+        return dict(check_country_block=app.check_country_block)
+
+    # Decorator for route-level country blocking
+    def restrict_by_country(countries_to_block=None, countries_to_allow=None, redirect_url=None):
+        """
+        Decorator to restrict access by country
+        Usage:
+            @app.route('/restricted-route')
+            @restrict_by_country(countries_to_block=['KE', 'CN'])
+            def restricted_route():
+                return "Access granted"
+        """
+        def decorator(f):
+            @wraps(f)
+            def decorated_function(*args, **kwargs):
+                # Get client IP
+                client_ip = request.remote_addr
+                
+                # Check country blocking
+                is_blocked, country_code, country_name = app.check_country_block(client_ip)
+                
+                # Override with decorator-specific countries if provided
+                if countries_to_block and country_code in countries_to_block:
+                    is_blocked = True
+                
+                if countries_to_allow and country_code not in countries_to_allow:
+                    is_blocked = True
+                
+                if is_blocked:
+                    app.logger.warning(f"Country blocked: {client_ip} from {country_name} ({country_code})")
+                    
+                    if redirect_url:
+                        flash(f"Access from {country_name} is not allowed", "danger")
+                        return redirect(redirect_url)
+                    else:
+                        abort(403, description=f"Access from {country_name} is not permitted")
+                
+                return f(*args, **kwargs)
+            return decorated_function
+        return decorator
+    
+    # Make decorator available globally
+    app.restrict_by_country = restrict_by_country
+
     # Request timing and traffic logging
     from app.models import TrafficStats, Category
 
@@ -252,7 +387,6 @@ def create_app():
         logger.error("CSRF error on endpoint=%s, ip=%s: %s",
                     request.endpoint, request.remote_addr, e.description)
         return render_template('csrf_error.html', reason=e.description), 400
-
 
     
     @app.template_filter('format_number')
@@ -333,8 +467,6 @@ def create_app():
             return dict(footer_ads=[])
 
     # Add a custom filter for inline ads processing
-    import re
-
     @app.template_filter('process_inline_ads')
     def process_inline_ads_filter(content):
         """Process inline ad shortcodes in content"""

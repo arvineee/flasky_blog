@@ -40,6 +40,7 @@ class PostForm(FlaskForm):
     category = SelectField('Category', coerce=int, validators=[DataRequired()])
     desc = CKEditorField('Content', validators=[DataRequired()])
     image = FileField('Featured Image', render_kw={"accept": "image/*"})
+    video = FileField('Video (Optional)', render_kw={"accept": "video/mp4,video/webm"})  # NEW: Video upload field
     submit = SubmitField('Publish Post')
 
 class AdminActionForm(FlaskForm):
@@ -176,3 +177,8 @@ class AdForm(FlaskForm):
     end_date = StringField('End Date (YYYY-MM-DD)', validators=[Optional()])
     is_active = BooleanField('Active', default=True)
     submit = SubmitField('Save Ad')
+
+class CaptchaForm(FlaskForm):
+    submit = SubmitField()
+
+

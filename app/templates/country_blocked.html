@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0"><i class="fas fa-globe-americas me-2"></i>Access Restricted</h4>
+                </div>
+                <div class="card-body text-center">
+                    <div class="mb-4">
+                        <i class="fas fa-ban fa-5x text-danger mb-3"></i>
+                        <h3 class="text-danger">Access Not Available</h3>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <h5><i class="fas fa-exclamation-triangle me-2"></i>Geographic Restriction</h5>
+                        <p class="mb-0">Access to this site is not available from your country.</p>
+                    </div>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 mb-3">
+                                <small class="text-muted">Your IP Address</small>
+                                <div class="fw-bold text-monospace">{{ ip_address }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 mb-3">
+                                <small class="text-muted">Detected Country</small>
+                                <div class="fw-bold">{{ country_name }} ({{ country_code }})</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <small>
+                            This restriction is based on geographic location. If you believe this is an error, 
+                            please contact the site administrator.
+                        </small>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <a href="{{ url_for('main.contact') }}" class="btn btn-outline-primary me-2">
+                            <i class="fas fa-envelope me-1"></i>Contact Admin
+                        </a>
+                        <a href="{{ url_for('main.index') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-home me-1"></i>Return Home
+                        </a>
+                    </div>
+                    
+                    {% if current_user.is_authenticated and current_user.is_admin %}
+                    <div class="mt-3 pt-3 border-top">
+                        <a href="{{ url_for('advanced_protection.dashboard') }}" class="btn btn-sm btn-warning">
+                            <i class="fas fa-shield-alt me-1"></i>Advanced Protection Dashboard
+                        </a>
+                        <a href="{{ url_for('admin.manage_country_blocking') }}" class="btn btn-sm btn-info ms-2">
+                            <i class="fas fa-globe-americas me-1"></i>Country Blocking Settings
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

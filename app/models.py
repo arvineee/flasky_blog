@@ -1,4 +1,3 @@
-
 from datetime import date, datetime
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -17,12 +16,16 @@ class User(UserMixin, db.Model):
     warning_message = db.Column(db.String(500), nullable=True)
 
     posts = db.relationship('Post', backref='author', lazy='dynamic')
-    comments = db.relationship('Comment', backref='user', lazy=True)
     likes = db.relationship('Like', backref='user', lazy=True)
     announcements = db.relationship('Announcement', backref='author', lazy=True)
     videos = db.relationship('Video', backref='author', lazy='dynamic')
     api_keys = db.relationship('ApiKey', backref='user', lazy='dynamic')
     ad_contents = db.relationship('AdContent', backref='advertiser', lazy='dynamic')
+    comments = db.relationship('Comment', backref='user', lazy=True, foreign_keys='Comment.user_id')
+    flagged_comments = db.relationship('Comment', 
+                                       foreign_keys='Comment.flagged_by', 
+                                       backref='flagger_user', 
+                                       lazy='dynamic')
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -59,6 +62,7 @@ class Post(db.Model):
     desc = db.Column(db.Text, nullable=False)
     date_pub = db.Column(db.DateTime, default=datetime.utcnow)
     image_url = db.Column(db.String(), nullable=True)
+    video_url = db.Column(db.String(), nullable=True)  # NEW: Support for videos in posts
     author_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     category_id = db.Column(db.Integer, db.ForeignKey('category.id'))
     is_blocked = db.Column(db.Boolean, default=False)
@@ -77,15 +81,48 @@ class Post(db.Model):
 
 # ---------------------- Comment Model ----------------------
 class Comment(db.Model):
+    __tablename__ = 'comment'
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.Text, nullable=False)
-    date_posted = db.Column(db.String(), default=date.today)
+    date_posted = db.Column(db.DateTime, default=datetime.utcnow)  # Changed to DateTime
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
-
+    
+    # NEW: Moderation fields
+    is_flagged = db.Column(db.Boolean, default=False)
+    is_hidden = db.Column(db.Boolean, default=False)
+    flag_reason = db.Column(db.String(200), nullable=True)
+    flagged_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    flagged_at = db.Column(db.DateTime, nullable=True)
+    
+    # NEW: Editing
+    edited = db.Column(db.Boolean, default=False)
+    edited_at = db.Column(db.DateTime, nullable=True)
+    
+    # Relationships
+    flagger = db.relationship('User', foreign_keys=[flagged_by], backref='comments_flagged_by_me')
+    
     def delete(self):
         db.session.delete(self)
         db.session.commit()
+    
+    def to_dict(self):
+        """Convert comment to dictionary for JSON response"""
+        return {
+            'id': self.id,
+            'content': self.content,
+            'date_posted': self.date_posted.strftime('%B %d, %Y at %I:%M %p'),
+            'user': {
+                'id': self.user_id,
+                'username': self.user.username,
+                'avatar_url': self.user.get_avatar_url(40)
+            },
+            'is_flagged': self.is_flagged,
+            'is_hidden': self.is_hidden,
+            'flag_reason': self.flag_reason,
+            'edited': self.edited,
+            'edited_at': self.edited_at.strftime('%B %d, %Y at %I:%M %p') if self.edited_at else None
+        }
 
 # ---------------------- Traffic Stats ----------------------
 class TrafficStats(db.Model):
