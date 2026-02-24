@@ -61,8 +61,8 @@ class Post(db.Model):
     title = db.Column(db.String(100), nullable=False)
     desc = db.Column(db.Text, nullable=False)
     date_pub = db.Column(db.DateTime, default=datetime.utcnow)
-    image_url = db.Column(db.String(), nullable=True)
-    video_url = db.Column(db.String(), nullable=True)  # NEW: Support for videos in posts
+    image_url = db.Column(db.String(500), nullable=True)
+    video_url = db.Column(db.String(500), nullable=True)  # NEW: Support for videos in posts
     author_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     category_id = db.Column(db.Integer, db.ForeignKey('category.id'))
     is_blocked = db.Column(db.Boolean, default=False)
