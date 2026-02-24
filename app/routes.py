@@ -217,31 +217,48 @@ def add_comment(post_id):
 @main.route('/like_post/<int:post_id>', methods=['POST'])
 @login_required
 def like_post(post_id):
-    post = Post.query.get_or_404(post_id)
-    existing_like = Like.query.filter_by(user_id=current_user.id, post_id=post_id).first()
+    from sqlalchemy.exc import IntegrityError
 
-    # Initialize like_count if None
+    post = Post.query.get_or_404(post_id)
+
     if post.like_count is None:
         post.like_count = 0
 
-    # Toggle like state
-    if existing_like:
-        db.session.delete(existing_like)
-        post.like_count -= 1
-        action = "unliked"
-    else:
-        new_like = Like(user_id=current_user.id, post_id=post_id)
-        db.session.add(new_like)
-        post.like_count += 1
-        action = "liked"
+    existing_like = Like.query.filter_by(user_id=current_user.id, post_id=post_id).first()
 
-    db.session.commit()
+    try:
+        if existing_like:
+            db.session.delete(existing_like)
+            post.like_count = max(0, post.like_count - 1)
+            action = "unliked"
+        else:
+            new_like = Like(user_id=current_user.id, post_id=post_id)
+            db.session.add(new_like)
+            post.like_count += 1
+            action = "liked"
 
-    # Return JSON for AJAX requests
+        db.session.commit()
+
+    except IntegrityError:
+        # Race/double-click: duplicate INSERT blocked by UNIQUE constraint.
+        # Roll back and report the current true count.
+        db.session.rollback()
+        post = Post.query.get(post_id)
+        return jsonify({
+            'status': 'success',
+            'action': 'liked',
+            'like_count': max(0, post.like_count or 0),
+            'post_id': post_id
+        })
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"like_post error: {e}")
+        return jsonify({'status': 'error', 'message': 'Could not update like'}), 500
+
     return jsonify({
         'status': 'success',
         'action': action,
-        'like_count': post.like_count,
+        'like_count': max(0, post.like_count),
         'post_id': post_id
     })
 
@@ -1344,58 +1361,58 @@ def trending_debug(post_id):
 @main.route('/api/comment/add/<int:post_id>', methods=['POST'])
 @login_required
 def add_comment_ajax(post_id):
-    """Add comment via AJAX"""
+    """Add a top-level comment or a reply (pass parent_id in JSON body)."""
     try:
         data = request.get_json()
         content = data.get('content', '').strip()
-        
+        parent_id = data.get('parent_id')   # None for top-level, int for reply
+
         if not content:
-            return jsonify({
-                'success': False,
-                'message': 'Comment cannot be empty'
-            }), 400
-        
+            return jsonify({'success': False, 'message': 'Comment cannot be empty'}), 400
+
         if len(content) > 1000:
-            return jsonify({
-                'success': False,
-                'message': 'Comment too long (max 1000 characters)'
-            }), 400
-        
-        # Check for spam (simple check)
+            return jsonify({'success': False, 'message': 'Comment too long (max 1000 characters)'}), 400
+
         spam_words = ['viagra', 'casino', 'lottery', 'click here', 'buy now']
         if any(word in content.lower() for word in spam_words):
-            return jsonify({
-                'success': False,
-                'message': 'Comment contains inappropriate content'
-            }), 400
-        
-        # Create comment
+            return jsonify({'success': False, 'message': 'Comment contains inappropriate content'}), 400
+
+        # Validate parent comment belongs to this post
+        if parent_id:
+            parent = Comment.query.filter_by(id=int(parent_id), post_id=post_id).first()
+            if not parent:
+                return jsonify({'success': False, 'message': 'Parent comment not found'}), 404
+            # Non-admins cannot reply to flagged comments
+            if parent.is_flagged and not current_user.is_admin:
+                return jsonify({'success': False, 'message': 'Replies are disabled on flagged comments'}), 403
+            # Prevent nested replies (only one level deep)
+            if parent.parent_id is not None:
+                parent_id = parent.parent_id
+
         comment = Comment(
             content=content,
             user_id=current_user.id,
-            post_id=post_id
+            post_id=post_id,
+            parent_id=int(parent_id) if parent_id else None
         )
-        
+
         db.session.add(comment)
         db.session.commit()
-        
-        # Update post comment count
+
         post = Post.query.get(post_id)
-        
+        is_admin_req = current_user.is_admin
+
         return jsonify({
             'success': True,
-            'message': 'Comment added successfully',
-            'comment': comment.to_dict(),
+            'message': 'Reply added!' if parent_id else 'Comment added!',
+            'comment': comment.to_dict(include_admin_fields=is_admin_req),
             'comment_count': post.comment_count
         })
-        
+
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"Error adding comment: {str(e)}")
-        return jsonify({
-            'success': False,
-            'message': 'Error adding comment'
-        }), 500
+        return jsonify({'success': False, 'message': 'Error adding comment'}), 500
 
 
 # AJAX: Edit comment
@@ -1537,40 +1554,79 @@ def flag_comment(comment_id):
         }), 500
 
 
-# AJAX: Get comments for a post
+# AJAX: Get top-level comments for a post
 @main.route('/api/comments/<int:post_id>')
 def get_comments(post_id):
-    """Get all comments for a post"""
+    """Get paginated top-level comments for a post."""
     try:
         page = request.args.get('page', 1, type=int)
-        per_page = request.args.get('per_page', 20, type=int)
-        
-        # Get comments (show hidden only to admins)
-        query = Comment.query.filter_by(post_id=post_id)
-        
-        if not (current_user.is_authenticated and current_user.is_admin):
+        per_page = request.args.get('per_page', 10, type=int)
+        is_admin_req = current_user.is_authenticated and current_user.is_admin
+
+        # Only top-level comments (no replies)
+        query = Comment.query.filter_by(post_id=post_id, parent_id=None)
+
+        # Non-admins never see hidden comments
+        if not is_admin_req:
             query = query.filter_by(is_hidden=False)
-        
-        comments = query.order_by(Comment.date_posted.desc()).paginate(
+
+        comments = query.order_by(Comment.date_posted.asc()).paginate(
             page=page, per_page=per_page, error_out=False
         )
-        
+
+        # Total counts only top-level; replies are fetched separately
+        total_all = Comment.query.filter_by(post_id=post_id).count()
+
         return jsonify({
             'success': True,
-            'comments': [comment.to_dict() for comment in comments.items],
+            'comments': [c.to_dict(include_admin_fields=is_admin_req) for c in comments.items],
             'total': comments.total,
+            'total_all': total_all,
             'pages': comments.pages,
             'current_page': page,
             'has_next': comments.has_next,
             'has_prev': comments.has_prev
         })
-        
+
     except Exception as e:
         current_app.logger.error(f"Error getting comments: {str(e)}")
+        return jsonify({'success': False, 'message': 'Error loading comments'}), 500
+
+
+# AJAX: Get replies for a comment
+@main.route('/api/comment/replies/<int:comment_id>')
+def get_replies(comment_id):
+    """Get all replies for a specific comment.
+    Non-admins receive an empty list if the parent comment is flagged —
+    replies on flagged comments are hidden from regular users.
+    """
+    try:
+        is_admin_req = current_user.is_authenticated and current_user.is_admin
+
+        # Check if the parent comment is flagged
+        parent = Comment.query.get(comment_id)
+        if not parent:
+            return jsonify({'success': True, 'replies': [], 'total': 0})
+
+        # Non-admins see no replies on flagged comments
+        if parent.is_flagged and not is_admin_req:
+            return jsonify({'success': True, 'replies': [], 'total': 0})
+
+        query = Comment.query.filter_by(parent_id=comment_id)
+        if not is_admin_req:
+            query = query.filter_by(is_hidden=False)
+
+        replies = query.order_by(Comment.date_posted.asc()).all()
+
         return jsonify({
-            'success': False,
-            'message': 'Error loading comments'
-        }), 500
+            'success': True,
+            'replies': [r.to_dict(include_admin_fields=is_admin_req) for r in replies],
+            'total': len(replies)
+        })
+
+    except Exception as e:
+        current_app.logger.error(f"Error getting replies: {str(e)}")
+        return jsonify({'success': False, 'message': 'Error loading replies'}), 500
 
 
 @main.route('/delete_comment/<int:comment_id>', methods=['POST'])
@@ -1586,5 +1642,6 @@ def delete_comment(comment_id):
         return redirect(url_for('admin.see_more', post_id=post_id))
     flash('Unauthorized', 'danger')
     return redirect(url_for('main.index'))
+
 
 

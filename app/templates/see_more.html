@@ -491,10 +491,73 @@
     margin-left: 5px;
 }
 
+/* Flagged comment notice shown to non-admin users */
+.flag-notice {
+    background: #fff8e1;
+    border: 1px solid #ffe082;
+    border-left: 4px solid #ffc107;
+    font-size: 0.9rem;
+}
+
+/* Reply thread indentation */
+.replies-container {
+    border-left: 3px solid #dee2e6;
+    margin-left: 2.5rem;
+    padding-left: 1rem;
+    margin-top: 0.5rem;
+}
+
+.reply-item {
+    position: relative;
+}
+
+.reply-item::before {
+    content: '';
+    position: absolute;
+    left: -1.15rem;
+    top: 1.2rem;
+    width: 0.8rem;
+    height: 2px;
+    background: #dee2e6;
+}
+
+/* Inline reply form */
+.reply-form-wrapper {
+    margin-left: 2.5rem;
+    margin-top: 0.5rem;
+    display: none;
+}
+
+.reply-form-wrapper.open {
+    display: block;
+}
+
+/* Collapse toggle */
+.toggle-replies-btn {
+    font-size: 0.8rem;
+    cursor: pointer;
+    color: #0d6efd;
+    background: none;
+    border: none;
+    padding: 0.25rem 0;
+    margin-left: 2.5rem;
+    margin-top: 0.25rem;
+    display: block;
+}
+
+.toggle-replies-btn:hover {
+    text-decoration: underline;
+}
+
+.hidden-replies {
+    display: none;
+}
+
 @media (max-width: 768px) {
-    .post-content {
-        font-size: 1rem;
-    }
+    .post-content { font-size: 1rem; }
+    .replies-container { margin-left: 1rem; }
+    .reply-form-wrapper { margin-left: 1rem; }
+    .toggle-replies-btn { margin-left: 1rem; }
 }
 </style>
 
@@ -588,8 +651,9 @@ function loadComments(page = 1) {
             if (data.success) {
                 displayComments(data.comments);
                 displayPagination(data);
-                updateCommentCount(data.total);
-                
+                // total_all includes replies; fall back to total (top-level only) if absent
+                updateCommentCount(data.total_all !== undefined ? data.total_all : data.total);
+
                 // Update admin stats if admin
                 if (isAdmin) {
                     updateAdminStats();
@@ -614,159 +678,312 @@ function loadComments(page = 1) {
         });
 }
 
-// Display comments
+// ── Build action-button dropdown for a comment/reply ────────────────────────
+function buildActionButtons(comment) {
+    if (!userId) return '';
+    const isOwner = userId === comment.user.id;
+    if (!isOwner && !isAdmin) return '';
+
+    let menu = `
+        <div class="dropdown">
+            <button class="btn btn-sm btn-outline-secondary py-0 px-1" type="button"
+                    data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fas fa-ellipsis-v"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">`;
+
+    if (isOwner) {
+        // Use comment id only — content is read from window._commentData map
+        // This avoids ALL escaping/quoting issues with inline onclick attributes
+        menu += `
+            <li><a class="dropdown-item" href="#" onclick="showEditModal(${comment.id}); return false;">
+                <i class="fas fa-edit me-2"></i>Edit
+            </a></li>
+            <li><hr class="dropdown-divider"></li>`;
+    }
+
+    if (isAdmin) {
+        if (comment.is_flagged) {
+            menu += `<li><a class="dropdown-item text-warning" href="#" onclick="performModeration(${comment.id},'unflag'); return false;">
+                <i class="fas fa-flag me-2"></i>Remove Flag</a></li>`;
+        } else {
+            menu += `<li><a class="dropdown-item text-warning" href="#" onclick="showFlagModal(${comment.id}); return false;">
+                <i class="fas fa-flag me-2"></i>Flag Comment</a></li>`;
+        }
+        if (comment.is_hidden) {
+            menu += `<li><a class="dropdown-item text-success" href="#" onclick="performModeration(${comment.id},'unhide'); return false;">
+                <i class="fas fa-eye me-2"></i>Unhide</a></li>`;
+        } else {
+            menu += `<li><a class="dropdown-item text-secondary" href="#" onclick="performModeration(${comment.id},'hide'); return false;">
+                <i class="fas fa-eye-slash me-2"></i>Hide</a></li>`;
+        }
+        menu += `<li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item text-danger" href="#" onclick="deleteComment(${comment.id}); return false;">
+                <i class="fas fa-trash me-2"></i>Delete as Admin</a></li>`;
+    } else if (isOwner) {
+        menu += `<li><a class="dropdown-item text-danger" href="#" onclick="deleteComment(${comment.id}); return false;">
+            <i class="fas fa-trash me-2"></i>Delete</a></li>`;
+    }
+
+    menu += `</ul></div>`;
+    return menu;
+}
+
+// ── Build a single comment/reply card ────────────────────────────────────────
+function buildCommentCard(comment, isReply) {
+    let cardClass = isReply
+        ? 'reply-item comment p-3 mb-2 rounded bg-white border'
+        : 'comment p-3 mb-1 rounded';
+
+    // Flagged/hidden styling only visible to admins
+    if (isAdmin && comment.is_hidden) cardClass += ' comment-hidden';
+    if (isAdmin && comment.is_flagged) cardClass += ' comment-flagged';
+
+    let badges = '';
+    if (isAdmin && comment.is_flagged) badges += '<span class="badge bg-warning comment-badge">Flagged</span>';
+    if (isAdmin && comment.is_hidden)  badges += '<span class="badge bg-danger comment-badge">Hidden</span>';
+    if (comment.edited)                badges += '<span class="badge bg-info comment-badge">Edited</span>';
+
+    // Admin: always see real content + admin-specific badges.
+    // Regular user: if comment is flagged, show a notice instead of the content.
+    let bodyHtml;
+    if (isAdmin && comment.is_hidden) {
+        bodyHtml = '<em class="text-muted">[Hidden by a moderator]</em>';
+    } else if (!isAdmin && comment.is_flagged) {
+        // Non-admin sees the flag notice — NOT the original content
+        const reasonText = comment.flag_reason ? `: "${comment.flag_reason}"` : '';
+        bodyHtml = `<div class="flag-notice rounded p-2 d-flex align-items-start gap-2">
+                        <i class="fas fa-flag text-warning mt-1 flex-shrink-0"></i>
+                        <div>
+                            <strong class="text-warning">This comment has been flagged by a moderator</strong>
+                            ${comment.flag_reason ? `<div class="text-muted small mt-1">Reason${reasonText}</div>` : ''}
+                        </div>
+                    </div>`;
+    } else {
+        bodyHtml = comment.content;
+    }
+
+    // Flag info line shown to admins only (non-admins see the notice in bodyHtml instead)
+    const flagLine = (isAdmin && comment.is_flagged && comment.flag_reason)
+        ? `<small class="text-warning d-block mt-1"><i class="fas fa-exclamation-triangle me-1"></i>Admin flag reason: ${comment.flag_reason}</small>`
+        : '';
+
+    // No reply button on flagged comments for non-admins
+    const canReply = !isReply && userId && !(comment.is_flagged && !isAdmin);
+    const replyBtn = canReply
+        ? `<button class="btn btn-link btn-sm p-0 text-muted"
+                   onclick="toggleReplyForm(${comment.id}); return false;">
+               <i class="fas fa-reply me-1"></i>Reply
+           </button>`
+        : '';
+
+    return `
+        <div class="${cardClass}" id="comment-${comment.id}">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div class="d-flex align-items-center gap-2">
+                    <img src="${comment.user.avatar_url}" alt="${comment.user.username}"
+                         class="rounded-circle flex-shrink-0" style="width:32px;height:32px;">
+                    <div>
+                        <strong>${comment.user.username}</strong>
+                        ${badges}
+                    </div>
+                </div>
+                ${buildActionButtons(comment)}
+            </div>
+
+            <div class="comment-content ps-1 mb-2">${bodyHtml}</div>
+
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <small class="text-muted">
+                    <i class="far fa-clock me-1"></i>${comment.date_posted}
+                    ${comment.edited_at ? `<span class="ms-2 fst-italic">(edited)</span>` : ''}
+                </small>
+                ${flagLine}
+                ${replyBtn}
+            </div>
+        </div>`;
+}
+
+// ── Build the inline reply form ───────────────────────────────────────────────
+function buildReplyForm(commentId) {
+    return `
+        <div class="reply-form-wrapper" id="reply-form-${commentId}">
+            <textarea class="form-control form-control-sm"
+                      id="reply-textarea-${commentId}"
+                      rows="2" maxlength="1000"
+                      placeholder="Write a reply…"></textarea>
+            <div class="d-flex justify-content-between align-items-center mt-1">
+                <small class="text-muted" id="reply-count-${commentId}">0/1000</small>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-sm btn-outline-secondary"
+                            onclick="toggleReplyForm(${commentId}); return false;">Cancel</button>
+                    <button class="btn btn-sm btn-primary"
+                            onclick="submitReply(${commentId}); return false;">
+                        <i class="fas fa-paper-plane me-1"></i>Post Reply
+                    </button>
+                </div>
+            </div>
+        </div>`;
+}
+
+// Global map: comment id → content, used by showEditModal to avoid escaping issues
+window._commentData = {};
+
+// ── Display all top-level comments ───────────────────────────────────────────
 function displayComments(comments) {
     const commentsList = document.getElementById('commentsList');
-    
+
     if (comments.length === 0) {
         commentsList.innerHTML = `
             <div class="text-center py-5">
                 <i class="fas fa-comment-slash fa-3x text-muted mb-3"></i>
                 <p class="text-muted">No comments yet. Be the first to comment!</p>
-            </div>
-        `;
+            </div>`;
         return;
     }
 
+    // Reset map for this page load
+    window._commentData = {};
     let html = '';
     comments.forEach(comment => {
-        // Determine comment classes
-        let commentClass = 'comment p-3 mb-3 rounded';
-        if (comment.is_hidden) commentClass += ' comment-hidden';
-        if (comment.is_flagged) commentClass += ' comment-flagged';
-        
-        // Determine action buttons based on user role
-        let actionButtons = '';
-        const isCommentOwner = userId === comment.user.id;
-        
-        if (userId) {
-            actionButtons = `
-                <div class="dropdown">
-                    <button class="btn btn-sm btn-outline-secondary" type="button" 
-                            data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="fas fa-ellipsis-v"></i>
-                    </button>
-                    <ul class="dropdown-menu">
-            `;
-            
-            // Owner actions
-            if (isCommentOwner) {
-                actionButtons += `
-                    <li><a class="dropdown-item" href="#" onclick="showEditModal(${comment.id}, '${comment.content.replace(/'/g, "\\'")}')">
-                        <i class="fas fa-edit me-2"></i>Edit
-                    </a></li>
-                    <li><hr class="dropdown-divider"></li>
-                `;
-            }
-            
-            // Admin actions
-            if (isAdmin) {
-                // Flag/Unflag
-                if (comment.is_flagged) {
-                    actionButtons += `
-                        <li><a class="dropdown-item text-warning" href="#" onclick="performModeration(${comment.id}, 'unflag')">
-                            <i class="fas fa-flag me-2"></i>Remove Flag
-                        </a></li>
-                    `;
-                } else {
-                    actionButtons += `
-                        <li><a class="dropdown-item text-warning" href="#" onclick="showFlagModal(${comment.id})">
-                            <i class="fas fa-flag me-2"></i>Flag Comment
-                        </a></li>
-                    `;
-                }
-                
-                // Hide/Unhide
-                if (comment.is_hidden) {
-                    actionButtons += `
-                        <li><a class="dropdown-item text-success" href="#" onclick="performModeration(${comment.id}, 'unhide')">
-                            <i class="fas fa-eye me-2"></i>Unhide Comment
-                        </a></li>
-                    `;
-                } else {
-                    actionButtons += `
-                        <li><a class="dropdown-item text-secondary" href="#" onclick="performModeration(${comment.id}, 'hide')">
-                            <i class="fas fa-eye-slash me-2"></i>Hide Comment
-                        </a></li>
-                    `;
-                }
-                
-                // Delete (admin)
-                actionButtons += `
-                    <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item text-danger" href="#" onclick="deleteComment(${comment.id})">
-                        <i class="fas fa-trash me-2"></i>Delete as Admin
-                    </a></li>
-                `;
-            } else if (isCommentOwner) {
-                // Delete (owner)
-                actionButtons += `
-                    <li><a class="dropdown-item text-danger" href="#" onclick="deleteComment(${comment.id})">
-                        <i class="fas fa-trash me-2"></i>Delete
-                    </a></li>
-                `;
-            }
-            
-            actionButtons += `
-                    </ul>
-                </div>
-            `;
+        window._commentData[comment.id] = comment.content;
+        // Non-admins: flagged comments get no reply infrastructure at all
+        const flaggedForUser = comment.is_flagged && !isAdmin;
+        html += `<div class="comment-wrapper mb-4" id="wrapper-${comment.id}">`;
+        html += buildCommentCard(comment, false);
+        if (!flaggedForUser) {
+            // Replies container + toggle placeholder + reply form
+            html += `
+                <div class="replies-container" id="replies-${comment.id}" style="display:none;"></div>
+                <span id="toggle-btn-${comment.id}"></span>
+                ${buildReplyForm(comment.id)}`;
         }
-        
-        // Badges for comment status
-        let badges = '';
-        if (comment.is_flagged) {
-            badges += `<span class="badge bg-warning comment-badge">Flagged</span>`;
-        }
-        if (comment.is_hidden) {
-            badges += `<span class="badge bg-danger comment-badge">Hidden</span>`;
-        }
-        if (comment.edited) {
-            badges += `<span class="badge bg-info comment-badge">Edited</span>`;
-        }
-        
-        html += `
-            <div class="${commentClass}" id="comment-${comment.id}">
-                <div class="d-flex justify-content-between align-items-start mb-2">
-                    <div class="d-flex align-items-center">
-                        <img src="${comment.user.avatar_url}" 
-                             alt="${comment.user.username}" 
-                             class="rounded-circle me-2" 
-                             style="width: 32px; height: 32px;">
-                        <div>
-                            <strong class="me-2">${comment.user.username}</strong>
-                            ${badges}
-                        </div>
-                    </div>
-                    ${actionButtons}
-                </div>
-                
-                <div class="comment-content mb-2">
-                    ${comment.is_hidden ? 
-                        '<em class="text-muted">[This comment has been hidden by a moderator]</em>' : 
-                        comment.content}
-                </div>
-                
-                <div class="d-flex justify-content-between align-items-center">
-                    <small class="text-muted">
-                        <i class="far fa-clock me-1"></i>${comment.date_posted}
-                        ${comment.edited_at ? 
-                            `<span class="ms-2"><i class="fas fa-pencil-alt me-1"></i>Edited: ${comment.edited_at}</span>` : 
-                            ''}
-                    </small>
-                    
-                    ${comment.is_flagged && comment.flag_reason ? 
-                        `<small class="text-warning">
-                            <i class="fas fa-exclamation-triangle me-1"></i>Flagged: ${comment.flag_reason}
-                        </small>` : 
-                        ''}
-                </div>
-            </div>
-        `;
+        html += `</div>`;
     });
-    
+
     commentsList.innerHTML = html;
+
+    // Load replies and wire counters — skip flagged comments for non-admins
+    comments.forEach(comment => {
+        const flaggedForUser = comment.is_flagged && !isAdmin;
+        if (!flaggedForUser && (comment.reply_count || 0) > 0) loadReplies(comment.id);
+
+        if (!flaggedForUser) {
+            const ta = document.getElementById(`reply-textarea-${comment.id}`);
+            const counter = document.getElementById(`reply-count-${comment.id}`);
+            if (ta && counter) {
+                ta.addEventListener('input', () => { counter.textContent = `${ta.value.length}/1000`; });
+            }
+        }
+    });
 }
+
+// ── Load & render replies ─────────────────────────────────────────────────────
+function loadReplies(commentId) {
+    fetch(`/api/comment/replies/${commentId}`)
+        .then(r => r.json())
+        .then(data => { if (data.success) renderReplies(commentId, data.replies); })
+        .catch(() => {});
+}
+
+function renderReplies(commentId, replies) {
+    const container  = document.getElementById(`replies-${commentId}`);
+    const toggleSlot = document.getElementById(`toggle-btn-${commentId}`);
+    if (!container) return;
+
+    if (replies.length === 0) { container.style.display = 'none'; return; }
+
+    const FIRST = 3;
+    container.style.display = 'block';
+
+    let html = '';
+    replies.forEach((reply, idx) => {
+        window._commentData[reply.id] = reply.content;
+        const hidden = idx >= FIRST;
+        html += `<div class="${hidden ? 'hidden-reply d-none' : ''}" id="reply-wrapper-${reply.id}">`;
+        html += buildCommentCard(reply, true);
+        html += '</div>';
+    });
+    container.innerHTML = html;
+
+    if (toggleSlot) {
+        const extra = replies.length - FIRST;
+        if (extra > 0) {
+            toggleSlot.innerHTML = `
+                <button class="toggle-replies-btn" id="collapse-btn-${commentId}"
+                        onclick="toggleExtraReplies(${commentId}, ${replies.length}); return false;">
+                    <i class="fas fa-chevron-down me-1"></i>Show ${extra} more ${extra === 1 ? 'reply' : 'replies'}
+                </button>`;
+        } else {
+            toggleSlot.innerHTML = '';
+        }
+    }
+}
+
+// ── Expand / collapse extra replies ──────────────────────────────────────────
+function toggleExtraReplies(commentId, total) {
+    const container = document.getElementById(`replies-${commentId}`);
+    const btn = document.getElementById(`collapse-btn-${commentId}`);
+    if (!container || !btn) return;
+
+    const hiddenEls = container.querySelectorAll('.hidden-reply');
+    const collapsed = hiddenEls.length > 0 && hiddenEls[0].classList.contains('d-none');
+    const extra = total - 3;
+
+    hiddenEls.forEach(el => el.classList.toggle('d-none', !collapsed));
+    btn.innerHTML = collapsed
+        ? `<i class="fas fa-chevron-up me-1"></i>Hide ${extra} ${extra === 1 ? 'reply' : 'replies'}`
+        : `<i class="fas fa-chevron-down me-1"></i>Show ${extra} more ${extra === 1 ? 'reply' : 'replies'}`;
+}
+
+// ── Toggle the inline reply textarea ─────────────────────────────────────────
+function toggleReplyForm(commentId) {
+    const form = document.getElementById(`reply-form-${commentId}`);
+    if (!form) return;
+    const wasOpen = form.classList.contains('open');
+    // Close every open form first
+    document.querySelectorAll('.reply-form-wrapper.open').forEach(f => f.classList.remove('open'));
+    if (!wasOpen) {
+        form.classList.add('open');
+        const ta = document.getElementById(`reply-textarea-${commentId}`);
+        if (ta) setTimeout(() => ta.focus(), 40);
+    }
+}
+
+// ── Submit a reply ────────────────────────────────────────────────────────────
+function submitReply(parentId) {
+    const ta = document.getElementById(`reply-textarea-${parentId}`);
+    if (!ta) return;
+    const content = ta.value.trim();
+    if (!content) { showNotification('Reply cannot be empty', 'warning'); return; }
+
+    const csrfMeta  = document.querySelector('meta[name="csrf-token"]');
+    const csrfToken = csrfMeta ? csrfMeta.getAttribute('content') : '';
+
+    fetch(`/api/comment/add/${postId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+        body: JSON.stringify({ content, parent_id: parentId })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            ta.value = '';
+            const counter = document.getElementById(`reply-count-${parentId}`);
+            if (counter) counter.textContent = '0/1000';
+            toggleReplyForm(parentId);
+            showNotification('Reply posted!', 'success');
+            loadReplies(parentId);
+            updateCommentCount(data.comment_count);
+        } else {
+            showNotification(data.message, 'error');
+        }
+    })
+    .catch(() => showNotification('Failed to post reply', 'error'));
+}
+
+// Display comments (alias — end of block)
+function _endDisplayComments() {}
 
 // Display pagination
 function displayPagination(data) {
@@ -835,39 +1052,90 @@ function updateCommentCount(count) {
     });
 }
 
-// Add new comment
+// Add new comment — injects the new comment directly into the DOM so the
+// user sees it immediately without a full page reload.
 document.getElementById('commentForm')?.addEventListener('submit', function(e) {
     e.preventDefault();
-    
+
     const content = document.getElementById('commentTextarea').value.trim();
     if (!content) return;
-    
+
     const submitBtn = document.getElementById('commentSubmitBtn');
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Posting...';
-    
+
     fetch(`/api/comment/add/${postId}`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
         },
-        body: JSON.stringify({ content: content })
+        body: JSON.stringify({ content })
     })
-    .then(response => response.json())
+    .then(r => r.json())
     .then(data => {
         if (data.success) {
+            // Clear the textarea
             document.getElementById('commentTextarea').value = '';
             document.getElementById('charCounter').textContent = '0/1000';
-            showNotification(data.message, 'success');
-            loadComments(currentPage);
+
+            // Store content in the global map for editing later
+            window._commentData = window._commentData || {};
+            window._commentData[data.comment.id] = data.comment.content;
+
+            const commentsList = document.getElementById('commentsList');
+
+            // If the list currently shows the empty-state placeholder, clear it
+            if (commentsList.querySelector('.fa-comment-slash')) {
+                commentsList.innerHTML = '';
+            }
+
+            // Build and append the new comment card + its reply infrastructure
+            const wrapper = document.createElement('div');
+            wrapper.className = 'comment-wrapper mb-4';
+            wrapper.id = `wrapper-${data.comment.id}`;
+            const newFlaggedForUser = data.comment.is_flagged && !isAdmin;
+            wrapper.innerHTML =
+                buildCommentCard(data.comment, false) +
+                (newFlaggedForUser ? '' :
+                `<div class="replies-container" id="replies-${data.comment.id}" style="display:none;"></div>
+                 <span id="toggle-btn-${data.comment.id}"></span>
+                 ${buildReplyForm(data.comment.id)}`);
+            commentsList.appendChild(wrapper);
+
+            // Wire the char counter for the new reply textarea (only if reply form was added)
+            if (!newFlaggedForUser) {
+                const ta = document.getElementById(`reply-textarea-${data.comment.id}`);
+                const counter = document.getElementById(`reply-count-${data.comment.id}`);
+                if (ta && counter) {
+                    ta.addEventListener('input', () => {
+                        counter.textContent = `${ta.value.length}/1000`;
+                    });
+                }
+            }
+
+            // Scroll smoothly to the new comment
+            wrapper.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+            // Briefly highlight the new comment so the user spots it
+            wrapper.style.transition = 'background 0.4s';
+            wrapper.style.background = '#e8f5e9';
+            setTimeout(() => { wrapper.style.background = ''; }, 1800);
+
+            // Update the comment count badge
+            updateCommentCount(data.comment_count);
+
+            showNotification('Comment posted!', 'success');
+
+            // Refresh admin stats if needed
+            if (isAdmin) updateAdminStats();
         } else {
             showNotification(data.message, 'error');
         }
     })
-    .catch(error => {
-        console.error('Error:', error);
-        showNotification('Failed to post comment', 'error');
+    .catch(err => {
+        console.error('Comment post error:', err);
+        showNotification('Failed to post comment. Please try again.', 'error');
     })
     .finally(() => {
         submitBtn.disabled = false;
@@ -989,10 +1257,11 @@ function performModeration(commentId, action) {
     });
 }
 
-// Show edit modal
-function showEditModal(commentId, content) {
+// Show edit modal — content comes from the _commentData map, never from onclick args
+function showEditModal(commentId) {
+    const content = (window._commentData && window._commentData[commentId]) || '';
     document.getElementById('editCommentId').value = commentId;
-    document.getElementById('editCommentText').value = content.replace(/\\'/g, "'");
+    document.getElementById('editCommentText').value = content;
     document.getElementById('editCharCounter').textContent = `${content.length}/1000`;
     
     setupEditCounter();
@@ -1122,9 +1391,133 @@ if (isAdmin) {
 }
 </script>
 
-<!-- Include the like.js script -->
-<script src="{{ url_for('static', filename='js/like.js') }}"></script>
+<script>
+// ── Like Button ───────────────────────────────────────────────────────────────
+(function () {
+    const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+    const csrfToken = csrfMeta ? csrfMeta.getAttribute('content') : '';
+
+    // Check initial liked state on page load
+    {% if current_user.is_authenticated %}
+    fetch('/check_liked_posts', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify({ post_ids: [{{ post.id }}] })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.status === 'success' && data.liked_posts.includes({{ post.id }})) {
+            const btn = document.querySelector('.btn-like[data-post-id="{{ post.id }}"]');
+            if (btn) {
+                btn.classList.add('liked');
+                btn.classList.replace('btn-outline-danger', 'btn-danger');
+                const icon = btn.querySelector('i');
+                if (icon) { icon.classList.replace('far', 'fas'); }
+            }
+        }
+    })
+    .catch(() => {});
+    {% endif %}
+
+    // Attach click handlers to all like buttons
+    document.querySelectorAll('.btn-like').forEach(function (btn) {
+        // pending flag prevents double-click race conditions
+        btn._likePending = false;
+
+        btn.addEventListener('click', function () {
+            if (this._likePending) return;   // ignore clicks while a request is in-flight
+
+            const postId = this.dataset.postId;
+            if (!postId) return;
+
+            const isLiked = this.classList.contains('liked');
+            const countEl = this.querySelector('.like-count');
+            const icon    = this.querySelector('i');
+            const count   = parseInt(countEl ? countEl.textContent : '0', 10);
+
+            // Lock button immediately
+            this._likePending = true;
+            this.disabled = true;
+
+            // Optimistic UI update
+            if (isLiked) {
+                this.classList.remove('liked');
+                this.classList.replace('btn-danger', 'btn-outline-danger');
+                if (icon) icon.classList.replace('fas', 'far');
+                if (countEl) countEl.textContent = Math.max(0, count - 1);
+            } else {
+                this.classList.add('liked');
+                this.classList.replace('btn-outline-danger', 'btn-danger');
+                if (icon) icon.classList.replace('far', 'fas');
+                this.classList.add('animate-like');
+                setTimeout(() => this.classList.remove('animate-like'), 400);
+                if (countEl) countEl.textContent = count + 1;
+            }
+
+            // Send request to server
+            fetch('/like_post/' + postId, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                }
+            })
+            .then(r => {
+                if (!r.ok) throw new Error('Network error');
+                return r.json();
+            })
+            .then(data => {
+                if (data.status === 'success') {
+                    // Always sync displayed count with server truth to stay accurate
+                    if (countEl) countEl.textContent = Math.max(0, data.like_count);
+                    // Ensure UI matches what the server decided
+                    if (data.action === 'liked') {
+                        btn.classList.add('liked');
+                        btn.classList.remove('btn-outline-danger');
+                        btn.classList.add('btn-danger');
+                        if (icon) { icon.classList.remove('far'); icon.classList.add('fas'); }
+                    } else {
+                        btn.classList.remove('liked');
+                        btn.classList.remove('btn-danger');
+                        btn.classList.add('btn-outline-danger');
+                        if (icon) { icon.classList.remove('fas'); icon.classList.add('far'); }
+                    }
+                } else {
+                    revertLike(btn, isLiked, count, countEl, icon);
+                    showNotification('Could not update like. Please try again.', 'error');
+                }
+            })
+            .catch(() => {
+                revertLike(btn, isLiked, count, countEl, icon);
+                showNotification('Could not update like. Please try again.', 'error');
+            })
+            .finally(() => {
+                // Unlock after server responds
+                this._likePending = false;
+                this.disabled = false;
+            });
+        });
+    });
+
+    function revertLike(btn, wasLiked, originalCount, countEl, icon) {
+        if (wasLiked) {
+            btn.classList.add('liked');
+            btn.classList.replace('btn-outline-danger', 'btn-danger');
+            if (icon) { icon.classList.replace('far', 'fas'); }
+        } else {
+            btn.classList.remove('liked');
+            btn.classList.replace('btn-danger', 'btn-outline-danger');
+            if (icon) { icon.classList.replace('fas', 'far'); }
+        }
+        if (countEl) countEl.textContent = originalCount;
+    }
+})();
+</script>
 <!-- Include the recommend.js script -->
 <script src="{{ url_for('static', filename='js/recommend.js') }}"></script>
 
 {% endblock %}
+

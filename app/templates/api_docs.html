@@ -1,39 +1,495 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="container mt-4">
-    <h1>API Documentation</h1>
-    <p>Use our API to create and manage posts programmatically.</p>
-    
-    <h2>Authentication</h2>
-    <p>All API requests require an API key in the <code>X-API-Key</code> header.</p>
-    
-    <h2>Endpoints</h2>
-    
-    <h3>Create a Post</h3>
-    <p><code>POST /api/posts</code></p>
-    <p>Parameters (form-data):</p>
-    <ul>
-        <li><code>title</code> (required) - Post title</li>
-        <li><code>content</code> (required) - Post content (HTML allowed)</li>
-        <li><code>category_id</code> (optional) - Category ID</li>
-        <li><code>image</code> (optional) - Featured image</li>
+<div class="container-xxl py-5">
+
+  <!-- Header -->
+  <div class="row mb-5">
+    <div class="col">
+      <h1 class="fw-bold mb-1"><i class="fas fa-plug text-primary me-3"></i>API Documentation</h1>
+      <p class="text-muted fs-5">Programmatically create posts, upload videos and manage categories.</p>
+      <span class="badge bg-success fs-6 me-2">v1.0</span>
+      <span class="badge bg-secondary fs-6">REST / JSON</span>
+    </div>
+  </div>
+
+  <!-- Quick-nav pills -->
+  <ul class="nav nav-pills mb-5 gap-2 flex-wrap" id="apiNav">
+    <li class="nav-item"><a class="nav-link active" href="#auth">Authentication</a></li>
+    <li class="nav-item"><a class="nav-link" href="#posts">Posts</a></li>
+    <li class="nav-item"><a class="nav-link" href="#videos">Videos</a></li>
+    <li class="nav-item"><a class="nav-link" href="#categories">Categories</a></li>
+    <li class="nav-item"><a class="nav-link" href="#errors">Errors</a></li>
+    <li class="nav-item"><a class="nav-link" href="#examples">Examples</a></li>
+  </ul>
+
+  <!-- ── AUTHENTICATION ───────────────────────────────────────────── -->
+  <section id="auth" class="mb-5 pb-4 border-bottom">
+    <h2 class="fw-bold text-primary mb-3"><i class="fas fa-key me-2"></i>Authentication</h2>
+    <p>Every request must include your API key. Pass it in the HTTP header or as a query-string parameter.</p>
+
+    <div class="row g-4 mb-4">
+      <div class="col-md-6">
+        <div class="card h-100 border-0 shadow-sm">
+          <div class="card-header bg-dark text-white fw-bold">Header (recommended)</div>
+          <div class="card-body">
+            <pre class="mb-0 text-success">X-API-Key: YOUR_API_KEY</pre>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card h-100 border-0 shadow-sm">
+          <div class="card-header bg-dark text-white fw-bold">Query parameter (fallback)</div>
+          <div class="card-body">
+            <pre class="mb-0 text-success">GET /api/posts?api_key=YOUR_API_KEY</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="alert alert-info">
+      <i class="fas fa-info-circle me-2"></i>
+      API keys are issued by administrators. Contact your admin or visit your profile to request one.
+    </div>
+
+    <h5 class="fw-bold mt-4">Generate a Key <span class="badge bg-warning text-dark">Admin only</span></h5>
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-dark text-white"><span class="badge bg-warning text-dark me-2">POST</span>/api/generate_key</div>
+      <div class="card-body">
+        <p class="text-muted">JSON body:</p>
+        <pre class="bg-light rounded p-3">{
+  "user_id": 42,
+  "permissions": "post:create"
+}</pre>
+        <p class="text-muted mb-0"><strong>Response 201:</strong></p>
+        <pre class="bg-light rounded p-3">{
+  "api_key": "abc123...",
+  "user_id": 42,
+  "permissions": "post:create"
+}</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── POSTS ────────────────────────────────────────────────────── -->
+  <section id="posts" class="mb-5 pb-4 border-bottom">
+    <h2 class="fw-bold text-primary mb-3"><i class="fas fa-newspaper me-2"></i>Posts</h2>
+
+    <!-- CREATE POST -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-dark text-white d-flex align-items-center gap-2">
+        <span class="badge bg-success">POST</span>
+        <code class="text-white">/api/posts</code>
+        <span class="ms-auto text-muted small">Create a new post</span>
+      </div>
+      <div class="card-body">
+        <p>Send as <strong>multipart/form-data</strong> so you can attach image and/or video files.</p>
+        <table class="table table-sm table-bordered align-middle">
+          <thead class="table-light"><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>title</code></td><td>string</td><td><span class="badge bg-danger">yes</span></td><td>Post title</td></tr>
+            <tr><td><code>content</code></td><td>string (HTML)</td><td><span class="badge bg-danger">yes</span></td><td>Post body – HTML tags are sanitised server-side</td></tr>
+            <tr><td><code>category_id</code></td><td>integer</td><td><span class="badge bg-secondary">no</span></td><td>Category by numeric ID</td></tr>
+            <tr><td><code>category_name</code></td><td>string</td><td><span class="badge bg-secondary">no</span></td><td>Category by name — auto-creates the category if it doesn't exist yet</td></tr>
+            <tr><td><code>image</code></td><td>file</td><td><span class="badge bg-secondary">no</span></td><td>Featured image: <code>png jpg jpeg gif webp</code></td></tr>
+            <tr><td><code>video</code></td><td>file</td><td><span class="badge bg-secondary">no</span></td><td>Embedded video: <code>mp4 webm mov avi mkv</code></td></tr>
+            <tr><td><code>video_url</code></td><td>string</td><td><span class="badge bg-secondary">no</span></td><td>Filename of an already-uploaded video (alternative to uploading)</td></tr>
+          </tbody>
+        </table>
+        <p class="text-muted mb-1"><strong>Response 201:</strong></p>
+        <pre class="bg-light rounded p-3">{
+  "message": "Post created successfully",
+  "post_id": 101,
+  "post_url": "https://example.com/see_more/101",
+  "has_video": true,
+  "category": { "id": 3, "name": "Technology" }
+}</pre>
+      </div>
+    </div>
+
+    <!-- LIST POSTS -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-dark text-white d-flex align-items-center gap-2">
+        <span class="badge bg-primary">GET</span>
+        <code class="text-white">/api/posts</code>
+        <span class="ms-auto text-muted small">List your posts</span>
+      </div>
+      <div class="card-body">
+        <table class="table table-sm table-bordered align-middle">
+          <thead class="table-light"><tr><th>Parameter</th><th>Default</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>page</code></td><td>1</td><td>Page number</td></tr>
+            <tr><td><code>per_page</code></td><td>10</td><td>Results per page (max 50)</td></tr>
+            <tr><td><code>category_id</code></td><td>–</td><td>Filter by category ID</td></tr>
+            <tr><td><code>category</code></td><td>–</td><td>Filter by partial category name (case-insensitive)</td></tr>
+            <tr><td><code>has_video</code></td><td>–</td><td>Pass <code>1</code> to return only posts with an attached video</td></tr>
+          </tbody>
+        </table>
+        <p class="text-muted mb-1"><strong>Response 200:</strong></p>
+        <pre class="bg-light rounded p-3">{
+  "posts": [
+    {
+      "id": 101,
+      "title": "Breaking News",
+      "excerpt": "First 150 chars...",
+      "published_date": "2025-03-01T10:00:00",
+      "views": 234,
+      "likes": 18,
+      "comments": 7,
+      "has_video": false,
+      "video_url": null,
+      "image_url": "photo.jpg",
+      "category": { "id": 3, "name": "Technology" },
+      "url": "https://example.com/see_more/101"
+    }
+  ],
+  "total": 45,
+  "pages": 5,
+  "current_page": 1,
+  "has_next": true,
+  "has_prev": false
+}</pre>
+      </div>
+    </div>
+
+    <!-- GET SINGLE POST -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-dark text-white d-flex align-items-center gap-2">
+        <span class="badge bg-primary">GET</span>
+        <code class="text-white">/api/posts/&lt;post_id&gt;</code>
+        <span class="ms-auto text-muted small">Get a single post</span>
+      </div>
+      <div class="card-body">
+        <p>Returns the full post object including <code>content</code> (HTML), <code>video_url</code>, and <code>has_video</code>.</p>
+        <p class="text-muted mb-0"><em>The post must belong to the authenticated API user.</em></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── VIDEOS ───────────────────────────────────────────────────── -->
+  <section id="videos" class="mb-5 pb-4 border-bottom">
+    <h2 class="fw-bold text-primary mb-3"><i class="fas fa-video me-2"></i>Videos</h2>
+    <p>The <strong>Videos</strong> resource lets you upload standalone videos (separate from posts). Supported formats: <code>mp4 webm mov avi mkv</code>.</p>
+
+    <!-- UPLOAD VIDEO -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-dark text-white d-flex align-items-center gap-2">
+        <span class="badge bg-success">POST</span>
+        <code class="text-white">/api/videos</code>
+        <span class="ms-auto text-muted small">Upload a video</span>
+      </div>
+      <div class="card-body">
+        <p>Send as <strong>multipart/form-data</strong>.</p>
+        <table class="table table-sm table-bordered align-middle">
+          <thead class="table-light"><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>title</code></td><td>string</td><td><span class="badge bg-danger">yes</span></td><td>Video title</td></tr>
+            <tr><td><code>description</code></td><td>string</td><td><span class="badge bg-danger">yes</span></td><td>Short description</td></tr>
+            <tr><td><code>video</code></td><td>file</td><td><span class="badge bg-danger">yes</span></td><td>Video file: <code>mp4 webm mov avi mkv</code></td></tr>
+          </tbody>
+        </table>
+        <p class="text-muted mb-1"><strong>Response 201:</strong></p>
+        <pre class="bg-light rounded p-3">{
+  "message": "Video uploaded successfully",
+  "video_id": 7,
+  "video_url": "my-clip.mp4"
+}</pre>
+      </div>
+    </div>
+
+    <!-- LIST VIDEOS -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-dark text-white d-flex align-items-center gap-2">
+        <span class="badge bg-primary">GET</span>
+        <code class="text-white">/api/videos</code>
+        <span class="ms-auto text-muted small">List your videos</span>
+      </div>
+      <div class="card-body">
+        <p>Supports <code>page</code> and <code>per_page</code> (max 50) query parameters.</p>
+        <pre class="bg-light rounded p-3">{
+  "videos": [
+    {
+      "id": 7,
+      "title": "Product Demo",
+      "description": "Watch how it works",
+      "video_url": "demo.mp4",
+      "uploaded_at": "2025-03-01T12:00:00"
+    }
+  ],
+  "total": 3,
+  "pages": 1,
+  "current_page": 1,
+  "has_next": false,
+  "has_prev": false
+}</pre>
+      </div>
+    </div>
+
+    <!-- DELETE VIDEO -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-dark text-white d-flex align-items-center gap-2">
+        <span class="badge bg-danger">DELETE</span>
+        <code class="text-white">/api/videos/&lt;video_id&gt;</code>
+        <span class="ms-auto text-muted small">Delete a video</span>
+      </div>
+      <div class="card-body">
+        <p>Deletes both the database record and the physical file. The video must belong to the authenticated user.</p>
+        <pre class="bg-light rounded p-3">{ "message": "Video deleted successfully" }</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── CATEGORIES ────────────────────────────────────────────────── -->
+  <section id="categories" class="mb-5 pb-4 border-bottom">
+    <h2 class="fw-bold text-primary mb-3"><i class="fas fa-tags me-2"></i>Categories</h2>
+    <p>Categories are hierarchical (parent → children). You can reference them by ID <em>or</em> by name; when creating a post with <code>category_name</code>, the category is auto-created if it doesn't already exist.</p>
+
+    <!-- LIST CATEGORIES -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-dark text-white d-flex align-items-center gap-2">
+        <span class="badge bg-primary">GET</span>
+        <code class="text-white">/api/categories</code>
+        <span class="ms-auto text-muted small">List all categories</span>
+      </div>
+      <div class="card-body">
+        <p><strong>Default</strong> returns a tree structure. Add <code>?flat=1</code> for a simple list.</p>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <p class="fw-bold text-muted small mb-1">Tree (default)</p>
+            <pre class="bg-light rounded p-3">{
+  "categories": [
+    {
+      "id": 1,
+      "name": "Technology",
+      "parent_id": null,
+      "children": [
+        { "id": 4, "name": "AI", "parent_id": 1, "children": [] }
+      ]
+    }
+  ],
+  "total": 5
+}</pre>
+          </div>
+          <div class="col-md-6">
+            <p class="fw-bold text-muted small mb-1">Flat <code>?flat=1</code></p>
+            <pre class="bg-light rounded p-3">{
+  "categories": [
+    { "id": 4, "name": "AI", "parent_id": 1 },
+    { "id": 1, "name": "Technology", "parent_id": null }
+  ],
+  "total": 5
+}</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CREATE CATEGORY -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-dark text-white d-flex align-items-center gap-2">
+        <span class="badge bg-success">POST</span>
+        <code class="text-white">/api/categories</code>
+        <span class="ms-auto text-muted small">Create a category</span>
+      </div>
+      <div class="card-body">
+        <p>Send <strong>JSON</strong>. If the category name already exists the existing record is returned (idempotent).</p>
+        <pre class="bg-light rounded p-3">// Request body
+{ "name": "Machine Learning", "parent_id": 1 }
+
+// Response 201 (new) or 200 (already exists)
+{
+  "message": "Category created successfully",
+  "category": { "id": 9, "name": "Machine Learning", "parent_id": 1 }
+}</pre>
+      </div>
+    </div>
+
+    <!-- POSTS IN CATEGORY -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-dark text-white d-flex align-items-center gap-2">
+        <span class="badge bg-primary">GET</span>
+        <code class="text-white">/api/categories/&lt;category_id&gt;/posts</code>
+        <span class="ms-auto text-muted small">Posts in a category</span>
+      </div>
+      <div class="card-body">
+        <p>Returns paginated public posts for any category (not just your own). Supports <code>page</code> and <code>per_page</code>.</p>
+        <pre class="bg-light rounded p-3">{
+  "category": { "id": 1, "name": "Technology" },
+  "posts": [
+    {
+      "id": 101,
+      "title": "AI Trends 2025",
+      "excerpt": "...",
+      "published_date": "2025-03-01T10:00:00",
+      "author": "alice",
+      "views": 412,
+      "likes": 30,
+      "has_video": true,
+      "url": "https://example.com/see_more/101"
+    }
+  ],
+  "total": 12, "pages": 2, "current_page": 1,
+  "has_next": true, "has_prev": false
+}</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── ERROR REFERENCE ──────────────────────────────────────────── -->
+  <section id="errors" class="mb-5 pb-4 border-bottom">
+    <h2 class="fw-bold text-primary mb-3"><i class="fas fa-exclamation-triangle me-2"></i>Error Reference</h2>
+    <table class="table table-bordered align-middle">
+      <thead class="table-dark"><tr><th>HTTP Status</th><th>Meaning</th><th>Common cause</th></tr></thead>
+      <tbody>
+        <tr><td><span class="badge bg-warning text-dark">400</span></td><td>Bad Request</td><td>Missing required fields, invalid file format</td></tr>
+        <tr><td><span class="badge bg-danger">401</span></td><td>Unauthorised</td><td>Missing or invalid API key</td></tr>
+        <tr><td><span class="badge bg-danger">403</span></td><td>Forbidden</td><td>API key lacks required permissions</td></tr>
+        <tr><td><span class="badge bg-danger">404</span></td><td>Not Found</td><td>Post / video / category does not exist or belongs to another user</td></tr>
+        <tr><td><span class="badge bg-danger">500</span></td><td>Server Error</td><td>Unexpected internal error</td></tr>
+      </tbody>
+    </table>
+    <p>All error responses follow the same shape: <code>{ "error": "Description of the problem" }</code></p>
+  </section>
+
+  <!-- ── EXAMPLES ─────────────────────────────────────────────────── -->
+  <section id="examples" class="mb-5">
+    <h2 class="fw-bold text-primary mb-4"><i class="fas fa-terminal me-2"></i>Examples</h2>
+
+    <!-- Tabs -->
+    <ul class="nav nav-tabs mb-4" id="exampleTabs" role="tablist">
+      <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#ex-post-image">Post with Image</button></li>
+      <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#ex-post-video">Post with Video</button></li>
+      <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#ex-standalone-video">Upload Video</button></li>
+      <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#ex-categories">Categories</button></li>
+      <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#ex-python">Python</button></li>
     </ul>
-    
-    <h3>List Posts</h3>
-    <p><code>GET /api/posts?page=1&per_page=10</code></p>
-    
-    <h3>Get Categories</h3>
-    <p><code>GET /api/categories</code></p>
-    
-    <h2>Example Usage</h2>
-    <pre>
+
+    <div class="tab-content">
+
+      <!-- Post with image -->
+      <div class="tab-pane fade show active" id="ex-post-image">
+        <pre class="bg-dark text-light rounded p-4"><code>curl -X POST \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -F "title=My New Article" \
+  -F "content=&lt;p&gt;This is the body.&lt;/p&gt;" \
+  -F "category_name=Technology" \
+  -F "image=@/path/to/photo.jpg" \
+  {{ url_for('api.create_post', _external=True) }}</code></pre>
+      </div>
+
+      <!-- Post with video -->
+      <div class="tab-pane fade" id="ex-post-video">
+        <pre class="bg-dark text-light rounded p-4"><code>curl -X POST \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -F "title=Video Report" \
+  -F "content=&lt;p&gt;Watch the clip below.&lt;/p&gt;" \
+  -F "category_id=3" \
+  -F "video=@/path/to/clip.mp4" \
+  {{ url_for('api.create_post', _external=True) }}</code></pre>
+      </div>
+
+      <!-- Standalone video -->
+      <div class="tab-pane fade" id="ex-standalone-video">
+        <pre class="bg-dark text-light rounded p-4"><code># Upload a standalone video
 curl -X POST \
   -H "X-API-Key: YOUR_API_KEY" \
-  -F "title=My New Post" \
-  -F "content=This is the content of my post" \
-  -F "category_id=1" \
-  -F "image=@/path/to/image.jpg" \
-  {{ url_for('api.create_post', _external=True) }}
-    </pre>
-</div>
+  -F "title=Product Demo" \
+  -F "description=Watch how the feature works" \
+  -F "video=@/path/to/demo.mp4" \
+  {{ url_for('api.create_video', _external=True) }}
+
+# List your videos
+curl -H "X-API-Key: YOUR_API_KEY" \
+  "{{ url_for('api.get_videos', _external=True) }}?page=1&per_page=10"
+
+# Delete a video
+curl -X DELETE \
+  -H "X-API-Key: YOUR_API_KEY" \
+  {{ request.host_url }}api/videos/7</code></pre>
+      </div>
+
+      <!-- Categories -->
+      <div class="tab-pane fade" id="ex-categories">
+        <pre class="bg-dark text-light rounded p-4"><code># Get hierarchical tree
+curl -H "X-API-Key: YOUR_API_KEY" \
+  {{ url_for('api.get_categories', _external=True) }}
+
+# Get flat list
+curl -H "X-API-Key: YOUR_API_KEY" \
+  "{{ url_for('api.get_categories', _external=True) }}?flat=1"
+
+# Create a sub-category
+curl -X POST \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Machine Learning", "parent_id": 1}' \
+  {{ url_for('api.create_category', _external=True) }}
+
+# Get all posts in category 3
+curl -H "X-API-Key: YOUR_API_KEY" \
+  {{ request.host_url }}api/categories/3/posts</code></pre>
+      </div>
+
+      <!-- Python -->
+      <div class="tab-pane fade" id="ex-python">
+        <pre class="bg-dark text-light rounded p-4"><code>import requests
+
+API_KEY = "YOUR_API_KEY"
+BASE    = "{{ request.host_url }}"
+HEADERS = {"X-API-Key": API_KEY}
+
+# ── Create a text-only post ──────────────────────────────────────
+r = requests.post(BASE + "api/posts", headers=HEADERS, data={
+    "title": "Hello World",
+    "content": "&lt;p&gt;First API post!&lt;/p&gt;",
+    "category_name": "General",   # auto-created if absent
+})
+print(r.json())
+
+# ── Create a post with a video ───────────────────────────────────
+with open("clip.mp4", "rb") as vid:
+    r = requests.post(BASE + "api/posts", headers=HEADERS, data={
+        "title": "Video Post",
+        "content": "&lt;p&gt;See the video below.&lt;/p&gt;",
+        "category_id": 3,
+    }, files={"video": vid})
+print(r.json())
+
+# ── Upload a standalone video ────────────────────────────────────
+with open("demo.mp4", "rb") as vid:
+    r = requests.post(BASE + "api/videos", headers=HEADERS, data={
+        "title": "Product Demo",
+        "description": "A short walkthrough",
+    }, files={"video": vid})
+print(r.json())
+
+# ── Filter posts with video in a specific category ───────────────
+r = requests.get(BASE + "api/posts", headers=HEADERS,
+                 params={"category": "Technology", "has_video": "1"})
+for post in r.json()["posts"]:
+    print(post["title"], post["url"])</code></pre>
+      </div>
+
+    </div><!-- /tab-content -->
+  </section>
+
+</div><!-- /container -->
+
+<style>
+pre { white-space: pre-wrap; word-break: break-all; font-size: 0.85rem; }
+section { scroll-margin-top: 80px; }
+.nav-pills .nav-link { border-radius: 20px; }
+</style>
+
+<script>
+// Smooth-scroll for quick-nav
+document.querySelectorAll('#apiNav a').forEach(a => {
+    a.addEventListener('click', function(e) {
+        e.preventDefault();
+        document.querySelector(this.getAttribute('href')).scrollIntoView({behavior: 'smooth'});
+        document.querySelectorAll('#apiNav .nav-link').forEach(l => l.classList.remove('active'));
+        this.classList.add('active');
+    });
+});
+</script>
 {% endblock %}
+

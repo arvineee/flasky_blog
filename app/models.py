@@ -84,45 +84,80 @@ class Comment(db.Model):
     __tablename__ = 'comment'
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.Text, nullable=False)
-    date_posted = db.Column(db.DateTime, default=datetime.utcnow)  # Changed to DateTime
+    date_posted = db.Column(db.DateTime, default=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
-    
-    # NEW: Moderation fields
+
+    # Moderation fields
     is_flagged = db.Column(db.Boolean, default=False)
     is_hidden = db.Column(db.Boolean, default=False)
     flag_reason = db.Column(db.String(200), nullable=True)
     flagged_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     flagged_at = db.Column(db.DateTime, nullable=True)
-    
-    # NEW: Editing
+
+    # Editing
     edited = db.Column(db.Boolean, default=False)
     edited_at = db.Column(db.DateTime, nullable=True)
-    
+
+    # Replies — self-referencing FK; NULL means top-level comment
+    parent_id = db.Column(db.Integer, db.ForeignKey('comment.id'), nullable=True)
+
     # Relationships
     flagger = db.relationship('User', foreign_keys=[flagged_by], backref='comments_flagged_by_me')
-    
+    replies = db.relationship(
+        'Comment',
+        backref=db.backref('parent', remote_side='Comment.id'),
+        lazy='dynamic',
+        foreign_keys='Comment.parent_id',
+        cascade='all, delete-orphan'
+    )
+
+    @property
+    def reply_count(self):
+        return self.replies.count()
+
     def delete(self):
         db.session.delete(self)
         db.session.commit()
-    
-    def to_dict(self):
-        """Convert comment to dictionary for JSON response"""
-        return {
+
+    def to_dict(self, include_admin_fields=False):
+        """Convert comment to dictionary for JSON response.
+
+        include_admin_fields=True  → sent to admins: full content always visible,
+                                     plus is_hidden status.
+        include_admin_fields=False → sent to regular users:
+                                     - is_flagged + flag_reason ARE included so the
+                                       frontend can show a "flagged" notice instead of
+                                       the real content.
+                                     - is_hidden is never exposed (hidden comments are
+                                       filtered out server-side for non-admins).
+        """
+        data = {
             'id': self.id,
-            'content': self.content,
+            # Admins always see real content.
+            # Non-admins: content is blanked when flagged so the frontend
+            # renders the flag notice instead of the original text.
+            'content': self.content if (include_admin_fields or not self.is_flagged) else '',
             'date_posted': self.date_posted.strftime('%B %d, %Y at %I:%M %p'),
             'user': {
                 'id': self.user_id,
                 'username': self.user.username,
                 'avatar_url': self.user.get_avatar_url(40)
             },
+            'parent_id': self.parent_id,
+            'reply_count': self.reply_count,
+            # Flagged status + reason are always returned — users need to know
+            # their comment is flagged and why.
             'is_flagged': self.is_flagged,
-            'is_hidden': self.is_hidden,
             'flag_reason': self.flag_reason,
+            # Hidden is admin-only; non-admins never receive hidden comments at all
+            # (they are filtered out in the query), so this field is only meaningful
+            # when include_admin_fields is True.
+            'is_hidden': self.is_hidden if include_admin_fields else False,
             'edited': self.edited,
             'edited_at': self.edited_at.strftime('%B %d, %Y at %I:%M %p') if self.edited_at else None
         }
+        return data
 
 # ---------------------- Traffic Stats ----------------------
 class TrafficStats(db.Model):
@@ -221,3 +256,4 @@ class AdContent(db.Model):
 
     def __repr__(self):
         return f'<AdContent {self.title} by {self.advertiser_name}>'
+
